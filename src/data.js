@@ -43,7 +43,10 @@ const MODELS=[
  {id:'samurai2',name:'サムライ斬・零',k:'s',spec:'AT機',price:620000,pop:82,hit:26000,c:'#9b5cff',c2:'#e6d8ff',rank:3,gen:2},
  {id:'umineko2',name:'CR海ねこパラダイス2',k:'p',spec:'ミドル',price:430000,pop:72,hit:14000,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
  {id:'pirate2',name:'パイレーツゴールド2',k:'s',spec:'AT機',price:560000,pop:76,hit:22000,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
+ ...MACHINE_DB, /* 人気機種をもとにした追加分は machines.js */
 ];
+const byRankPrice=(a,b)=>a.rank-b.rank||a.price-b.price;
+const shortName=n=>n.length>13?n.slice(0,12)+'…':n;
 /* 規制（日数は開業からの日） */
 const REGS=[
  {day:45,name:'一撃性能の規制',ids:['dragon','samurai'],add:['dragon2','samurai2'],grace:28,desc:'一撃が大きすぎる台が規制対象になりました'},

@@ -21,7 +21,7 @@ function eventLabel(ev=S.event){
   switch(ev.type){
     case 'island':return `${ev.target}島 全台系`;
     case 'tail':return `末尾${ev.target}の日`;
-    case 'model':return `${MB[ev.target]?MB[ev.target].name:''}の日`;
+    case 'model':return `${MB[ev.target]?shortName(MB[ev.target].name):''}の日`;
     case 'newm':return '新台入替';
     case 'renewal':return 'リニューアルオープン';
     case 'media':return ev.target==='tube'?'人気配信者の来店取材':'パチンコ雑誌の取材';

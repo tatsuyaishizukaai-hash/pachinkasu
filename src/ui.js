@@ -338,7 +338,7 @@ function machineSheet(d){
   if(d.swap){
     const trade=Math.round(md.price*0.3/1000)*1000;
     h+=`<div class="lbl">入れ替える機種（いまの台は${yen(trade)}で下取り）</div>`;
-    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${x.spec}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
+    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${x.spec}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
     h+=`<button class="btn" data-act="m-swap-back" type="button">もどる</button>`;
     return [`${m.no}番台を入れ替え`,h];
   }
@@ -386,7 +386,7 @@ function shopSheet(tab){
   if(tab==='m'){
     for(const k of ['p','s']){
       h+=`<div class="lbl">${KIND_NAME[k]}</div>`;
-      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${x.spec}・人気${x.pop}<br>${SPEC_INFO[x.spec]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
+      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${x.spec}・人気${x.pop}<br>${SPEC_INFO[x.spec]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
     }
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
@@ -461,7 +461,7 @@ function eventSheet(){
   if(!canRenewal())h+=`<div class="sub">リニューアル：前のオープンから21日以上たち、改装に100万円以上使うと選べます（今${man(G.renoSpend)}・${S.day-S.lastOpen}日）</div>`;
   if(ev.type==='island')h+=`<div class="lbl">どの島？</div><div class="chips">${islands.map(i=>`<button class="chip ${ev.target===i.label?'cur':''}" data-act="ev-target" data-v="${i.label}" type="button">${i.label}島（${i.ms.length}台）</button>`).join('')}</div>`;
   if(ev.type==='tail'){const cnt=d=>ms.filter(m=>m.no%10===d).length;h+=`<div class="lbl">台番号の最後の数字（4と9はありません）</div><div class="chips">${[0,1,2,3,5,6,7,8].map(d=>`<button class="chip ${String(ev.target)===String(d)?'cur':''}" data-act="ev-target" data-v="${d}" ${cnt(d)?'':'disabled'} type="button">末尾${d}（${cnt(d)}台）</button>`).join('')}</div>`}
-  if(ev.type==='model'){const ids=[...new Set(ms.map(m=>m.type))];h+=`<div class="lbl">どの機種？</div><div class="chips">${ids.map(id=>`<button class="chip ${ev.target===id?'cur':''}" data-act="ev-target" data-v="${id}" type="button">${esc(MB[id].name)}（${ms.filter(m=>m.type===id).length}台）</button>`).join('')}</div>`}
+  if(ev.type==='model'){const ids=[...new Set(ms.map(m=>m.type))];h+=`<div class="lbl">どの機種？</div><div class="chips">${ids.map(id=>`<button class="chip ${ev.target===id?'cur':''}" data-act="ev-target" data-v="${id}" type="button">${esc(shortName(MB[id].name))}（${ms.filter(m=>m.type===id).length}台）</button>`).join('')}</div>`}
   if(ev.type==='media'){
     h+=`<div class="lbl">どこに取材してもらう？</div><div class="chips">${[['mag',`パチンコ雑誌（${man(MEDIA_COST.mag)}）`,1],['tube',`人気配信者（${man(MEDIA_COST.tube)}）`,3]].map(([k,l,r])=>`<button class="chip ${ev.target===k?'cur':''}" data-act="ev-target" data-v="${k}" ${rankNo()<r?'disabled':''} type="button">${l}${rankNo()<r?`（ランク${r}）`:''}</button>`).join('')}</div>`;
     const avg=avgOf(ms.map(dashi)),[j,cls]=judgeOf(avg,0.12);
