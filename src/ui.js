@@ -84,7 +84,7 @@ function renderDock(){
   if(open){
     const v=prefs.speed,pz=prefs.paused,html=`<button class="ib ${pz?'on':''}" data-dock="pause" type="button">${pz?'▶':'❚❚'}</button>`+
       [1,2,4].map(x=>`<button class="ib ${!pz&&v===x?'on':''}" data-dock="speed" data-v="${x}" type="button">×${x}</button>`).join('')+
-      `<button class="ib" data-dock="list" type="button">データ</button>`;
+      `<button class="ib" data-dock="hall" type="button">データ</button>`;
     if(sp._h!==html){sp.innerHTML=html;sp._h=html}
     d.innerHTML='';return;
   }
@@ -294,7 +294,7 @@ function buyWall(id){
 
 /* ---------- シート共通 ---------- */
 let sheetAt=0;
-function openSheet(kind,data){sheetAt=performance.now();sheetKind=kind;sheetData=data;renderSheet();$('#sheet').hidden=false;$('#scrim').hidden=false;$('#sheetBody').scrollTop=0;$('#sheet').classList.toggle('tall',kind==='report'||kind==='guide'||kind==='manage'||kind==='list')}
+function openSheet(kind,data){sheetAt=performance.now();sheetKind=kind;sheetData=data;renderSheet();$('#sheet').hidden=false;$('#scrim').hidden=false;$('#sheetBody').scrollTop=0;$('#sheet').classList.toggle('tall',kind==='report'||kind==='guide'||kind==='manage'||kind==='list'||kind==='hall'||kind==='mdb')}
 function closeSheet(){
   const was=sheetKind,wasData=sheetData;
   $('#sheet').hidden=true;$('#scrim').hidden=true;sheetKind=null;sheetData=null;panelSel=null;
@@ -318,6 +318,8 @@ function renderSheet(){
     case 'over':r=overSheet();break;
     case 'end':r=endSheet(sheetData);break;
     case 'transfer':r=transferSheet();break;
+    case 'hall':r=hallSheet(sheetData);break;
+    case 'mdb':r=mdbSheet(sheetData);break;
     default:return;
   }
   if(!r||!sheetKind)return;
@@ -334,16 +336,16 @@ const starTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
 function machineSheet(d){
   const m=d.m;if(!G.objs.includes(m)){closeSheet();return null}
   const md=MB[m.type],k=md.k,prep=S.phase==='prep',age=S.day-m.installDay,s=seatOf(m),z=zoneAt(s.x,s.y);
-  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${md.spec}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
+  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
   if(d.swap){
     const trade=Math.round(md.price*0.3/1000)*1000;
     h+=`<div class="lbl">入れ替える機種（いまの台は${yen(trade)}で下取り）</div>`;
-    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${x.spec}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
+    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
     h+=`<button class="btn" data-act="m-swap-back" type="button">もどる</button>`;
     return [`${m.no}番台を入れ替え`,h];
   }
   h+=`<div class="lbl">レート</div><div class="chips">${['hi','lo'].map(r=>`<button class="chip ${m.rate===r?'cur':''}" data-act="m-rate" data-v="${r}" ${prep?'':'disabled'} type="button">${RATE[k][r].label}${k==='p'?'パチンコ':'スロット'}</button>`).join('')}</div>`;
-  h+=`<div class="lbl">${k==='s'?'設定':'釘'}${prep?'':'（営業中は変えられません）'}</div>${lvBtns(m,'m-lv','',!prep)}<div class="sub">${k==='s'?SLOT_HINT[m.set]:NAIL_HINT[m.nail+2]}</div>`;
+  h+=`<div class="lbl">${k==='s'?'設定':'釘'}${prep?'':'（営業中は変えられません）'}</div>${lvBtns(m,'m-lv','',!prep)}<div class="sub">${k==='s'?`<b>設定${m.set}：出玉率${md.rates[m.set-1].toFixed(1)}%</b>（初当り約1/${Math.round(slotProb(md,m.set))}）${(md.none||[]).includes(m.set)?'※実機にない設定':''}<br>${SLOT_HINT[m.set]}`:`<b>初当り1/${md.prob}（${specOf(md)}）</b>・平均約${Math.round(400*NAIL_R[2]*md.prob/P_SPM/4).toLocaleString('ja-JP')}発/初当り<br>${NAIL_HINT[m.nail+2]}`}</div>`;
   const t=S.phase==='open'?m.today:m.yest,lab=S.phase==='open'?'今日':'昨日';
   if(t)h+=`<div class="box stats"><span>${lab}の稼働 <b>${Math.round(t.mins)}分</b></span><span>大当り <b>${t.hits}回</b></span><span>店の収支 <b class="${t.coin-t.out>=0?'pos':'neg'}">${sgn(t.coin-t.out)}</b></span></div>`;
   else h+=`<div class="sub">まだデータがありません</div>`;
@@ -386,7 +388,7 @@ function shopSheet(tab){
   if(tab==='m'){
     for(const k of ['p','s']){
       h+=`<div class="lbl">${KIND_NAME[k]}</div>`;
-      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${x.spec}・人気${x.pop}<br>${SPEC_INFO[x.spec]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
+      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${specLine(x)}・人気${x.pop}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
     }
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
@@ -423,6 +425,7 @@ function listSheet(scope){
   const sl=ms.filter(m=>kindOf(m)==='s'),pc=ms.filter(m=>kindOf(m)==='p');
   let h='';
   h+=`<div class="box stats"><span>スロット平均設定 <b>${sl.length?avgOf(sl.map(m=>m.set)).toFixed(1):'-'}</b></span><span>パチンコ平均釘 <b>${pc.length?(avgOf(pc.map(m=>m.nail))>=0?'+':'')+avgOf(pc.map(m=>m.nail)).toFixed(1):'-'}</b></span><span>出し具合 <b>${Math.round(avgOf(ms.map(dashi))*100)}%</b></span></div>`;
+  h+=`<button class="btn sm" data-act="open-hall" type="button">ホールデータを見る（${prep?'昨日':'今日'}の出玉ランキング・稼働率）</button>`;
   if(prep){
     const sc=[['all','全台'],['p','パチンコ'],['s','スロット'],...(S.event.type!=='none'&&S.event.type!=='renewal'?[['ev','イベント対象']]:[]),...islands.map(i=>[i.label,i.label+'島'])];
     h+=`<div class="lbl">まとめて変える範囲</div>`+tabs(sc,scope,'ls-scope');
@@ -461,7 +464,7 @@ function eventSheet(){
   if(!canRenewal())h+=`<div class="sub">リニューアル：前のオープンから21日以上たち、改装に100万円以上使うと選べます（今${man(G.renoSpend)}・${S.day-S.lastOpen}日）</div>`;
   if(ev.type==='island')h+=`<div class="lbl">どの島？</div><div class="chips">${islands.map(i=>`<button class="chip ${ev.target===i.label?'cur':''}" data-act="ev-target" data-v="${i.label}" type="button">${i.label}島（${i.ms.length}台）</button>`).join('')}</div>`;
   if(ev.type==='tail'){const cnt=d=>ms.filter(m=>m.no%10===d).length;h+=`<div class="lbl">台番号の最後の数字（4と9はありません）</div><div class="chips">${[0,1,2,3,5,6,7,8].map(d=>`<button class="chip ${String(ev.target)===String(d)?'cur':''}" data-act="ev-target" data-v="${d}" ${cnt(d)?'':'disabled'} type="button">末尾${d}（${cnt(d)}台）</button>`).join('')}</div>`}
-  if(ev.type==='model'){const ids=[...new Set(ms.map(m=>m.type))];h+=`<div class="lbl">どの機種？</div><div class="chips">${ids.map(id=>`<button class="chip ${ev.target===id?'cur':''}" data-act="ev-target" data-v="${id}" type="button">${esc(MB[id].name)}（${ms.filter(m=>m.type===id).length}台）</button>`).join('')}</div>`}
+  if(ev.type==='model'){const ids=[...new Set(ms.map(m=>m.type))];h+=`<div class="lbl">どの機種？</div><div class="chips">${ids.map(id=>`<button class="chip ${ev.target===id?'cur':''}" data-act="ev-target" data-v="${id}" type="button">${esc(shortName(MB[id].name))}（${ms.filter(m=>m.type===id).length}台）</button>`).join('')}</div>`}
   if(ev.type==='media'){
     h+=`<div class="lbl">どこに取材してもらう？</div><div class="chips">${[['mag',`パチンコ雑誌（${man(MEDIA_COST.mag)}）`,1],['tube',`人気配信者（${man(MEDIA_COST.tube)}）`,3]].map(([k,l,r])=>`<button class="chip ${ev.target===k?'cur':''}" data-act="ev-target" data-v="${k}" ${rankNo()<r?'disabled':''} type="button">${l}${rankNo()<r?`（ランク${r}）`:''}</button>`).join('')}</div>`;
     const avg=avgOf(ms.map(dashi)),[j,cls]=judgeOf(avg,0.12);
@@ -570,7 +573,7 @@ function reportSheet(R){
   if(R.ev){h+=`<div class="stampbox"><div class="stamp ${R.ev.cls}">${R.ev.judge}</div><div><div class="lbl">${esc(R.ev.label)}</div><div class="sub">対象${R.ev.n}台・出し具合${Math.round(R.ev.avg*100)}%</div><div>信用 ${R.trust0} → ${R.trust1}</div></div></div>`}
   h+=`<div class="kpis"><div><b>${R.visitors}</b><span>来店</span></div><div><b class="${R.full?'neg':''}">${R.full}</b><span>満席で帰った</span></div><div><b>${Math.round(R.share*100)}%</b><span>町のシェア</span></div></div>`;
   h+=`<div class="segs">${SEGS.filter(s=>R.seg[s]).map(s=>`<span>${SEG_NAME[s]} ${R.seg[s]}人</span>`).join('')}</div>`;
-  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr><tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
+  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>スロットの交換差益（5.6枚交換）</td><td>${yen(R.exch)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
   const dr=R.rep1-R.rep0,fl=R.feel>=1?['よく出る店','pos']:R.feel<=-1?['出ない店','neg']:['ふつう',''];
   h+=`<div class="box">出玉率 <b>${Math.round(R.payR*100)}%</b>　お客さんの体感：<b class="${fl[1]}">${fl[0]}</b></div>`;
   h+=`<div class="box">評判 <b>${Math.round(R.rep0)} → ${Math.round(R.rep1)}</b> <span class="${dr>=0?'pos':'neg'}">(${dr>=0?'+':''}${dr.toFixed(1)})</span>　信用 <b>${R.trust1}</b>　資金 <b class="${R.money<0?'neg':''}">${yen(R.money)}</b></div>`;
@@ -580,6 +583,7 @@ function reportSheet(R){
   if(R.voices.length)h+=`<div class="lbl">お客さんの声</div>`+R.voices.map(v=>`<div class="voice ${v.good?'':'bad'}">${esc(WHY[v.k].t)}<span class="cnt">${v.n}人</span></div>`).join('');
   if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
   if(R.brokenN)h+=`<div class="sub">今日は${R.brokenN}台が故障しました。ホール係が多いと早く直せます</div>`;
+  if(R.completes&&R.completes.length)h+=`<div class="box neg">コンプリート ${R.completes.length}台：${R.completes.map(c=>`${c.no}番（${esc(shortName(MB[c.id].name))}）`).join('・')}<br><span class="sub">差玉の上限（パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚）まで出て、その日は打ち止めになりました</span></div>`;
   if(R.gotoCaught)h+=`<div class="box">ゴト師を${R.gotoCaught}人捕まえました！</div>`;
   if(R.gotoEsc)h+=`<div class="box neg">ゴト師に逃げられ、${yen(R.gotoEsc)}の被害。防犯カメラを付けると見つけやすくなります</div>`;
   if(R.goals&&R.goals.length)h+=R.goals.map(g=>`<div class="rankup">目標達成「${esc(g.name)}」<br><span>ボーナス ${man(g.reward)}</span></div>`).join('');
@@ -588,6 +592,7 @@ function reportSheet(R){
   if(R.rankUp)h+=`<div class="rankup">ランクアップ！ ランク${R.rankNo}「${esc(R.rankUp)}」<br><span>新しい台・設備・物件が解放されました</span></div>`;
   const t=R.tomorrow;
   h+=`<div class="box tmr"><b>明日 ${dateLong(R.day+1)}</b>　${WEATHER[t.weather].name}${t.info.tags.length?'・'+t.info.tags.join('・'):''}${t.go?'・オープン期間':''}${t.rivals.length?`<br><span class="neg">${t.rivals.map(esc).join('・')}がイベント予定</span>`:''}</div>`;
+  h+=`<div class="actions"><button class="btn sm wide2" data-act="open-hall" type="button">ホールデータ（出玉ランキング・稼働率）</button></div>`;
   h+=`<button class="btn primary" data-act="close" type="button">明日の準備へ</button>`;
   return [`${R.date}の日報`,h];
 }
@@ -645,6 +650,11 @@ const GUIDE={
   people:['店員と常連',`<ul><li><b>ホール係</b>：呼び出しランプに対応します。台12台につき1人が目安。足りないとお客さんが待たされて不満になります。</li><li><b>カウンター係</b>：景品カウンター1つに1人必要。いないと勝ったお客さんが交換できません。</li><li><b>清掃係</b>：床のゴミを片付けます。汚い店は満足度が下がります。</li><li>店員は「速さ」と「接客」が高いほど優秀です。研修でレベルを上げられます。</li></ul>
 <h3>名物常連客</h3><p>頭に★がついているのは名前つきの常連さんです。好きなことと苦手なことがあり、満足するほど通ってくれます。不満が続くと来なくなります。</p>`],
   biz:['物件とライバル',`<ul><li>町には<b>ライバル店</b>があり、お客さんを取り合っています。評判・台数・イベントでシェアが決まります。</li><li>ライバル店がイベントの日は、お客さんを取られやすくなります。</li><li>シェアを奪われ続けたライバル店は閉店し、<b>居抜き物件</b>として売りに出ることがあります。</li><li><b>物件</b>：今の店を広げるほか、居抜き物件や、更地に新築（マス数で値段が決まる）で移転できます。新築には設備のプレゼントがつきます。</li><li>移転すると今の店は売却され、台と設備は倉庫に入ります。新しい店はグランドオープンから。</li><li>毎日の経費は家賃・店員の給料・電気代です。資金のマイナスが7日続くと倒産します。</li><li><b>銀行</b>（経営 → 銀行）でお金を借りられます。利息は毎日かかります。</li></ul>`],
+  kishu:['機種と出玉',`<h3>パチンコ</h3><p>機種ごとに<b>初当り確率</b>（1/99.9・1/199・1/319・1/349・1/399・1/599）が決まっています。確率が重いほど当たるまで時間がかかりますが、1回の当りが大きく、RUSHの連チャンで一撃数万発になることもあります。<b>釘</b>は回りやすさ（＝お店の出し具合）を決めます。</p>
+<h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります。</p>
+<h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
+<h3>ホールデータ</h3><p>営業中の「データ」、設定一覧、日報から見られます。<b>出玉ランキング</b>・<b>台番号別の稼働率</b>・<b>機種別の稼働率</b>・<b>客層と時間ごとの稼働</b>で、どんなお客さんがどの台を打っているかがわかります。稼働の低い機種は入れ替え候補です。</p>
+<h3>機種データベース</h3><p>メニューの「機種データベース」で、機種の名前・出玉率・初当り確率を変えられます。変えた内容はこの端末に保存されます。</p>`],
   more:['規制・取材・トラブル',`<h3>規制</h3><p>ときどき国の規制が発表され、対象の機種は期限までに撤去されます（期限を過ぎると自動で撤去・下取りなし）。代わりに「新基準」の新しい機種が買えるようになります。</p>
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
@@ -656,6 +666,100 @@ function guideSheet(tab){
   tab=tab||'start';
   return ['遊び方',tabs(Object.entries(GUIDE).map(([k,v])=>[k,v[0]]),tab,'g-tab')+`<div class="guide">${GUIDE[tab][1]}</div><button class="btn primary" data-act="close" type="button">わかった</button>`];
 }
+const specLine=x=>x.k==='p'?`1/${x.prob}・${specOf(x)}`:`${x.spec}・出玉率${x.rates[0].toFixed(1)}〜${x.rates[5].toFixed(1)}%`;
+const pctS=v=>Math.round(clamp(v,0,1)*100)+'%';
+const hbar=(v,cls='')=>`<span class="hb ${cls}"><i style="width:${Math.round(clamp(v,0,1)*100)}%"></i></span>`;
+const fmtD=(d,k)=>`${d>=0?'+':''}${d.toLocaleString('ja-JP')}${unitName(k)}`;
+
+/* ---------- ホールデータ（出玉ランキング・台番号別／機種別の稼働率・客層） ---------- */
+function hallSrc(){
+  const open=S.phase==='open';
+  return {open,get:m=>open?m.today:m.yest,span:open?Math.max(1,Math.min(clock,LAST)-OPEN):LAST-OPEN,
+    label:open?'今日（営業中・いまの時点）':S.lastDay?`昨日（${dateStr(S.lastDay.day)}）`:'昨日',
+    day:open?{seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly}:S.lastDay};
+}
+function hallModels(src,ms){
+  const g=new Map();
+  for(const m of ms){const t=src.get(m),k=m.type+'|'+m.rate;let e=g.get(k);if(!e){e={md:MB[m.type],m,n:0,mins:0,d:0,hits:0,done:0};g.set(k,e)}
+    e.n++;e.mins+=t.mins;e.d+=diffUnits(m,t);e.hits+=t.hits;if(t.done)e.done++}
+  return [...g.values()].map(e=>Object.assign(e,{util:e.mins/(e.n*src.span)})).sort((a,b)=>b.util-a.util);
+}
+function hallSheet(tab){
+  tab=tab||'rank';
+  const src=hallSrc(),ms=machines().filter(m=>src.get(m));
+  let h=tabs([['rank','出玉ランキング'],['no','台番号別'],['model','機種別'],['cust','客層と時間']],tab,'hall-tab');
+  h+=`<div class="sub">${src.label}のデータ</div>`;
+  if(!ms.length){h+=`<div class="box">まだデータがありません。営業するとたまります。</div>`;return ['ホールデータ',h]}
+  if(tab==='rank'){
+    for(const k of ['s','p']){
+      const list=ms.filter(m=>kindOf(m)===k).map(m=>({m,t:src.get(m),d:diffUnits(m,src.get(m))})).sort((a,b)=>b.d-a.d);
+      if(!list.length)continue;
+      h+=`<div class="isl-h">${KIND_NAME[k]}の差${k==='s'?'枚':'玉'}ランキング</div>`;
+      h+=list.map((x,i)=>`<div class="lrow"><div class="l1"><span class="rk ${i<3?'top':''}">${i+1}</span><span class="no">${x.m.no}</span><span class="nm">${esc(MB[x.m.type].name)}</span><span class="dv ${x.d>=0?'pos':'neg'}">${fmtD(x.d,k)}</span></div><div class="sub">${rateLabel(x.m)}・${Math.round(x.t.g||0).toLocaleString('ja-JP')}${k==='s'?'G':'回転'}・大当り${x.t.hits}回・稼働${pctS(x.t.mins/src.span)}${x.t.done?'・<b class="pos">コンプリート</b>':''}</div></div>`).join('');
+    }
+  }else if(tab==='no'){
+    const list=[...ms].sort((a,b)=>a.no-b.no),avg=avgOf(list.map(m=>src.get(m).mins/src.span));
+    h+=`<div class="box stats"><span>全体の稼働率 <b>${pctS(avg)}</b></span><span>パチンコ <b>${pctS(avgOf(list.filter(m=>kindOf(m)==='p').map(m=>src.get(m).mins/src.span))||0)}</b></span><span>スロット <b>${pctS(avgOf(list.filter(m=>kindOf(m)==='s').map(m=>src.get(m).mins/src.span))||0)}</b></span></div>`;
+    h+=list.map(m=>{const t=src.get(m),u=t.mins/src.span,d=diffUnits(m,t),k=kindOf(m);return `<div class="hrow"><span class="no">${m.no}</span><span class="nm">${esc(shortName(MB[m.type].name))}<small>${rateLabel(m)}・${k==='s'?`設定${m.set}`:`釘${NAIL_SHORT[m.nail+2]}`}</small></span>${hbar(u,u<0.25?'low':u>=0.7?'high':'')}<span class="pc">${pctS(u)}</span><span class="dv ${d>=0?'pos':'neg'}">${fmtD(d,k)}</span></div>`}).join('');
+  }else if(tab==='model'){
+    const list=hallModels(src,ms);
+    h+=`<div class="sub">稼働率の高い順。同じ機種でもレートが違えば別に数えます</div>`;
+    h+=list.map(e=>`<div class="lrow"><div class="l1"><span class="nm">${esc(e.md.name)}</span><span class="rs sub">${rateLabel(e.m)}・${e.n}台</span></div><div class="hrow in">${hbar(e.util,e.util<0.25?'low':e.util>=0.7?'high':'')}<span class="pc">${pctS(e.util)}</span><span class="dv ${e.d>=0?'pos':'neg'}">合計${fmtD(e.d,e.md.k)}</span></div><div class="sub">1台平均${fmtD(Math.round(e.d/e.n),e.md.k)}・大当り${e.hits}回${e.done?`・コンプリート${e.done}台`:''}・${specLine(e.md)}</div></div>`).join('');
+  }else{
+    const dy=src.day;
+    if(!dy||!dy.visitors){h+=`<div class="box">お客さんのデータがまだありません。</div>`;return ['ホールデータ',h]}
+    const ml=hallModels(src,ms),best=ml[0],worst=ml[ml.length-1];
+    const segs=SEGS.filter(s=>dy.seg[s]).sort((a,b)=>dy.seg[b]-dy.seg[a]);
+    const hr=dy.hourly||[],nP=ms.filter(m=>kindOf(m)==='p').length,nS=ms.filter(m=>kindOf(m)==='s').length,nAll=nP+nS;
+    const peak=hr.length?hr.reduce((a,b)=>(b.p+b.s>a.p+a.s?b:a)):null;
+    h+=`<div class="box col"><div class="lbl">${src.open?"今日":"この日"}の傾向</div>`
+      +(best?`<div>いちばん人気：<b>${esc(shortName(best.md.name))}</b>（${rateLabel(best.m)}・稼働${pctS(best.util)}）</div>`:'')
+      +(worst&&worst!==best?`<div>いちばん空いていた：<b>${esc(shortName(worst.md.name))}</b>（${rateLabel(worst.m)}・稼働${pctS(worst.util)}）${worst.util<0.25?'<span class="neg"> 入れ替え候補</span>':''}</div>`:'')
+      +(segs.length?`<div>多かった客層：<b>${SEG_NAME[segs[0]]}</b>（${pctS(dy.seg[segs[0]]/dy.visitors)}）</div>`:'')
+      +(peak&&nAll?`<div>いちばん混んだ時間：<b>${peak.h}時台</b>（${peak.p+peak.s}人が遊技）</div>`:'')+`</div>`;
+    h+=`<div class="lbl">客層（来店${dy.visitors}人）</div>`+segs.map(s=>`<div class="hrow"><span class="nm">${SEG_NAME[s]}</span>${hbar(dy.seg[s]/dy.visitors)}<span class="pc">${dy.seg[s]}人</span></div>`).join('');
+    h+=`<div class="box stats"><span>設定・釘狙い <b>${pctS(dy.hunters/dy.visitors)}</b></span><span>年配の客 <b>${pctS((dy.elders||0)/dy.visitors)}</b></span><span>たばこを吸う客 <b>${pctS((dy.smokers||0)/dy.visitors)}</b></span></div>`;
+    if(hr.length){
+      h+=`<div class="lbl">時間ごとの稼働（毎時30分の時点）</div>`;
+      h+=hr.map(x=>`<div class="hrow"><span class="nm">${x.h}時台</span>${hbar(nAll?(x.p+x.s)/nAll:0)}<span class="pc">${nAll?pctS((x.p+x.s)/nAll):'-'}</span><span class="dv sub">パ${x.p}・ス${x.s}</span></div>`).join('');
+    }
+  }
+  h+=`<div class="actions"><button class="btn sm" data-act="open-list" type="button">${S.phase==='prep'?'設定一覧へ':'台データへ'}</button></div>`;
+  return ['ホールデータ',h];
+}
+
+/* ---------- 機種データベースの画面 ---------- */
+function probInfo(p){
+  const P=probShape(p),balls=Math.round(400*NAIL_R[2]*p/P_SPM/4/10)*10,star={99.9:1,199:2,319:3,349:3,399:4,599:5}[p]||3;
+  return `<div class="box col"><div><b>1/${p}（${PROB_SPEC[p]}）</b>　一撃 ${'★'.repeat(star)}${'☆'.repeat(5-star)}</div><div class="sub">初当り1回の平均 約${balls.toLocaleString('ja-JP')}発（RUSH込み・標準の釘）／RUSH突入${Math.round(P.e*100)}%・継続${Math.round(P.q*100)}%${P.lt?`・まれに上位RUSH（継続${Math.round(P.ltq*100)}%）`:''}<br>${SPEC_INFO[PROB_SPEC[p]]}</div></div>`;
+}
+function mdbSheet(d){
+  d=d||{tab:'s'};const prep=S.phase==='prep';
+  if(d.id){
+    const md=MB[d.id],def=MDB_DEF[d.id],dis=prep?'':'disabled',nm=d.name??md.name;
+    let h=`<div class="mp-head"><span class="sw big" style="background:${md.c}"></span><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${md.k}">${KIND_NAME[md.k]}</span><span class="tag">${specOf(md)}</span>${mdbEdits[md.id]?'<span class="tag new">変更あり</span>':''}</div></div></div>`;
+    h+=`<label class="lbl" for="mdbName">名前（30文字まで）</label><input class="field" id="mdbName" maxlength="30" value="${esc(nm)}" ${dis}>`;
+    if(nm!==def.name)h+=`<div class="sub">元の名前：${esc(def.name)}</div>`;
+    if(md.k==='s'){
+      h+=`<div class="lbl">設定ごとの出玉率（機械割％・${SLOT_MIN}〜${SLOT_MAX}）</div><div class="rgrid">${md.rates.map((v,i)=>{const f=(md.none||[]).includes(i+1)?'<em>実機なし</em>':(md.est||[]).includes(i+1)?'<em>推定</em>':'';return `<label class="rcell c${i+1}"><span>設定${i+1}${f}</span><input class="field" id="mdbR${i}" type="number" inputmode="decimal" step="0.1" min="${SLOT_MIN}" max="${SLOT_MAX}" value="${(d.rates?d.rates[i]:v).toFixed(1)}" ${dis}></label>`}).join('')}</div>`;
+      h+=`<div class="sub">初当り 1/${md.hit[0]}（設定1）〜1/${md.hit[1]}（設定6）・${VOL_NAME[md.vol]}<br>元の値：${def.rates.map(v=>v.toFixed(1)).join(' / ')}</div>`;
+    }else{
+      const cur=d.prob??md.prob;
+      h+=`<div class="lbl">初当り確率（重いほど1回の当りが大きく、一撃が荒くなる）</div><div class="chips">${PROBS.map(p=>`<button class="chip ${cur===p?'cur':''}" data-act="mdb-prob" data-v="${p}" ${dis} type="button">1/${p}</button>`).join('')}</div>`+probInfo(cur);
+      if(cur!==def.prob)h+=`<div class="sub">元の確率：1/${def.prob}</div>`;
+    }
+    if(md.real)h+=`<div class="sub">実機のデータ：${esc(md.real)}</div>`;
+    h+=prep?`<div class="actions"><button class="btn sm" data-act="mdb-back" type="button">もどる</button><button class="btn sm" data-act="mdb-reset1" type="button">最初の値に戻す</button><button class="btn sm primary wide2" data-act="mdb-save" type="button">保存</button></div>`
+      :`<div class="box">営業中は見るだけです。閉店後に変えられます。</div><button class="btn sm" data-act="mdb-back" type="button">もどる</button>`;
+    return ['機種データベース',h];
+  }
+  let h=tabs([['s','スロット'],['p','パチンコ']],d.tab,'mdb-tab');
+  h+=`<div class="box">機種の<b>名前</b>・<b>出玉率</b>（スロット）・<b>初当り確率</b>（パチンコ）を変えられます。変えた内容はこの端末に保存され、どのお店でも使われます。</div>`;
+  h+=MODELS.filter(x=>x.k===d.tab).sort(byRankPrice).map(x=>`<div class="item"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}${mdbEdits[x.id]?' <span class="tag new">変更あり</span>':''}</div><div class="ds">${specLine(x)}・ランク${x.rank}</div></div><button class="btn sm" data-act="mdb-edit" data-id="${x.id}" type="button">${prep?'編集':'見る'}</button></div>`).join('');
+  const n=Object.keys(mdbEdits).length;
+  h+=`<div class="sub">変更した機種：${n}</div><div class="actions"><button class="btn sm wide2" data-act="mdb-export" type="button" ${n?'':'disabled'}>変更を書き出す（コピー）</button>${d.confirm?`<button class="btn sm" data-act="mdb-resetall-no" type="button">やめる</button><button class="btn sm danger" data-act="mdb-resetall-yes" type="button">本当に全部戻す</button>`:`<button class="btn sm danger" data-act="mdb-resetall" type="button" ${n&&prep?'':'disabled'}>すべて最初に戻す</button>`}</div><textarea class="field" id="mdbOut" rows="3" hidden style="font-family:var(--f-body);font-size:11px;resize:none" readonly></textarea>`;
+  return ['機種データベース',h];
+}
 function transferSheet(){
   const intro=sheetData==='title'?'別の場所（アーティファクト版など）で遊んでいたお店を、ここで続きから遊べます。<br>移す元のメニュー →「セーブの引っ越し」→「セーブをコピー」で写したテキストを、下の欄に貼り付けて「読み込む」を押してください。'
     :'アーティファクト版とホーム画面アプリ版は、セーブが別々に保存されます。進み具合を移すには：<br>① 移す元のメニューで「セーブをコピー」<br>② 移す先のメニュー →「セーブの引っ越し」で下の欄に貼り付けて「読み込む」';
@@ -666,7 +770,7 @@ ${sheetData==='title'?'':'<button class="btn" data-act="tr-copy" type="button">�
 <button class="btn primary" data-act="tr-load" type="button">読み込む（今のセーブは上書きされます）</button>`];
 }
 function menuSheet(confirm){
-  let h=`<div class="actions"><button class="btn sm" data-act="menu-guide" type="button">遊び方</button><button class="btn sm" data-act="menu-bgm" type="button">BGM ${prefs.bgm?'ON':'OFF'}</button><button class="btn sm" data-act="menu-sfx" type="button">効果音 ${prefs.sfx?'ON':'OFF'}</button><button class="btn sm" data-act="menu-manage" type="button">経営の記録</button><button class="btn sm" data-act="menu-tweet" type="button">つぶやき ${prefs.tweets?'ON':'OFF'}</button><button class="btn sm wide2" data-act="menu-transfer" type="button">セーブの引っ越し（${window.APP_MODE?'コピー・読み込み':'アプリ版へ移す'}）</button></div>`;
+  let h=`<div class="actions"><button class="btn sm" data-act="menu-guide" type="button">遊び方</button><button class="btn sm" data-act="menu-bgm" type="button">BGM ${prefs.bgm?'ON':'OFF'}</button><button class="btn sm" data-act="menu-sfx" type="button">効果音 ${prefs.sfx?'ON':'OFF'}</button><button class="btn sm" data-act="menu-manage" type="button">経営の記録</button><button class="btn sm" data-act="menu-tweet" type="button">つぶやき ${prefs.tweets?'ON':'OFF'}</button><button class="btn sm wide2" data-act="menu-mdb" type="button">機種データベース（名前・出玉率・確率）</button><button class="btn sm wide2" data-act="menu-transfer" type="button">セーブの引っ越し（${window.APP_MODE?'コピー・読み込み':'アプリ版へ移す'}）</button></div>`;
   h+=`<div class="lbl">画面の向き（縦持ちのとき）</div><div class="chips">${[['auto','横画面にする'],['flip','横画面（反対向き）'],['off','縦のまま']].map(([k,l])=>`<button class="chip ${prefs.rot===k?'cur':''}" data-act="menu-rot" data-v="${k}" type="button">${l}</button>`).join('')}</div>`;
   h+=`<label class="lbl" for="mName">お店の名前</label><div class="inrow"><input class="field" id="mName" maxlength="10" value="${esc(S.name)}"><button class="btn sm" data-act="menu-rename" type="button">変更</button></div>`;
   h+=confirm?`<div class="box">本当にデータを消して最初からやり直しますか？元には戻せません。</div><div class="actions"><button class="btn sm" data-act="menu-reset-no" type="button">やめる</button><button class="btn sm danger" data-act="restart" type="button">消してやり直す</button></div>`:`<button class="btn danger" data-act="menu-reset" type="button">データを消して最初から</button>`;
@@ -724,15 +828,46 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'bk-repay':{const n=repay(v==='all'?S.loan:Number(v));if(n){sfx('cash');toast(`${man(n)}返しました`);save();refreshAll()}break}
     case 'menu-tweet':prefs.tweets=!prefs.tweets;savePrefs();renderSheet();break;
     case 'menu-transfer':openSheet('transfer');break;
+    case 'menu-mdb':openSheet('mdb',{tab:'s'});break;
+    case 'hall-tab':sheetData=v;renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'open-hall':if(sheetKind==='report'){closeSheet();refreshAll();if(sheetKind)break}openSheet('hall','rank');break;
+    case 'open-list':openSheet('list','all');break;
+    case 'mdb-tab':sheetData={tab:v};renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'mdb-edit':sheetData={tab:sheetData.tab,id};renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'mdb-back':sheetData={tab:sheetData.tab};renderSheet();break;
+    case 'mdb-prob':{const nm=$('#mdbName');sheetData=Object.assign({},sheetData,{prob:Number(v),name:nm?nm.value:undefined});sfx('tap');renderSheet();break}
+    case 'mdb-save':{
+      const d=sheetData,md=MB[d.id],nm=(($('#mdbName')||{}).value||'').trim();
+      if(!nm){toast('名前を入れてください');sfx('bad');break}
+      const e={name:nm};let bad=-1,clipped=false;
+      if(md.k==='s'){e.rates=[];for(let i=0;i<6;i++){const v=parseFloat($('#mdbR'+i).value);if(!isFinite(v)){bad=i;break}const c=clampRate(v);if(c!==Math.round(v*10)/10)clipped=true;e.rates.push(c)}}
+      else e.prob=d.prob??md.prob;
+      if(bad>=0){toast(`設定${bad+1}の出玉率を数字で入れてください`);sfx('bad');break}
+      mdbSet(Object.assign({},mdbEdits,{[d.id]:e}));
+      sfx('good');toast(clipped?`保存しました（${SLOT_MIN}〜${SLOT_MAX}%の外の値は直しました）`:'保存しました');
+      sheetData={tab:md.k,id:d.id};refreshAll();break}
+    case 'mdb-reset1':{const o=Object.assign({},mdbEdits);delete o[sheetData.id];mdbSet(o);sheetData={tab:sheetData.tab,id:sheetData.id};sfx('tap');toast('最初の値に戻しました');refreshAll();break}
+    case 'mdb-resetall':sheetData=Object.assign({},sheetData,{confirm:true});renderSheet();break;
+    case 'mdb-resetall-no':sheetData={tab:sheetData.tab};renderSheet();break;
+    case 'mdb-resetall-yes':mdbSet({});sheetData={tab:sheetData.tab};sfx('tap');toast('すべて最初の値に戻しました');refreshAll();break;
+    case 'mdb-export':{
+      const code='PKDB1:'+JSON.stringify(mdbEdits),ta=$('#mdbOut');
+      const fallback=()=>{ta.hidden=false;ta.value=code;ta.focus();ta.select();toast('欄のテキストを全部選んでコピーしてください')};
+      try{navigator.clipboard.writeText(code).then(()=>{toast('コピーしました。「セーブの引っ越し」の欄に貼ると読み込めます');sfx('good')},fallback)}catch(err){fallback()}
+      break;}
     case 'tr-copy':{
-      const code='PHJ1:'+(S.phase==='open'&&openSnap?openSnap:ser()),ta=$('#trText');
+      const code='PHJ2:'+JSON.stringify({save:S.phase==='open'&&openSnap?openSnap:ser(),mdb:mdbEdits}),ta=$('#trText');
       const fallback=()=>{ta.value=code;ta.focus();ta.select();toast('欄のテキストを全部選んでコピーしてください')};
       try{navigator.clipboard.writeText(code).then(()=>{toast('セーブをコピーしました');sfx('good')},fallback)}catch(err){fallback()}
       break;}
     case 'tr-load':{
       if(S.phase==='open'){toast('営業中は読み込めません。営業が終わってから読み込んでください');sfx('bad');break}
-      const raw=($('#trText').value||'').trim(),str=raw.startsWith('PHJ1:')?raw.slice(5):raw;
+      const raw=($('#trText').value||'').trim();
+      if(raw.startsWith('PKDB1:')){try{mdbSet(JSON.parse(raw.slice(6)));sfx('good');toast('機種データベースを読み込みました');closeSheet();refreshAll()}catch(err){toast('読み込めませんでした');sfx('bad')}break}
+      let str=raw.startsWith('PHJ1:')?raw.slice(5):raw,mdb=null;
+      if(raw.startsWith('PHJ2:')){try{const o=JSON.parse(raw.slice(5));str=o.save;mdb=o.mdb}catch(err){str=''}}
       let ok=false;try{ok=!!str&&load(str)}catch(err){ok=false}
+      if(ok&&mdb)mdbSet(mdb);
       if(!ok){toast('読み込めませんでした。コピーしたテキストを全部貼り付けてください');sfx('bad');break}
       save();custs=[];staffA=[];tool='view';sheetData=null;closeSheet();cam.fit=true;applyLayout();refreshAll();sfx('fanfare');telop('引っ越し完了！',S.name,'good');
       break;}
@@ -763,7 +898,7 @@ $('#sheetBody').addEventListener('click',e=>{
 function manageTabFromData(){return typeof sheetData==='string'?sheetData:(sheetData&&sheetData.tab)||'staff'}
 
 /* ---------- ドック ---------- */
-$('#dock').addEventListener('click',e=>{
+function onDock(e){
   const b=e.target.closest('[data-dock]');if(!b||b.disabled)return;audio();
   switch(b.dataset.dock){
     case 'build':openSheet('shop','m');break;
@@ -771,6 +906,7 @@ $('#dock').addEventListener('click',e=>{
     case 'remove':tool='remove';renderDock();break;
     case 'undo':if(undo()){moveSel=null;resizeCanvas();clampCam();save();refreshAll();sfx('tap');toast('ひとつ前に戻しました')}break;
     case 'list':openSheet('list','all');break;
+    case 'hall':openSheet('hall','rank');break;
     case 'event':openSheet('event');break;
     case 'manage':openSheet('manage','staff');break;
     case 'open':startDay();break;
@@ -787,7 +923,8 @@ $('#dock').addEventListener('click',e=>{
     case 'pause':prefs.paused=!prefs.paused;renderDock();break;
     case 'speed':prefs.speed=Number(b.dataset.v);prefs.paused=false;savePrefs();renderDock();break;
   }
-});
+}
+$('#dock').addEventListener('click',onDock);$('#speed').addEventListener('click',onDock);
 function startDay(){
   const wasGo=goActive(),ev=S.event.type;
   if(!openStore())return;

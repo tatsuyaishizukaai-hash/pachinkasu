@@ -8,7 +8,6 @@ const OPEN=600, CLOSE=1365, LAST=1350, MIN_PER_SEC=8.5;
 const SAVE_KEY='pachinko-hanjoki-v2', PREF_KEY='pachinko-hanjoki-prefs2';
 
 /* 設定（スロット）と釘（パチンコ） */
-const SLOT_R=[0,0.88,0.92,0.95,0.99,1.04,1.10];
 const NAIL_R=[0.86,0.90,0.94,0.99,1.05];            // index = 釘+2
 const NAIL_NAME=['締め','やや締め','標準','やや開け','開け'];
 const NAIL_SHORT=['-2','-1','±0','+1','+2'];
@@ -19,38 +18,59 @@ const SLOT_HINT=['','店がいちばん儲かる。客はほとんど勝てな�
 const NAIL_HINT=['ほとんど回らない。客はすぐ見切る。店は大きく儲かる','あまり回らない。店がやや儲かる','ふつうの回り。店が少し儲かる','よく回る。客が勝ちやすい','すごく回る。客は大喜び、店は赤字ぎみ'];
 
 /* 貸玉レート */
-const RATE={p:{hi:{label:'4円',coin:400},lo:{label:'1円',coin:100}},s:{hi:{label:'20円',coin:500},lo:{label:'5円',coin:125}}};
+const RATE={p:{hi:{label:'4円',coin:400,unit:4},lo:{label:'1円',coin:100,unit:1}},s:{hi:{label:'20円',coin:500,unit:20},lo:{label:'5円',coin:125,unit:5}}};
 const SEGS=['p-hi','p-lo','s-hi','s-lo'];
 const SEG_SHARE={'p-hi':0.40,'p-lo':0.17,'s-hi':0.33,'s-lo':0.10};
 const SEG_NAME={'p-hi':'4円パチンコ','p-lo':'1円パチンコ','s-hi':'20円スロット','s-lo':'5円スロット'};
 const KIND_NAME={p:'パチンコ',s:'スロット'};
 
-/* 機種（架空） */
+/* 機種（架空）
+   パチンコ：prob＝初当り確率の分母（PROBS から選ぶ）
+   スロット：rates＝設定1〜6の機械割(%)、hit＝初当り確率の分母[設定1,設定6]、vol＝一撃の荒さ(1=Aタイプ 2=AT 3=AT荒波) */
 const MODELS=[
- {id:'ponpoko',name:'CRぽんぽこ合戦',k:'p',spec:'甘デジ',price:220000,pop:40,hit:4000,c:'#ff9a2e',c2:'#ffe08a',rank:1},
- {id:'umineko',name:'CR海ねこパラダイス',k:'p',spec:'ミドル',price:320000,pop:55,hit:15000,c:'#2e9bff',c2:'#bfe4ff',rank:1},
- {id:'manekineko',name:'CR招き猫フィーバー',k:'p',spec:'甘デジ',price:380000,pop:64,hit:5000,c:'#f2c230',c2:'#fff3b0',rank:2},
- {id:'dragon',name:'CR爆炎ドラゴン伝説',k:'p',spec:'荒波',price:450000,pop:68,hit:32000,c:'#e8392e',c2:'#ffb08a',rank:2},
- {id:'karakuri',name:'CR大江戸からくり',k:'p',spec:'ライトミドル',price:520000,pop:74,hit:11000,c:'#b45309',c2:'#fde68a',rank:3},
- {id:'stella',name:'CR銀河特急ステラ',k:'p',spec:'ミドル',price:640000,pop:82,hit:22000,c:'#14b8a6',c2:'#b8fff4',rank:4},
- {id:'neon7',name:'ネオン7',k:'s',spec:'Aタイプ',price:260000,pop:46,hit:6000,c:'#ff4fa3',c2:'#ffd1e8',rank:1},
- {id:'bell',name:'ハッピーベル',k:'s',spec:'Aタイプ',price:300000,pop:52,hit:5500,c:'#facc15',c2:'#fff7b0',rank:1},
- {id:'pirate',name:'パイレーツゴールド',k:'s',spec:'AT機',price:460000,pop:66,hit:28000,c:'#16a34a',c2:'#c8ffe0',rank:2},
- {id:'samurai',name:'サムライ斬',k:'s',spec:'AT機',price:520000,pop:72,hit:36000,c:'#7c3aed',c2:'#d9c4ff',rank:3},
- {id:'panda',name:'ジェットパンダ',k:'s',spec:'AT機',price:600000,pop:78,hit:25000,c:'#0f172a',c2:'#e2e8f0',rank:4},
- {id:'lumina',name:'魔法少女ルミナ',k:'s',spec:'AT機',price:780000,pop:90,hit:30000,c:'#ff6ad5',c2:'#ffffff',rank:5},
- {id:'dragon2',name:'CR爆炎ドラゴン伝説・極',k:'p',spec:'ミドル',price:560000,pop:78,hit:20000,c:'#ff5a36',c2:'#ffd0b0',rank:2,gen:2},
- {id:'samurai2',name:'サムライ斬・零',k:'s',spec:'AT機',price:620000,pop:82,hit:26000,c:'#9b5cff',c2:'#e6d8ff',rank:3,gen:2},
- {id:'umineko2',name:'CR海ねこパラダイス2',k:'p',spec:'ミドル',price:430000,pop:72,hit:14000,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
- {id:'pirate2',name:'パイレーツゴールド2',k:'s',spec:'AT機',price:560000,pop:76,hit:22000,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
+ {id:'ponpoko',name:'PAぽんぽこ合戦',k:'p',prob:99.9,price:220000,pop:40,c:'#ff9a2e',c2:'#ffe08a',rank:1},
+ {id:'umineko',name:'P海ねこパラダイス',k:'p',prob:319,price:320000,pop:55,c:'#2e9bff',c2:'#bfe4ff',rank:1},
+ {id:'manekineko',name:'PA招き猫フィーバー',k:'p',prob:99.9,price:380000,pop:64,c:'#f2c230',c2:'#fff3b0',rank:2},
+ {id:'dragon',name:'e爆炎ドラゴン伝説',k:'p',prob:599,price:450000,pop:68,c:'#e8392e',c2:'#ffb08a',rank:2},
+ {id:'karakuri',name:'e大江戸からくり',k:'p',prob:199,price:520000,pop:74,c:'#b45309',c2:'#fde68a',rank:3},
+ {id:'stella',name:'e銀河特急ステラ',k:'p',prob:349,price:640000,pop:82,c:'#14b8a6',c2:'#b8fff4',rank:4},
+ {id:'neon7',name:'ネオン7',k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.5,101.1,103.3,105.5],hit:[168,128],vol:1,price:260000,pop:46,c:'#ff4fa3',c2:'#ffd1e8',rank:1},
+ {id:'bell',name:'ハッピーベル',k:'s',spec:'Aタイプ',rates:[97.0,98.5,99.8,102.0,104.3,109.0],hit:[165,120],vol:1,price:300000,pop:52,c:'#facc15',c2:'#fff7b0',rank:1},
+ {id:'pirate',name:'パイレーツゴールドカリビアン',k:'s',spec:'AT機',rates:[97.5,98.5,100.5,104.0,108.0,112.0],hit:[380,270],vol:2,price:460000,pop:66,c:'#16a34a',c2:'#c8ffe0',rank:2},
+ {id:'samurai',name:'サムライ斬',k:'s',spec:'AT機',rates:[97.0,98.5,101.0,106.0,110.5,114.9],hit:[520,300],vol:3,price:520000,pop:72,c:'#7c3aed',c2:'#d9c4ff',rank:3},
+ {id:'panda',name:'ジェットパンダ',k:'s',spec:'AT機',rates:[97.6,98.6,100.5,105.0,109.0,113.0],hit:[350,250],vol:2,price:600000,pop:78,c:'#0f172a',c2:'#e2e8f0',rank:4},
+ {id:'lumina',name:'魔法少女ミテミナ',k:'s',spec:'AT機',rates:[97.8,98.8,101.0,106.0,110.5,114.9],hit:[330,240],vol:2,price:780000,pop:90,c:'#ff6ad5',c2:'#ffffff',rank:5},
+ {id:'dragon2',name:'P爆炎ドラゴン伝説・極',k:'p',prob:399,price:560000,pop:78,c:'#ff5a36',c2:'#ffd0b0',rank:2,gen:2},
+ {id:'samurai2',name:'サムライ斬・零',k:'s',spec:'AT機',rates:[97.5,98.5,100.8,105.5,110.0,114.0],hit:[400,280],vol:2,price:620000,pop:82,c:'#9b5cff',c2:'#e6d8ff',rank:3,gen:2},
+ {id:'umineko2',name:'P海ねこパラダイス2',k:'p',prob:319,price:430000,pop:72,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
+ {id:'pirate2',name:'パイレーツゴールドカリビアン2',k:'s',spec:'AT機',rates:[97.6,98.6,100.8,105.5,109.5,113.5],hit:[360,260],vol:2,price:560000,pop:76,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
+ ...MACHINE_DB, /* 人気機種をもとにした追加分は machines.js */
 ];
+const byRankPrice=(a,b)=>a.rank-b.rank||a.price-b.price;
+const shortName=n=>n.length>13?n.slice(0,12)+'…':n;
 /* 規制（日数は開業からの日） */
 const REGS=[
  {day:45,name:'一撃性能の規制',ids:['dragon','samurai'],add:['dragon2','samurai2'],grace:28,desc:'一撃が大きすぎる台が規制対象になりました'},
  {day:110,name:'出玉の新基準',ids:['umineko','pirate'],add:['umineko2','pirate2'],grace:28,desc:'旧基準のミドル・AT機が撤去対象になりました'},
 ];
 const MB=Object.fromEntries(MODELS.map(m=>[m.id,m]));
-const SPEC_INFO={'甘デジ':'当たりが軽く、こまめに当たる','ライトミドル':'当たりやすさと出玉のバランス型','ミドル':'当たりの重さも出玉もふつう','荒波':'当たりは重いが一撃が大きい','Aタイプ':'小さな当たりが続くタイプ','AT機':'当たると一気に出る一撃型'};
+const SPEC_INFO={'甘デジ':'当たりが軽く、こまめに当たる','ライトミドル':'当たりやすさと出玉のバランス型','ミドル':'当たりの重さも出玉もふつう','ハイミドル':'当たりは重めで、当たれば大きい','荒波':'当たりはとても重いが、一撃で万発もある','Aタイプ':'ボーナスがこまめに当たるタイプ','AT機':'当たると一気に出る一撃型'};
+
+/* ---------- 出玉のしくみ ----------
+   パチンコ：初当り確率は6種類から選ぶ。重いほど1回の当りが大きく、連チャン（RUSH）も伸びやすい
+   スロット：設定ごとの機械割（最大114.9%）。初当りの重さは設定1と設定6の間をなめらかにつなぐ */
+const PROBS=[99.9,199,319,349,399,599];
+const PROB_SPEC={99.9:'甘デジ',199:'ライトミドル',319:'ミドル',349:'ミドル',399:'ハイミドル',599:'荒波'};
+/* e=RUSH突入率 q=RUSH継続率 m=RUSH中1回の大きさ（初当り比） lt=上位RUSH(LT)に入る率 ltq=LTの継続率 */
+const PROB_SHAPE={99.9:{e:0.5,q:0.55,m:0.8,lt:0,ltq:0.9},199:{e:0.5,q:0.65,m:1,lt:0,ltq:0.9},319:{e:0.55,q:0.72,m:1,lt:0,ltq:0.9},349:{e:0.55,q:0.75,m:1.2,lt:0.02,ltq:0.88},399:{e:0.5,q:0.75,m:1.4,lt:0.02,ltq:0.9},599:{e:0.5,q:0.78,m:1.6,lt:0.04,ltq:0.9}};
+/* スロットAT：q=継続 up=上位ATに入る率 uq=上位ATの継続 */
+const VOL_SHAPE={2:{q:0.75,up:0.025,uq:0.9},3:{q:0.78,up:0.045,uq:0.92}};
+const VOL_NAME={1:'ボーナス主体（波はおだやか）',2:'AT（一撃あり）',3:'AT（一撃がとても荒い）'};
+const P_SPM=6.5;          // パチンコ：標準の釘で1分あたりの回転数
+const S_GPM=13.3;         // スロット：1分あたりのゲーム数
+const SLOT_EXCH=5/5.6;    // スロットは5.6枚交換（貸しは5枚＝100円）。店に交換差益が残る
+const COMPLETE={p:95000,s:19000}; // コンプリート：1台1日の最大差玉（パチンコ発・スロット枚）
+const SLOT_MAX=114.9,SLOT_MIN=80;
 
 /* 床に置く設備 */
 const DECOR=[
@@ -174,6 +194,7 @@ const TW={
  target:['イベント台ゲット！','狙い台に座れた！'],
  hit:['キター！大当り！','当たった！！','うおお来た！','引いた！'],
  bigwin:['{v}勝ち！最高','今日は勝った！{v}','{v}プラスで撤退'],
+ complete:['コンプリートした！もう打てない','完走！差玉MAXまで出た','コンプリート達成…この店やばい'],
  lose:['今日はもう帰る…','{v}負け…','財布が空っぽ'],
  wait:['店員まだ？','ランプ押してるのに…','呼んでも来ない'],
  broken:['台が壊れた…','故障かよ'],

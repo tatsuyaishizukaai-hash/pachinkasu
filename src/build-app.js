@@ -5,7 +5,7 @@
    - dist/artifact.html          … Claudeのアーティファクト版 */
 const fs=require('fs'),path=require('path');
 const SRC=__dirname,ROOT=path.join(__dirname,'..');
-const ORDER=['data.js','state.js','market.js','sim.js','features.js','render.js','audio.js','ui.js','main.js'];
+const ORDER=['machines.js','data.js','state.js','market.js','sim.js','features.js','render.js','audio.js','ui.js','main.js'];
 const js=ORDER.map(f=>fs.readFileSync(path.join(SRC,f),'utf8')).join('\n');
 const tpl=fs.readFileSync(path.join(SRC,'template.html'),'utf8');
 if(!tpl.includes('/*__JS__*/'))throw new Error('template.html に /*__JS__*/ がありません');

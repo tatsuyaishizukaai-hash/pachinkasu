@@ -21,7 +21,7 @@ function eventLabel(ev=S.event){
   switch(ev.type){
     case 'island':return `${ev.target}島 全台系`;
     case 'tail':return `末尾${ev.target}の日`;
-    case 'model':return `${MB[ev.target]?MB[ev.target].name:''}の日`;
+    case 'model':return `${MB[ev.target]?shortName(MB[ev.target].name):''}の日`;
     case 'newm':return '新台入替';
     case 'renewal':return 'リニューアルオープン';
     case 'media':return ev.target==='tube'?'人気配信者の来店取材':'パチンコ雑誌の取材';
@@ -94,7 +94,7 @@ function openStore(){
   const isGo=goActive(),isEv=ev.type!=='none';
   D={coin:0,out:0,drink:0,visitors:0,full:0,satSum:0,satN:0,hunters:0,seg:{},reasons:{},calls:[],ad:cost,shares:fc.shares,expected:fc.expected,
      isGo,goType:isGo?S.go.type:null,goIdx:goDayIdx(),evType:ev.type,evTarget:ev.target,evLabel:isGo?(S.go.type==='grand'?'グランドオープン':'リニューアルオープン'):eventLabel(),bigWins:[],regsVisited:[],rivalClosed:null,nearSmoke:new Set(),smokeSpots:new Map(),
-     goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,broken:0,kiosk:hasDecor('kiosk')};
+     goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,broken:0,kiosk:hasDecor('kiosk'),exch:0,completes:[],hourly:[],lastHr:-1,elders:0,smokers:0};
   todayTargets=new Set(isEv?eventTargets():[]);
   hunterFrac=(isGo?0.4:ev.type==='media'?0.5:isEv?0.35:0.1)*(D.kiosk?1.4:1);
   if(S.day>=10&&Math.random()<0.08+(isGo||isEv?0.12:0)+(rankNo()>=3?0.04:0))D.gotoAt=rnd(660,1140);
@@ -162,11 +162,11 @@ function spawnCust(seg,opt={}){
     budget:(hunter?rnd(30000,80000):rnd(8000,40000))*sc*(opt.rich?2.5:1),goal:(hunter?rnd(40000,120000):rnd(10000,50000))*sc,
     maxT:hunter?rnd(240,700):lo?rnd(120,360):rnd(60,240),inv:0,won:0,t:0,sat:0,why:{},plan:[],cur:null,wait:0,emote:null,ph:Math.random()*10,
     nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false};
-  custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;
+  custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;if(elder)D.elders++;if(smoker)D.smokers++;
   return c;
 }
 function chooseMachine(c){
-  const cand=machines().filter(m=>!m.res&&!m.broken&&segOf(m)===c.seg);
+  const cand=machines().filter(m=>!m.res&&!m.broken&&!m.today.done&&segOf(m)===c.seg);
   if(!cand.length)return null;
   const ws=cand.map(m=>{
     const s=seatOf(m),z=zoneAt(s.x,s.y);let w;
@@ -224,12 +224,17 @@ function callStaff(c,type){c.st='call';c.callAt=clock;c.callType=type;c.m.call=t
 function play(c,dt){
   const m=c.m,md=MB[m.type],cin=c.coin*dt;
   if(c.goto){gotoStep(c,dt);return}
-  c.inv+=cin;c.t+=dt;S.money+=cin;D.coin+=cin;m.today.coin+=cin;m.today.mins+=dt;
-  const hit=md.hit*c.sc,p=c.coin*machR(m)/hit;
+  c.inv+=cin;c.t+=dt;S.money+=cin;D.coin+=cin;m.today.coin+=cin;m.today.mins+=dt;m.today.g=(m.today.g||0)+dt*(md.k==='s'?S_GPM:P_SPM*machR(m)/NAIL_R[2]);
+  const hit=hitMean(m)*c.sc,p=c.coin*machR(m)/hit;
   if(Math.random()<1-Math.exp(-p*dt)){
-    const pay=Math.round(hit*rnd(0.4,1.6)/100)*100;
-    c.won+=pay;S.money-=pay;D.out+=pay;m.today.out+=pay;m.today.hits++;
+    let pay=Math.max(100,Math.round(hit*payMult(md)/100)*100);
+    /* コンプリート：1台の差玉が上限に届いたら、そこで払い出しを止めて今日は終了 */
+    const cap=COMPLETE[md.k]*unitYen(m),diff=m.today.out-m.today.coin,done=diff+pay>=cap;
+    if(done)pay=Math.max(0,Math.round(cap-diff));
+    const ex=md.k==='s'?SLOT_EXCH:1;
+    c.won+=pay;S.money-=pay*ex;D.out+=pay;D.exch+=pay*(1-ex);m.today.out+=pay;m.today.hits++;
     m.flash=1.6;c.emote={ch:'！',t:10};floatAt(m.x,m.y,'大当り','#ff2d55');sfx('hit');tweet(c,'hit',0.12,1);
+    if(done){completeMachine(m,c);return}
     if(Math.random()<0.1){callStaff(c,'box');return}
   }
   if(Math.random()<dt/450){callStaff(c,'jam');return}
@@ -239,6 +244,15 @@ function play(c,dt){
   const net=c.won-c.inv;
   if(c.smoker&&!c.zone&&c.t>=c.nextSmoke){startSmoke(c,true);return}
   if(net<-c.budget||c.t>c.maxT||clock>=LAST||(net>c.goal&&Math.random()<0.03*dt))quit(c);
+}
+function completeMachine(m,c){
+  const md=MB[m.type];
+  m.today.done=true;m.flash=4;
+  D.completes.push({no:m.no,id:m.type,k:md.k});
+  floatAt(m.x,m.y,'コンプリート！','#ffcf3a');sfx('fanfare');
+  news(`${m.no}番台「${shortName(md.name)}」がコンプリート！差玉+${COMPLETE[md.k].toLocaleString('ja-JP')}${unitName(md.k)}で今日は打ち止め`,'good');
+  tweet(c,'complete',1,3);
+  quit(c);
 }
 function startSmoke(c,mid){
   if(!D.smokeSpots.size){
@@ -452,6 +466,9 @@ function stepStaff(a,dt){
 /* ---------- 1フレームの更新 ---------- */
 function update(dt){
   clock+=dt;
+  /* 1時間ごとの稼働（毎時30分に数える） */
+  const hr=Math.floor((clock-30)/60);
+  if(hr!==D.lastHr&&clock>=OPEN+30&&clock<LAST){D.lastHr=hr;const pl=custs.filter(c=>c.m&&(c.st==='play'||c.st==='call')&&!c.goto);D.hourly.push({h:hr,p:pl.filter(c=>c.k==='p').length,s:pl.filter(c=>c.k==='s').length})}
   if(clock<LAST-20){
     if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<0.75});tweet(c,'queue',0.06,1)}}
     while(regQueue.length&&regQueue[0].t<=clock){
@@ -477,10 +494,10 @@ function closeDay(){
   const ms=machines(),rent=rentOf(),wages=wagesTotal(),power=2500*ms.length;
   const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE);
   ms.forEach(m=>{m.broken=false;m.fixing=false});
-  const gross=D.coin-D.out,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
+  const gross=D.coin-D.out+D.exch,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
   S.money-=rent+wages+power+repairs+interest;
   const rep0=S.rep,trust0=S.trust,avgSat=D.satN?D.satSum/D.satN:0;
-  const payR=D.coin?D.out/D.coin:0.93,feel=clamp((payR-0.92)*30*(D.kiosk?1.5:1),-3.5,3.5);
+  const payR=D.coin?D.out/D.coin:0.93,feel=clamp((payR-0.955)*30*(D.kiosk?1.5:1),-3.5,3.5);
   S.rep=clamp(S.rep+clamp(avgSat*10,-5,5)*(D.isGo?1.5:1)+feel+(30-S.rep)*0.02,0,100);
   let evr=null,gor=null,goodEvent=false;
   if(D.isGo){
@@ -534,8 +551,9 @@ function closeDay(){
   const rivalNews=openRivals().filter(r=>r.ev).map(r=>r.name);
   const R={day:S.day,date:dateLong(S.day),visitors:D.visitors,full:D.full,hunters:D.hunters,seg:D.seg,coin:D.coin,out:D.out,gross,drink:D.drink,rent,wages,power,ad:D.ad,net,
     rep0,rep1:S.rep,trust0,trust1:S.trust,ev:evr,go:gor,best:byGive[0],worst:byGive[byGive.length-1],voices,regVoices,share:D.shares.me,rivalNews,rivalClosed:D.rivalClosed,
-    rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc};
+    rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc,exch:D.exch,completes:D.completes};
   S.hist.push({day:S.day,net:Math.round(net),visitors:D.visitors,rep:S.rep,share:D.shares.me});if(S.hist.length>90)S.hist.shift();
+  S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   S.negDays=S.money<0?(S.negDays||0)+1:0;
   dayEndFeatures(R);
   // 翌日へ
