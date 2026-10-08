@@ -28,22 +28,22 @@ const KIND_NAME={p:'パチンコ',s:'スロット'};
    パチンコ：prob＝初当り確率の分母（PROBS から選ぶ）
    スロット：rates＝設定1〜6の機械割(%)、hit＝初当り確率の分母[設定1,設定6]、vol＝一撃の荒さ(1=Aタイプ 2=AT 3=AT荒波) */
 const MODELS=[
- {id:'ponpoko',name:'CRぽんぽこ合戦',k:'p',prob:99.9,price:220000,pop:40,c:'#ff9a2e',c2:'#ffe08a',rank:1},
- {id:'umineko',name:'CR海ねこパラダイス',k:'p',prob:319,price:320000,pop:55,c:'#2e9bff',c2:'#bfe4ff',rank:1},
- {id:'manekineko',name:'CR招き猫フィーバー',k:'p',prob:99.9,price:380000,pop:64,c:'#f2c230',c2:'#fff3b0',rank:2},
- {id:'dragon',name:'CR爆炎ドラゴン伝説',k:'p',prob:599,price:450000,pop:68,c:'#e8392e',c2:'#ffb08a',rank:2},
- {id:'karakuri',name:'CR大江戸からくり',k:'p',prob:199,price:520000,pop:74,c:'#b45309',c2:'#fde68a',rank:3},
- {id:'stella',name:'CR銀河特急ステラ',k:'p',prob:349,price:640000,pop:82,c:'#14b8a6',c2:'#b8fff4',rank:4},
+ {id:'ponpoko',name:'PAぽんぽこ合戦',k:'p',prob:99.9,price:220000,pop:40,c:'#ff9a2e',c2:'#ffe08a',rank:1},
+ {id:'umineko',name:'P海ねこパラダイス',k:'p',prob:319,price:320000,pop:55,c:'#2e9bff',c2:'#bfe4ff',rank:1},
+ {id:'manekineko',name:'PA招き猫フィーバー',k:'p',prob:99.9,price:380000,pop:64,c:'#f2c230',c2:'#fff3b0',rank:2},
+ {id:'dragon',name:'e爆炎ドラゴン伝説',k:'p',prob:599,price:450000,pop:68,c:'#e8392e',c2:'#ffb08a',rank:2},
+ {id:'karakuri',name:'e大江戸からくり',k:'p',prob:199,price:520000,pop:74,c:'#b45309',c2:'#fde68a',rank:3},
+ {id:'stella',name:'e銀河特急ステラ',k:'p',prob:349,price:640000,pop:82,c:'#14b8a6',c2:'#b8fff4',rank:4},
  {id:'neon7',name:'ネオン7',k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.5,101.1,103.3,105.5],hit:[168,128],vol:1,price:260000,pop:46,c:'#ff4fa3',c2:'#ffd1e8',rank:1},
  {id:'bell',name:'ハッピーベル',k:'s',spec:'Aタイプ',rates:[97.0,98.5,99.8,102.0,104.3,109.0],hit:[165,120],vol:1,price:300000,pop:52,c:'#facc15',c2:'#fff7b0',rank:1},
- {id:'pirate',name:'パイレーツゴールド',k:'s',spec:'AT機',rates:[97.5,98.5,100.5,104.0,108.0,112.0],hit:[380,270],vol:2,price:460000,pop:66,c:'#16a34a',c2:'#c8ffe0',rank:2},
+ {id:'pirate',name:'パイレーツゴールドカリビアン',k:'s',spec:'AT機',rates:[97.5,98.5,100.5,104.0,108.0,112.0],hit:[380,270],vol:2,price:460000,pop:66,c:'#16a34a',c2:'#c8ffe0',rank:2},
  {id:'samurai',name:'サムライ斬',k:'s',spec:'AT機',rates:[97.0,98.5,101.0,106.0,110.5,114.9],hit:[520,300],vol:3,price:520000,pop:72,c:'#7c3aed',c2:'#d9c4ff',rank:3},
  {id:'panda',name:'ジェットパンダ',k:'s',spec:'AT機',rates:[97.6,98.6,100.5,105.0,109.0,113.0],hit:[350,250],vol:2,price:600000,pop:78,c:'#0f172a',c2:'#e2e8f0',rank:4},
- {id:'lumina',name:'魔法少女ルミナ',k:'s',spec:'AT機',rates:[97.8,98.8,101.0,106.0,110.5,114.9],hit:[330,240],vol:2,price:780000,pop:90,c:'#ff6ad5',c2:'#ffffff',rank:5},
- {id:'dragon2',name:'CR爆炎ドラゴン伝説・極',k:'p',prob:399,price:560000,pop:78,c:'#ff5a36',c2:'#ffd0b0',rank:2,gen:2},
+ {id:'lumina',name:'魔法少女ミテミナ',k:'s',spec:'AT機',rates:[97.8,98.8,101.0,106.0,110.5,114.9],hit:[330,240],vol:2,price:780000,pop:90,c:'#ff6ad5',c2:'#ffffff',rank:5},
+ {id:'dragon2',name:'P爆炎ドラゴン伝説・極',k:'p',prob:399,price:560000,pop:78,c:'#ff5a36',c2:'#ffd0b0',rank:2,gen:2},
  {id:'samurai2',name:'サムライ斬・零',k:'s',spec:'AT機',rates:[97.5,98.5,100.8,105.5,110.0,114.0],hit:[400,280],vol:2,price:620000,pop:82,c:'#9b5cff',c2:'#e6d8ff',rank:3,gen:2},
- {id:'umineko2',name:'CR海ねこパラダイス2',k:'p',prob:319,price:430000,pop:72,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
- {id:'pirate2',name:'パイレーツゴールド2',k:'s',spec:'AT機',rates:[97.6,98.6,100.8,105.5,109.5,113.5],hit:[360,260],vol:2,price:560000,pop:76,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
+ {id:'umineko2',name:'P海ねこパラダイス2',k:'p',prob:319,price:430000,pop:72,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
+ {id:'pirate2',name:'パイレーツゴールドカリビアン2',k:'s',spec:'AT機',rates:[97.6,98.6,100.8,105.5,109.5,113.5],hit:[360,260],vol:2,price:560000,pop:76,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
  ...MACHINE_DB, /* 人気機種をもとにした追加分は machines.js */
 ];
 const byRankPrice=(a,b)=>a.rank-b.rank||a.price-b.price;
