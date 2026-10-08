@@ -589,6 +589,7 @@ function reportSheet(R){
   return [`${R.date}の日報`,h];
 }
 function onDayClosed(R){
+  checkUpdate();
   closeSheet();tool='view';moveSel=null;releaseWake();
   sfx('close');playBgm('prep');refreshAll();openSheet('report',R);
   setTimeout(()=>{
@@ -779,6 +780,7 @@ ${sheetData==='title'?'':'<button class="btn" data-act="tr-copy" type="button">�
 }
 function menuSheet(confirm){
   let h=`<div class="actions"><button class="btn sm" data-act="menu-guide" type="button">遊び方</button><button class="btn sm" data-act="menu-bgm" type="button">BGM ${prefs.bgm?'ON':'OFF'}</button><button class="btn sm" data-act="menu-sfx" type="button">効果音 ${prefs.sfx?'ON':'OFF'}</button><button class="btn sm" data-act="menu-manage" type="button">経営の記録</button><button class="btn sm" data-act="menu-tweet" type="button">つぶやき ${prefs.tweets?'ON':'OFF'}</button><button class="btn sm wide2" data-act="menu-mdb" type="button">機種データベース（名前・出玉率・確率）</button><button class="btn sm wide2" data-act="menu-transfer" type="button">セーブの引っ越し（${window.APP_MODE?'コピー・読み込み':'アプリ版へ移す'}）</button></div>`;
+  if(window.APP_MODE)h+=`<div class="inrow"><span class="sub" style="flex:1;align-self:center">バージョン ${esc(window.APP_VERSION||'')}</span><button class="btn sm" data-act="menu-update" type="button">最新版か確認</button></div>`;
   h+=`<div class="lbl">画面の向き（縦持ちのとき）</div><div class="chips">${[['auto','横画面にする'],['flip','横画面（反対向き）'],['off','縦のまま']].map(([k,l])=>`<button class="chip ${prefs.rot===k?'cur':''}" data-act="menu-rot" data-v="${k}" type="button">${l}</button>`).join('')}</div>`;
   h+=`<label class="lbl" for="mName">お店の名前</label><div class="inrow"><input class="field" id="mName" maxlength="10" value="${esc(S.name)}"><button class="btn sm" data-act="menu-rename" type="button">変更</button></div>`;
   h+=confirm?`<div class="box">本当にデータを消して最初からやり直しますか？元には戻せません。</div><div class="actions"><button class="btn sm" data-act="menu-reset-no" type="button">やめる</button><button class="btn sm danger" data-act="restart" type="button">消してやり直す</button></div>`:`<button class="btn danger" data-act="menu-reset" type="button">データを消して最初から</button>`;
@@ -899,11 +901,32 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'menu-sfx':prefs.sfx=!prefs.sfx;savePrefs();audio();setVolumes();renderSheet();if(prefs.sfx)sfx('good');break;
     case 'menu-rename':{const n=($('#mName').value||'').trim().slice(0,10);if(n){S.name=n;save();refreshAll();toast('お店の名前を変えました')}break}
     case 'menu-reset':sheetData=true;renderSheet();break;
+    case 'menu-update':checkUpdate(true);break;
     case 'menu-reset-no':sheetData=false;renderSheet();break;
     case 'restart':try{localStorage.removeItem(SAVE_KEY)}catch(e){}closeSheet();custs=[];staffA=[];tool='view';newGame('パーラー満天');resizeCanvas();fitCam();refreshAll();showTitle();break;
   }
 });
 function manageTabFromData(){return typeof sheetData==='string'?sheetData:(sheetData&&sheetData.tab)||'staff'}
+
+/* ---------- アプリ版の更新チェック ----------
+   ホーム画面アプリはiPhoneが閉じずに残しておくことがあるので、開いたときに新しい版がないか確かめる */
+let updWanted=false;
+function checkUpdate(manual){
+  if(!window.APP_MODE||!window.APP_VERSION){if(manual)toast('この画面はいつも最新版です');return}
+  fetch('sw.js?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{
+    const m=t.match(/VERSION='(\d+)'/);
+    if(m&&m[1]>window.APP_VERSION){updWanted=true;$('#upd').hidden=false;if(manual)toast('新しい版があります。上のボタンで更新できます')}
+    else if(manual)toast('最新版です');
+  }).catch(()=>{if(manual)toast('いまはネットにつながっていません')});
+}
+$('#upd').addEventListener('click',()=>{
+  if(S.phase==='open'){toast('営業が終わったら更新してください（今日の進み具合が消えるため）');return}
+  save();
+  const go=()=>location.replace(location.pathname+'?v='+Date.now());
+  try{navigator.serviceWorker&&navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).finally(go)}catch(e){go()}
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate()});
+setTimeout(()=>checkUpdate(),2500);
 
 /* ---------- ドック ---------- */
 function onDock(e){

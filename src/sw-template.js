@@ -17,7 +17,7 @@ self.addEventListener('fetch',e=>{
   const url=new URL(req.url);
   /* ページ：ネット優先（4秒で諦めてキャッシュ） */
   if(req.mode==='navigate'){
-    e.respondWith(Promise.race([fetch(req),timeout(4000)]).then(res=>{
+    e.respondWith(Promise.race([fetch(req.url,{cache:'no-cache',credentials:'same-origin'}),timeout(4000)]).then(res=>{
       if(res.ok&&!res.redirected){const copy=res.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy))}return res;
     }).catch(()=>caches.match('./index.html').then(r=>r||caches.match('./'))));
     return;

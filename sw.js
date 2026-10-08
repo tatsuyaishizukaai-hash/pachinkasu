@@ -1,5 +1,5 @@
 /* パチンカスの成り上がり店長録 Service Worker（node src/build-app.js で sw.js を作り直す） */
-const VERSION='202610081501';
+const VERSION='202610081507';
 const CACHE='pachinkasu-'+VERSION;
 const FONT_CACHE='pachinkasu-fonts';
 const CORE=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png'];
@@ -17,7 +17,7 @@ self.addEventListener('fetch',e=>{
   const url=new URL(req.url);
   /* ページ：ネット優先（4秒で諦めてキャッシュ） */
   if(req.mode==='navigate'){
-    e.respondWith(Promise.race([fetch(req),timeout(4000)]).then(res=>{
+    e.respondWith(Promise.race([fetch(req.url,{cache:'no-cache',credentials:'same-origin'}),timeout(4000)]).then(res=>{
       if(res.ok&&!res.redirected){const copy=res.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy))}return res;
     }).catch(()=>caches.match('./index.html').then(r=>r||caches.match('./'))));
     return;
