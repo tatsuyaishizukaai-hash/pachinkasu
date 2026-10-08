@@ -130,14 +130,6 @@ function toLocalD(dx,dy){if(ROT===90)return {x:dy,y:-dx};if(ROT===-90)return {x:
   b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);
   b.addEventListener('click',e=>{if(b._drag&&performance.now()-b._drag<80){e.stopPropagation();e.preventDefault()}},true);
 })();
-/* ---------- つぶやき欄 ---------- */
-function pushFeed(tw){
-  const f=$('#feed'),el=document.createElement('div');el.className='tw';
-  el.innerHTML=`<i style="background:${tw.col}"></i><span><b>${esc(tw.name)}</b>${esc(tw.text)}</span>`;
-  f.appendChild(el);
-  while(f.children.length>4)f.removeChild(f.firstChild);
-  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),600)},7000);
-}
 function toolText(){
   const undoB=`<button class="btn sm" data-dock="undo" type="button" ${undoStack.length?'':'disabled'}>取り消す</button>`;
   const end=`<button class="btn sm primary" data-dock="endtool" type="button">終わる</button>`;
@@ -949,7 +941,6 @@ function startDay(){
   if(D.isGo){playBgm('grand');telop(D.goType==='grand'?'グランドオープン！':'リニューアルオープン！',`${D.goIdx+1}日目 ／ 全${S.go.len}日`,'good')}
   else if(D.evType!=='none'){playBgm('event');telop('本日イベント！',D.evLabel,'good')}
   else{playBgm('open');telop('開店！',dateLong(S.day),'good')}
-  $('#feed').innerHTML='';
   applyLayout();refreshAll();
 }
 $('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'off',off:'set'}[prefs.overlay];savePrefs();renderStatus()});

@@ -17,8 +17,8 @@ function tweetTick(now){
   twQueue.sort((a,b)=>b.prio-a.prio||b.t-a.t);
   const tw=twQueue.shift();twLast=now;
   if(now-tw.t>9000)return;
-  pushFeed(tw);
-  if(tw.c&&custs.includes(tw.c)&&!tw.c.hidden)tw.c.bubble={text:tw.text,until:now+2600};
+  /* つぶやきは客の頭の上の吹き出しだけに出す（帰った客・見えない客の分は出さない） */
+  if(tw.c&&custs.includes(tw.c)&&!tw.c.hidden)tw.c.bubble={text:tw.text,until:now+2600};else twLast=0;
 }
 
 /* ---------- ゴト師 ---------- */
