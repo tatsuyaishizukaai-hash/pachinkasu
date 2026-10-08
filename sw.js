@@ -1,5 +1,5 @@
 /* パチンカスの成り上がり店長録 Service Worker（node src/build-app.js で sw.js を作り直す） */
-const VERSION='202610081243';
+const VERSION='202610081255';
 const CACHE='pachinkasu-'+VERSION;
 const FONT_CACHE='pachinkasu-fonts';
 const CORE=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png'];

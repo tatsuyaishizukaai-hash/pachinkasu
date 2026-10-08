@@ -256,30 +256,6 @@ button{font:inherit;color:inherit}
 @keyframes telin{0%{opacity:0;transform:scale(.4)}18%{opacity:1;transform:scale(1.08)}28%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-20px)}}
 #fx{position:absolute;left:0;top:0;pointer-events:none;z-index:55}
 
-/* ゲーム内キーボード（画面を回しているときだけ使う） */
-#kb{position:absolute;inset:0;z-index:70;background:rgba(22,18,31,.45);display:flex;flex-direction:column;justify-content:flex-end}
-.kb-p{background:var(--paper-2);border-top:3px solid var(--ink);padding:6px calc(8px + var(--sr)) calc(6px + var(--sb)) calc(8px + var(--sl));display:flex;flex-direction:column;gap:5px}
-.kb-top{display:flex;align-items:center;gap:8px}
-.kb-lbl{font-family:var(--f-display);font-size:12px;white-space:nowrap;max-width:28%;overflow:hidden;text-overflow:ellipsis}
-.kb-disp{flex:1;min-width:0;background:#fff;border:2.5px solid var(--ink);border-radius:10px;padding:3px 9px;font-family:var(--f-display);font-size:17px;min-height:36px;display:flex;align-items:center;overflow:hidden;white-space:nowrap}
-.kb-disp span{overflow:hidden;text-overflow:clip;white-space:nowrap}
-.kb-disp i{flex:none;display:inline-block;width:2px;height:20px;background:var(--red);margin-left:1px;animation:kbc 1s steps(1) infinite}
-@keyframes kbc{50%{opacity:0}}
-.kb-cnt{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap}
-.kb-g{display:grid;gap:4px}
-.kb-k{min-width:0;height:34px;border:2px solid var(--ink);border-radius:8px;background:#fff;font-family:var(--f-body);font-weight:800;font-size:16px;padding:0;cursor:pointer;box-shadow:0 2px 0 var(--ink);color:var(--ink)}
-.kb-k:active{transform:translateY(2px);box-shadow:none;background:var(--sun)}
-.kb-k.u{background:#e0e7ff;font-size:13px}
-.kb-k.e{visibility:hidden}
-.kb-row{display:flex;gap:4px}
-.kb-row .kb-k{flex:1;font-size:12px;font-family:var(--f-display)}
-.kb-row .kb-k.cur{background:var(--ink);color:var(--sun)}
-.kb-row .kb-k.ok{background:var(--red);color:#fff;flex:1.4}
-.kb-row .kb-k.nat{flex:1.6;font-family:var(--f-body);font-weight:800;font-size:11px}
-.kb-num{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:min(320px,60%);margin:0 auto}
-.kb-num .kb-k{height:38px;font-size:19px;font-family:var(--f-display)}
-.P .kb-k{height:30px;font-size:14px}
-
 /* タイトル */
 #title{position:absolute;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.7) 0,rgba(255,255,255,0) 55%),repeating-conic-gradient(from 0deg at 50% 40%,var(--sun) 0deg 9deg,var(--sun-2) 9deg 18deg)}
 .title-box{width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px;text-align:center}
@@ -333,7 +309,6 @@ button{font:inherit;color:inherit}
   </section>
   <div id="telop" hidden><div class="burst"></div><div class="tel-in"><div id="telMain"></div><div id="telSub"></div></div></div>
   <canvas id="fx" hidden></canvas>
-  <div id="kb" hidden></div>
   <section id="title" hidden>
     <div class="title-box">
       <div><h1 class="logo"><span class="l1">パチンカスの</span><span class="l2">成り上がり</span><span class="l4">店長録</span><span class="l3">HALL MANAGER</span></h1>
