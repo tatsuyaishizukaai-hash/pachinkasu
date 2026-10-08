@@ -1,10 +1,10 @@
-# パチンコ繁盛記
+# パチンカスの成り上がり店長録
 
 釘と設定、イベント日、店づくりで客を呼ぶ、ドット絵のパチンコ屋経営ゲームです。iPhoneのホーム画面に追加すると、全画面のアプリとして遊べます。
 
 ## 遊ぶ
 
-公開URL：（GitHub Pagesで公開したら、ここに書きます）
+公開URL：https://tatsuyaishizukaai-hash.github.io/pachinkasu/
 
 ### iPhoneのホーム画面に追加する
 

@@ -1,7 +1,7 @@
-/* パチンコ繁盛記 Service Worker（node src/build-app.js で sw.js を作り直す） */
+/* パチンカスの成り上がり店長録 Service Worker（node src/build-app.js で sw.js を作り直す） */
 const VERSION='__VERSION__';
-const CACHE='hanjoki-'+VERSION;
-const FONT_CACHE='hanjoki-fonts';
+const CACHE='pachinkasu-'+VERSION;
+const FONT_CACHE='pachinkasu-fonts';
 const CORE=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png'];
 
 self.addEventListener('install',e=>{

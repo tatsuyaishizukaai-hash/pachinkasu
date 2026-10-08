@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* パチンコ繁盛記のビルド
+/* パチンカスの成り上がり店長録のビルド
    node src/build-app.js
    - ルートの index.html / sw.js … ホーム画面アプリ（PWA）版
    - dist/artifact.html          … Claudeのアーティファクト版 */
@@ -30,7 +30,7 @@ const app=`<!doctype html>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="パチンコ繁盛記">
+<meta name="apple-mobile-web-app-title" content="パチンカス">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">

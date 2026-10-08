@@ -24,7 +24,7 @@ def ball(cx, cy, r):
             f'<circle cx="{cx - r*0.32:.1f}" cy="{cy - r*0.34:.1f}" r="{r*0.28:.1f}" fill="#fff"/>')
 
 def art():
-    # パチンコ台（赤い枠・液晶の7・下皿の玉）と「繁盛記」のリボン
+    # パチンコ台（赤い枠・液晶の7・下皿の玉）と「店長録」のリボン
     return f'''
   <g>
     <rect x="128" y="58" width="256" height="352" rx="34" fill="#16121f"/>
@@ -44,7 +44,7 @@ def art():
     <rect x="70" y="398" width="372" height="88" rx="22" fill="#16121f"/>
     <rect x="70" y="390" width="372" height="88" rx="22" fill="#7c3aed" stroke="#16121f" stroke-width="12"/>
     <text x="256" y="463" text-anchor="middle" font-family="Noto Sans CJK JP" font-weight="900" font-size="74"
-          fill="#ffffff" stroke="#16121f" stroke-width="8" paint-order="stroke" letter-spacing="4">繁盛記</text>
+          fill="#ffffff" stroke="#16121f" stroke-width="8" paint-order="stroke" letter-spacing="4">店長録</text>
   </g>'''
 
 def svg(scale):
