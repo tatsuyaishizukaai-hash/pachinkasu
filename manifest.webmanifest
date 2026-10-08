@@ -1,0 +1,17 @@
+{
+  "name": "パチンコ繁盛記",
+  "short_name": "パチンコ繁盛記",
+  "description": "釘と設定、イベントと店づくりで客を呼ぶ、ドット絵のパチンコ屋経営ゲーム",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#2d2459",
+  "theme_color": "#2d2459",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
