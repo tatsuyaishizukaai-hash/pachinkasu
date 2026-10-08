@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>[hidden]{display:none!important}</style>
-<script>window.APP_MODE=true;window.APP_VERSION='202610081255';</script>
+<script>window.APP_MODE=true;window.APP_VERSION='202610081304';</script>
 <title>パチンカスの成り上がり店長録</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3025,6 +3025,22 @@ function mdbSheet(d){
   h+=`<div class="sub">変更した機種：${n}</div><div class="actions"><button class="btn sm wide2" data-act="mdb-export" type="button" ${n?'':'disabled'}>変更を書き出す（コピー）</button>${d.confirm?`<button class="btn sm" data-act="mdb-resetall-no" type="button">やめる</button><button class="btn sm danger" data-act="mdb-resetall-yes" type="button">本当に全部戻す</button>`:`<button class="btn sm danger" data-act="mdb-resetall" type="button" ${n&&prep?'':'disabled'}>すべて最初に戻す</button>`}</div><textarea class="field" id="mdbOut" rows="3" hidden style="font-family:var(--f-body);font-size:11px;resize:none" readonly></textarea>`;
   return ['機種データベース',h];
 }
+function showTrErr(msg){let e=$('#trErr');if(!e){e=document.createElement('div');e.id='trErr';e.className='box neg';const btn=$('[data-act="tr-load"]');btn&&btn.after(e)}e.textContent=msg;toast(msg)}
+/* セーブの引っ越しのテキストを読む。余計な文字・改行・前後の文が混ざっていても読めるようにする */
+function parseTransfer(text){
+  let t=String(text).replace(/[​-‍﻿\r\n\t]/g,'').replace(/[“”„‟″]/g,'"').trim();
+  if(!t)return {err:'テキストが空です。コピーしたセーブを貼り付けてください'};
+  const at=t.search(/PHJ[12]:|PKDB1:/);
+  if(at<0&&t[0]!=='{')return {err:'セーブのテキストではないようです（「PHJ2:」で始まる文を貼り付けてください）'};
+  if(at>0)t=t.slice(at);
+  const cut=t.lastIndexOf('}');if(cut>0)t=t.slice(0,cut+1);
+  const broken={err:`テキストが途中で切れているようです（${t.length.toLocaleString('ja-JP')}文字）。最後まで全部コピーして貼り付けてください`};
+  try{
+    if(t.startsWith('PKDB1:'))return {kind:'mdb',mdb:JSON.parse(t.slice(6))};
+    if(t.startsWith('PHJ2:')){const o=JSON.parse(t.slice(5));if(!o||typeof o.save!=='string')return broken;JSON.parse(o.save);return {kind:'save',save:o.save,mdb:o.mdb||null}}
+    const body=t.startsWith('PHJ1:')?t.slice(5):t;JSON.parse(body);return {kind:'save',save:body,mdb:null};
+  }catch(e){return broken}
+}
 function transferSheet(){
   const intro=sheetData==='title'?'別の場所（アーティファクト版など）で遊んでいたお店を、ここで続きから遊べます。<br>移す元のメニュー →「セーブの引っ越し」→「セーブをコピー」で写したテキストを、下の欄に貼り付けて「読み込む」を押してください。'
     :'アーティファクト版とホーム画面アプリ版は、セーブが別々に保存されます。進み具合を移すには：<br>① 移す元のメニューで「セーブをコピー」<br>② 移す先のメニュー →「セーブの引っ越し」で下の欄に貼り付けて「読み込む」';
@@ -3126,14 +3142,14 @@ $('#sheetBody').addEventListener('click',e=>{
       try{navigator.clipboard.writeText(code).then(()=>{toast('セーブをコピーしました');sfx('good')},fallback)}catch(err){fallback()}
       break;}
     case 'tr-load':{
-      if(S.phase==='open'){toast('営業中は読み込めません。営業が終わってから読み込んでください');sfx('bad');break}
-      const raw=($('#trText').value||'').trim();
-      if(raw.startsWith('PKDB1:')){try{mdbSet(JSON.parse(raw.slice(6)));sfx('good');toast('機種データベースを読み込みました');closeSheet();refreshAll()}catch(err){toast('読み込めませんでした');sfx('bad')}break}
-      let str=raw.startsWith('PHJ1:')?raw.slice(5):raw,mdb=null;
-      if(raw.startsWith('PHJ2:')){try{const o=JSON.parse(raw.slice(5));str=o.save;mdb=o.mdb}catch(err){str=''}}
-      let ok=false;try{ok=!!str&&load(str)}catch(err){ok=false}
-      if(ok&&mdb)mdbSet(mdb);
-      if(!ok){toast('読み込めませんでした。コピーしたテキストを全部貼り付けてください');sfx('bad');break}
+      const r=parseTransfer($('#trText').value||'');
+      if(r.err){showTrErr(r.err);sfx('bad');break}
+      if(r.kind==='mdb'){mdbSet(r.mdb);sfx('good');toast('機種データベースを読み込みました');closeSheet();refreshAll();break}
+      const wasOpen=S.phase==='open',back=wasOpen?openSnap:ser();
+      let ok=false;try{ok=load(r.save)}catch(err){console.error(err);ok=false}
+      if(!ok){try{load(back)}catch(e){}showTrErr('このセーブは読み込めない形式でした');sfx('bad');break}
+      if(r.mdb)mdbSet(r.mdb);
+      if(wasOpen){releaseWake();tweetReset();openSnap=null;playBgm('prep')}
       save();custs=[];staffA=[];tool='view';sheetData=null;closeSheet();cam.fit=true;applyLayout();refreshAll();sfx('fanfare');telop('引っ越し完了！',S.name,'good');
       break;}
     case 'menu-rot':prefs.rot=v;savePrefs();applyLayout();renderSheet();break;
