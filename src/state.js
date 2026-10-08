@@ -19,7 +19,23 @@ const seatOf=m=>({x:m.x+DIRS[m.dir][0],y:m.y+DIRS[m.dir][1]});
 const kindOf=m=>MB[m.type].k;
 const segOf=m=>kindOf(m)+'-'+m.rate;
 const blank=()=>({coin:0,out:0,hits:0,mins:0});
-const machR=m=>kindOf(m)==='s'?SLOT_R[m.set]:NAIL_R[m.nail+2];
+const machR=m=>kindOf(m)==='s'?MB[m.type].rates[m.set-1]/100:NAIL_R[m.nail+2];
+const unitYen=m=>RATE[kindOf(m)][m.rate].unit;
+const unitName=k=>k==='p'?'発':'枚';
+const specOf=md=>md.k==='p'?(PROB_SPEC[md.prob]||'ミドル'):md.spec;
+const slotProb=(md,set)=>md.hit[0]*Math.pow(md.hit[1]/md.hit[0],(set-1)/5);
+/* 1回の当り（RUSH・AT込み）の平均の大きさ。高レートの円で */
+function hitMean(m){const md=MB[m.type];return md.k==='p'?400*NAIL_R[2]*md.prob/P_SPM:500*machR(m)*slotProb(md,m.set)/S_GPM}
+function geoN(q){let n=1;while(n<600&&Math.random()<q)n++;return n}
+function probShape(prob){const P=PROB_SHAPE[prob]||PROB_SHAPE[319];return Object.assign({E:1+P.e*P.m*((1-P.lt)/(1-P.q)+P.lt/(1-P.ltq))},P)}
+/* 当り1回の大きさ（平均を1とした倍率）。パチンコは確率が重いほど、スロットは vol が大きいほど荒れる */
+function payMult(md){
+  if(md.k==='p'){const P=probShape(md.prob);let k=0;if(Math.random()<P.e)k=geoN(Math.random()<P.lt?P.ltq:P.q);return (1+P.m*k)/P.E}
+  if(md.vol===1)return Math.random()<0.65?1.25:0.536;
+  const V=VOL_SHAPE[md.vol]||VOL_SHAPE[2],E=(1-V.up)/(1-V.q)+V.up/(1-V.uq);
+  return geoN(Math.random()<V.up?V.uq:V.q)/E;
+}
+const diffUnits=(m,t)=>t?Math.round((t.out-t.coin)/unitYen(m)):0;
 const dashi=m=>kindOf(m)==='s'?(m.set-1)/5:NAIL_SCORE[m.nail+2];
 const zoneAt=(x,y)=>inB(x,y)&&G.zone[key(x,y)]===1;
 const rateLabel=m=>RATE[kindOf(m)][m.rate].label;

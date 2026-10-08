@@ -175,6 +175,7 @@ function drawMachine(m,now){
   }
   if(m.call&&Math.floor(now/200)%2===0){R(px+5,py-8,6,4,K);R(px+6,py-7,4,2,'#ff2d55')}
   if(m.broken){R(px+3,py+1,10,7,'#334155');const k=Math.floor(now/180)%3;R(px+5+k,py-6-k,2,2,'rgba(200,200,210,.8)');R(px+9-k,py-8+k,2,2,'rgba(160,160,170,.7)');if(Math.floor(now/300)%2)R(px+7,py+3,2,2,'#facc15')}
+  if(m.today&&m.today.done&&S.phase==='open'){R(px,py-1,16,9,K);R(px+1,py,14,7,Math.floor(now/400)%2?'#ffcf3a':'#ff2d55');txt('完',px+8,py+3.6,6,K)}
   if(m.flash>0){const t=Math.floor(now/80);for(let i=0;i<4;i++){const a=(t+i*5)%12;R(px+1+((a*5+i*4)%14),py-6-(a%4),1,1,i%2?'#fff36b':'#fff')}}
 }
 

@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>[hidden]{display:none!important}</style>
-<script>window.APP_MODE=true;window.APP_VERSION='202610081018';</script>
+<script>window.APP_MODE=true;window.APP_VERSION='202610081122';</script>
 <title>パチンカスの成り上がり店長録</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -169,6 +169,22 @@ button{font:inherit;color:inherit}
 .rt{font-size:10px;font-weight:800;border:2px solid var(--ink);border-radius:6px;padding:0 4px;background:#ffd1db;white-space:nowrap}
 .rt.lo{background:#bbf7d0}
 .isl-h{font-family:var(--f-display);font-size:14px;margin-top:3px}
+.hb{flex:1;min-width:40px;height:12px;border:2px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;position:relative}
+.hb i{position:absolute;inset:0 auto 0 0;background:var(--blue)}.hb.low i{background:#9ca3af}.hb.high i{background:var(--red)}
+.hrow{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;font-weight:800;font-size:12px;padding:2px 0}
+.hrow.in{padding:0}
+.hrow .no{font-family:var(--f-display);color:var(--red);font-size:14px;min-width:26px}
+.hrow .nm{width:38%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.hrow .nm small{display:block;font-size:10px;color:var(--muted)}
+.hrow .pc{width:38px;text-align:right}
+.dv{white-space:nowrap;font-weight:800;font-size:12px;text-align:right;min-width:74px;font-variant-numeric:tabular-nums}
+.rk{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:99px;background:var(--paper-2);border:2px solid var(--ink);font-family:var(--f-display);font-size:11px}
+.rk.top{background:var(--sun)}
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rcell{display:flex;flex-direction:column;gap:2px;font-size:11px;font-weight:800}
+.rcell span{display:flex;gap:4px;align-items:center}.rcell em{font-style:normal;font-size:9.5px;color:#fff;background:var(--muted);border-radius:6px;padding:0 4px}
+.rcell .field{padding:4px 6px;font-size:14px;width:100%}
+.sw.big{width:30px;height:30px}
 .verdict{font-family:var(--f-display);font-size:19px}
 .verdict.good{color:var(--red)} .verdict.mid{color:var(--blue)} .verdict.bad{color:var(--ink)}
 .meter{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-weight:800}
@@ -329,56 +345,54 @@ button{font:inherit;color:inherit}
 (()=>{
 'use strict';
 /* ===== machines.js : 機種データベース（追加分） =====
-   2026年10月はじめの人気ランキングをもとに選んだ機種です。
-   - パチンコ17機種・スロット16機種
-   - 元にしたランキング：P-WORLDの設置台数ランキング、パチビーの全国稼働ランキング
+   2026年10月はじめの人気ランキング（P-WORLD設置台数・パチビー全国稼働）から選んだ、パチンコ17・スロット16機種。
+   出玉の数値は、解析サイト（P-WORLD・パチ7・ちょんぼりすた・一撃・DMMぱちタウン・アルテマ）で2つ以上一致したもの（2026年10月調べ）。
 
-   ★ name はゲームに表示される名前です。いまは実機の名前のままなので、公開する前に変えてください。
-   ★ id は変えないでください（セーブデータが台の機種を id で覚えています）。
+   ★ name はゲームに表示される名前。いまは実機の名前のままなので、公開する前に変える。
+     ゲームの中（メニュー →「機種データベース」）でも変えられる。
+   ★ id は変えない（セーブデータが台の機種を id で覚えているため）。
 
-   k     … p=パチンコ／s=スロット
-   spec  … 甘デジ・ライトミドル・ミドル・荒波（パチンコ）／Aタイプ・AT機（スロット）
-   price … 買う値段（円）
-   pop   … 人気（0〜100）。高いほどお客さんが座りたがる
-   hit   … 大当り1回の出玉の目安（円）
-   rank  … 買えるようになるお店のランク（1〜5）
-   c・c2 … 台の色（本体・ランプ） */
+   共通 … k：p=パチンコ／s=スロット、price：値段、pop：人気(0〜100)、rank：買えるお店のランク、c・c2：台の色
+   パチンコ … prob：初当り確率の分母。ゲームで選べる 99.9／199／319／349／399／599 のどれか
+   スロット … rates：設定1〜6の機械割(%)、hit：初当り確率の分母[設定1, 設定6]、vol：一撃の荒さ(1=Aタイプ 2=AT 3=AT荒波)
+              none：実機にない設定（ゲームでは前後の間の値を入れている）、est：非公表で推定した設定
+   real … 実機のスペックのメモ（画面の「機種データベース」に出る） */
 const MACHINE_DB=[
  /* ---------- パチンコ ---------- */
- {id:'x_eva_mirai',  name:'新世紀エヴァンゲリオン〜未来への咆哮〜',     k:'p',spec:'ミドル',      price:680000,pop:88,hit:22000,rank:4,c:'#6d28d9',c2:'#a3e635'},
- {id:'x_ghoul_p',    name:'e東京喰種',                                 k:'p',spec:'荒波',        price:820000,pop:94,hit:34000,rank:5,c:'#1f2937',c2:'#ef4444'},
- {id:'x_sao_p',      name:'eソードアート・オンライン アリシゼーション', k:'p',spec:'荒波',        price:780000,pop:91,hit:32000,rank:5,c:'#1e3a8a',c2:'#fbbf24'},
- {id:'x_umi5sp',     name:'P大海物語5スペシャル',                       k:'p',spec:'ミドル',      price:560000,pop:84,hit:18000,rank:3,c:'#0284c7',c2:'#fde047'},
- {id:'x_umi5',       name:'P大海物語5',                                 k:'p',spec:'ミドル',      price:480000,pop:78,hit:17000,rank:2,c:'#0ea5e9',c2:'#fef08a'},
- {id:'x_umi5ag',     name:'PA大海物語5 With アグネス・ラム',            k:'p',spec:'甘デジ',      price:380000,pop:72,hit:5000, rank:1,c:'#38bdf8',c2:'#fbcfe8'},
- {id:'x_oki6',       name:'Pスーパー海物語IN沖縄6',                     k:'p',spec:'ミドル',      price:460000,pop:74,hit:16000,rank:2,c:'#06b6d4',c2:'#fda4af'},
- {id:'x_eva_hajime', name:'e新世紀エヴァンゲリオン〜はじまりの記憶〜',   k:'p',spec:'ミドル',      price:600000,pop:82,hit:21000,rank:3,c:'#7c3aed',c2:'#f97316'},
- {id:'x_rezero_p',   name:'eRe:ゼロから始める異世界生活 鬼がかり2',     k:'p',spec:'荒波',        price:720000,pop:87,hit:30000,rank:4,c:'#93c5fd',c2:'#f0f9ff'},
- {id:'x_garo12',     name:'e牙狼12 黄金騎士極限',                       k:'p',spec:'荒波',        price:740000,pop:88,hit:36000,rank:4,c:'#a16207',c2:'#fde68a'},
- {id:'x_takt',       name:'e takt op. Destiny',                         k:'p',spec:'ミドル',      price:640000,pop:85,hit:20000,rank:4,c:'#be123c',c2:'#fecdd3'},
- {id:'x_lyco_p',     name:'eリコリス・リコイル',                        k:'p',spec:'ライトミドル',price:560000,pop:83,hit:12000,rank:3,c:'#dc2626',c2:'#bfdbfe'},
- {id:'x_seed',       name:'eF機動戦士ガンダムSEED クライマックス',      k:'p',spec:'ミドル',      price:620000,pop:82,hit:20000,rank:3,c:'#1d4ed8',c2:'#f8fafc'},
- {id:'x_hokuto11',   name:'e北斗の拳11 暴凶星',                         k:'p',spec:'荒波',        price:700000,pop:84,hit:33000,rank:4,c:'#7f1d1d',c2:'#fca5a5'},
- {id:'x_umi3r3',     name:'PA海物語3R3',                                k:'p',spec:'甘デジ',      price:320000,pop:64,hit:4500, rank:1,c:'#0369a1',c2:'#bae6fd'},
- {id:'x_shinumi',    name:'PA新海物語',                                 k:'p',spec:'甘デジ',      price:300000,pop:62,hit:4200, rank:1,c:'#0891b2',c2:'#fef9c3'},
- {id:'x_odabuta2',   name:'Pポチッと一発!おだてブタ2',                  k:'p',spec:'甘デジ',      price:340000,pop:68,hit:5500, rank:2,c:'#f472b6',c2:'#fff1f2'},
+ {id:'x_eva_mirai',  name:'新世紀エヴァンゲリオン〜未来への咆哮〜',     k:'p',prob:319, price:680000,pop:88,rank:4,c:'#6d28d9',c2:'#a3e635',real:'約1/319.7・ST163回・RUSH突入約70%・継続約81%'},
+ {id:'x_ghoul_p',    name:'e東京喰種',                                 k:'p',prob:399, price:820000,pop:94,rank:5,c:'#1f2937',c2:'#ef4444',real:'図柄揃い約1/399.9（チャージ込み約1/199.9）・LTあり・突入約51%・継続約75%'},
+ {id:'x_sao_p',      name:'eソードアート・オンライン アリシゼーション', k:'p',prob:199, price:780000,pop:91,rank:5,c:'#1e3a8a',c2:'#fbbf24',real:'1/199.9・LTあり・突入50%・継続約65%（LT中約75%）'},
+ {id:'x_umi5sp',     name:'P大海物語5スペシャル',                       k:'p',prob:319, price:560000,pop:84,rank:3,c:'#0284c7',c2:'#fde047',real:'約1/319.6・確変54%（次回まで）＋時短・初当り期待出玉4452個'},
+ {id:'x_umi5',       name:'P大海物語5',                                 k:'p',prob:319, price:480000,pop:78,rank:2,c:'#0ea5e9',c2:'#fef08a',real:'約1/319.6・確変60%（次回まで）＋時短100回'},
+ {id:'x_umi5ag',     name:'PA大海物語5 With アグネス・ラム',            k:'p',prob:99.9,price:380000,pop:72,rank:1,c:'#38bdf8',c2:'#fbcfe8',real:'約1/99.9・ST10回（突入100%）'},
+ {id:'x_oki6',       name:'Pスーパー海物語IN沖縄6',                     k:'p',prob:319, price:460000,pop:74,rank:2,c:'#06b6d4',c2:'#fda4af',real:'約1/319.6・確変60%・トータル継続約78.8%'},
+ {id:'x_eva_hajime', name:'e新世紀エヴァンゲリオン〜はじまりの記憶〜',   k:'p',prob:349, price:600000,pop:82,rank:3,c:'#7c3aed',c2:'#f97316',real:'トータル約1/349.9（図柄揃い約1/399.9）・LT突入約61%・継続約80%'},
+ {id:'x_rezero_p',   name:'eRe:ゼロから始める異世界生活 鬼がかり2',     k:'p',prob:349, price:720000,pop:87,rank:4,c:'#93c5fd',c2:'#f0f9ff',real:'1/349.9・RUSH突入55%・継続約77%'},
+ {id:'x_garo12',     name:'e牙狼12 黄金騎士極限',                       k:'p',prob:349, price:740000,pop:88,rank:4,c:'#a16207',c2:'#fde68a',real:'1/349.99・LT継続約76%・初当り期待出玉5114個'},
+ {id:'x_takt',       name:'e takt op. Destiny',                         k:'p',prob:349, price:640000,pop:85,rank:4,c:'#be123c',c2:'#fecdd3',real:'合算約1/348.6・LTあり・継続約77%'},
+ {id:'x_lyco_p',     name:'eリコリス・リコイル',                        k:'p',prob:319, price:560000,pop:83,rank:3,c:'#dc2626',c2:'#bfdbfe',real:'1/259.7（選べる確率にないので近い1/319に）・LTあり・突入50%・継続約75%'},
+ {id:'x_seed',       name:'eF機動戦士ガンダムSEED クライマックス',      k:'p',prob:399, price:620000,pop:82,rank:3,c:'#1d4ed8',c2:'#f8fafc',real:'1/399.9・LTあり・突入約52%・継続約75%'},
+ {id:'x_hokuto11',   name:'e北斗の拳11 暴凶星',                         k:'p',prob:399, price:700000,pop:84,rank:4,c:'#7f1d1d',c2:'#fca5a5',real:'約1/399.8・LTあり・突入約61%・継続約75%'},
+ {id:'x_umi3r3',     name:'PA海物語3R3',                                k:'p',prob:99.9,price:320000,pop:64,rank:1,c:'#0369a1',c2:'#bae6fd',real:'約1/99.9・確変51%＋時短40回・初当り期待出玉1410個'},
+ {id:'x_shinumi',    name:'PA新海物語',                                 k:'p',prob:99.9,price:300000,pop:62,rank:1,c:'#0891b2',c2:'#fef9c3',real:'約1/99.9・ST5回（突入100%）＋時短'},
+ {id:'x_odabuta2',   name:'Pポチッと一発!おだてブタ2',                  k:'p',prob:99.9,price:340000,pop:68,rank:2,c:'#f472b6',c2:'#fff1f2',real:'羽根物（固定の確率なし。当たりやすさは甘デジ並み）・初当り期待出玉562個'},
  /* ---------- スロット ---------- */
- {id:'x_neoim',      name:'ネオアイムジャグラーEX',                     k:'s',spec:'Aタイプ',     price:360000,pop:80,hit:6000, rank:1,c:'#1f2937',c2:'#fde047'},
- {id:'x_myj5',       name:'マイジャグラーV',                            k:'s',spec:'Aタイプ',     price:420000,pop:82,hit:6500, rank:2,c:'#1e293b',c2:'#f472b6'},
- {id:'x_gogo3',      name:'ゴーゴージャグラー3',                        k:'s',spec:'Aタイプ',     price:380000,pop:74,hit:6200, rank:1,c:'#312e81',c2:'#fde047'},
- {id:'x_funky2',     name:'ファンキージャグラー2',                      k:'s',spec:'Aタイプ',     price:400000,pop:72,hit:6400, rank:2,c:'#581c87',c2:'#22d3ee'},
- {id:'x_hana',       name:'ニューキングハナハナV-30',                   k:'s',spec:'Aタイプ',     price:380000,pop:70,hit:6000, rank:1,c:'#be185d',c2:'#fef08a'},
- {id:'x_okidoki',    name:'沖ドキ!ゴージャス',                          k:'s',spec:'Aタイプ',     price:520000,pop:80,hit:9000, rank:3,c:'#f59e0b',c2:'#ecfccb'},
- {id:'x_ghoul_s',    name:'L東京喰種',                                  k:'s',spec:'AT機',        price:760000,pop:92,hit:34000,rank:5,c:'#0f172a',c2:'#f43f5e'},
- {id:'x_kabaneri',   name:'スマスロ 甲鉄城のカバネリ 海門決戦',         k:'s',spec:'AT機',        price:720000,pop:88,hit:30000,rank:4,c:'#3f3f46',c2:'#4ade80'},
- {id:'x_monkey',     name:'スマスロ モンキーターンV',                   k:'s',spec:'AT機',        price:700000,pop:90,hit:32000,rank:4,c:'#1d4ed8',c2:'#fde047'},
- {id:'x_hokuto_s',   name:'スマスロ北斗の拳',                           k:'s',spec:'AT機',        price:740000,pop:92,hit:36000,rank:5,c:'#450a0a',c2:'#f87171'},
- {id:'x_tensei2',    name:'スマスロ 北斗の拳 転生の章2',                k:'s',spec:'AT機',        price:680000,pop:84,hit:34000,rank:4,c:'#292524',c2:'#fb923c'},
- {id:'x_lyco_s',     name:'スマスロ リコリス・リコイル',                k:'s',spec:'AT機',        price:640000,pop:86,hit:26000,rank:3,c:'#b91c1c',c2:'#e0f2fe'},
- {id:'x_god',        name:'スマスロ ミリオンゴッド-神々の軌跡-',        k:'s',spec:'AT機',        price:700000,pop:82,hit:38000,rank:4,c:'#a16207',c2:'#fef3c7'},
- {id:'x_otome5',     name:'L戦国乙女5 業火を穿つ宿焔の双刃',            k:'s',spec:'AT機',        price:600000,pop:80,hit:26000,rank:3,c:'#9d174d',c2:'#fbcfe8'},
- {id:'x_sao_s',      name:'Lスロット ソードアート・オンラインII',       k:'s',spec:'AT機',        price:760000,pop:93,hit:30000,rank:5,c:'#1e40af',c2:'#e0f2fe'},
- {id:'x_aobuta',     name:'L青春ブタ野郎はバニーガール先輩の夢を見ない', k:'s',spec:'AT機',        price:660000,pop:88,hit:26000,rank:3,c:'#4c1d95',c2:'#f9a8d4'},
+ {id:'x_neoim',      name:'ネオアイムジャグラーEX',                     k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.5,101.1,103.3,105.5],hit:[168.5,127.5],vol:1,price:360000,pop:80,rank:1,c:'#1f2937',c2:'#fde047',real:'ボーナス合算 1/168.5（設定1）〜1/127.5（設定6）'},
+ {id:'x_myj5',       name:'マイジャグラーV',                            k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.9,102.8,105.3,109.4],hit:[163.8,114.6],vol:1,price:420000,pop:82,rank:2,c:'#1e293b',c2:'#f472b6',real:'ボーナス合算 1/163.8〜1/114.6'},
+ {id:'x_gogo3',      name:'ゴーゴージャグラー3',                        k:'s',spec:'Aタイプ',rates:[97.2,98.2,99.4,101.6,103.8,106.5],hit:[149.6,117.4],vol:1,price:380000,pop:74,rank:1,c:'#312e81',c2:'#fde047',real:'ボーナス合算 1/149.6〜1/117.4'},
+ {id:'x_funky2',     name:'ファンキージャグラー2',                      k:'s',spec:'Aタイプ',rates:[97.0,98.5,99.8,102.0,104.3,109.0],hit:[165.9,119.6],vol:1,price:400000,pop:72,rank:2,c:'#581c87',c2:'#22d3ee',real:'ボーナス合算 1/165.9〜1/119.6'},
+ {id:'x_hana',       name:'ニューキングハナハナV-30',                   k:'s',spec:'Aタイプ',rates:[97.0,99.0,101.0,104.0,106.0,108.0],none:[5],hit:[186,150],vol:1,price:380000,pop:70,rank:1,c:'#be185d',c2:'#fef08a',real:'設定は1・2・3・4・V（ゲームの設定6＝V）。機械割は整数のみ公表。合算 1/186〜1/150'},
+ {id:'x_okidoki',    name:'沖ドキ!ゴージャス',                          k:'s',spec:'Aタイプ',rates:[97.2,98.7,101.9,103.4,104.9,109.0],none:[4],hit:[288.7,246.4],vol:2,price:520000,pop:80,rank:3,c:'#f59e0b',c2:'#ecfccb',real:'設定4なし。ボーナス初当り 1/288.7〜1/246.4・連チャンあり'},
+ {id:'x_ghoul_s',    name:'L東京喰種',                                  k:'s',spec:'AT機',rates:[97.5,99.0,101.6,105.6,110.3,114.9],hit:[394.4,261.3],vol:2,price:760000,pop:92,rank:5,c:'#0f172a',c2:'#f43f5e',real:'AT初当り 1/394.4〜1/261.3'},
+ {id:'x_kabaneri',   name:'スマスロ 甲鉄城のカバネリ 海門決戦',         k:'s',spec:'AT機',rates:[97.5,98.5,100.8,106.0,111.0,114.9],hit:[254.2,195.1],vol:2,price:720000,pop:88,rank:4,c:'#3f3f46',c2:'#4ade80',real:'ボーナス初当り 1/254.2〜1/195.1'},
+ {id:'x_monkey',     name:'スマスロ モンキーターンV',                   k:'s',spec:'AT機',rates:[97.9,98.9,101.7,104.5,110.2,114.9],none:[3],hit:[299.8,222.9],vol:2,price:700000,pop:90,rank:4,c:'#1d4ed8',c2:'#fde047',real:'設定3なし。AT初当り 1/299.8〜1/222.9'},
+ {id:'x_hokuto_s',   name:'スマスロ北斗の拳',                           k:'s',spec:'AT機',rates:[98.0,98.9,102.3,105.7,110.0,113.0],none:[3],hit:[383.4,235.1],vol:3,price:740000,pop:92,rank:5,c:'#450a0a',c2:'#f87171',real:'設定3なし（別に設定Lあり・数値非公表）。BB初当り 1/383.4〜1/235.1'},
+ {id:'x_tensei2',    name:'スマスロ 北斗の拳 転生の章2',                k:'s',spec:'AT機',rates:[97.6,98.4,100.7,106.2,111.1,114.9],hit:[366.0,273.1],vol:2,price:680000,pop:84,rank:4,c:'#292524',c2:'#fb923c',real:'AT初当り 1/366.0〜1/273.1'},
+ {id:'x_lyco_s',     name:'スマスロ リコリス・リコイル',                k:'s',spec:'AT機',rates:[97.9,98.9,101.3,106.1,110.4,114.6],hit:[328.8,256.7],vol:2,price:640000,pop:86,rank:3,c:'#b91c1c',c2:'#e0f2fe',real:'ST初当り 1/328.8〜1/256.7'},
+ {id:'x_god',        name:'スマスロ ミリオンゴッド-神々の軌跡-',        k:'s',spec:'AT機',rates:[97.2,99.1,102.1,106.9,111.7,114.6],hit:[532.8,294.8],vol:3,price:700000,pop:82,rank:4,c:'#a16207',c2:'#fef3c7',real:'AT初当り 1/532.8〜1/294.8（奇数設定は重め）'},
+ {id:'x_otome5',     name:'L戦国乙女5 業火を穿つ宿焔の双刃',            k:'s',spec:'AT機',rates:[97.9,98.9,101.0,106.2,111.1,114.9],hit:[359.5,262.9],vol:2,price:600000,pop:80,rank:3,c:'#9d174d',c2:'#fbcfe8',real:'AT初当り 1/359.5〜1/262.9'},
+ {id:'x_sao_s',      name:'Lスロット ソードアート・オンラインII',       k:'s',spec:'AT機',rates:[97.6,98.8,100.2,105.3,110.4,114.9],hit:[386.2,269.6],vol:2,price:760000,pop:93,rank:5,c:'#1e40af',c2:'#e0f2fe',real:'AT初当り 1/386.2〜1/269.6'},
+ {id:'x_aobuta',     name:'L青春ブタ野郎はバニーガール先輩の夢を見ない', k:'s',spec:'AT機',rates:[97.0,98.1,99.3,105.3,108.4,110.3],est:[1],hit:[360,207.8],vol:2,price:660000,pop:88,rank:3,c:'#4c1d95',c2:'#f9a8d4',real:'設定1の機械割・初当りは非公表（推定値）。初当り 設定2 1/350.8〜設定6 1/207.8'},
 ];
 
 /* ===== data.js : 定数とゲームデータ ===== */
@@ -391,7 +405,6 @@ const OPEN=600, CLOSE=1365, LAST=1350, MIN_PER_SEC=8.5;
 const SAVE_KEY='pachinko-hanjoki-v2', PREF_KEY='pachinko-hanjoki-prefs2';
 
 /* 設定（スロット）と釘（パチンコ） */
-const SLOT_R=[0,0.88,0.92,0.95,0.99,1.04,1.10];
 const NAIL_R=[0.86,0.90,0.94,0.99,1.05];            // index = 釘+2
 const NAIL_NAME=['締め','やや締め','標準','やや開け','開け'];
 const NAIL_SHORT=['-2','-1','±0','+1','+2'];
@@ -402,30 +415,32 @@ const SLOT_HINT=['','店がいちばん儲かる。客はほとんど勝てな�
 const NAIL_HINT=['ほとんど回らない。客はすぐ見切る。店は大きく儲かる','あまり回らない。店がやや儲かる','ふつうの回り。店が少し儲かる','よく回る。客が勝ちやすい','すごく回る。客は大喜び、店は赤字ぎみ'];
 
 /* 貸玉レート */
-const RATE={p:{hi:{label:'4円',coin:400},lo:{label:'1円',coin:100}},s:{hi:{label:'20円',coin:500},lo:{label:'5円',coin:125}}};
+const RATE={p:{hi:{label:'4円',coin:400,unit:4},lo:{label:'1円',coin:100,unit:1}},s:{hi:{label:'20円',coin:500,unit:20},lo:{label:'5円',coin:125,unit:5}}};
 const SEGS=['p-hi','p-lo','s-hi','s-lo'];
 const SEG_SHARE={'p-hi':0.40,'p-lo':0.17,'s-hi':0.33,'s-lo':0.10};
 const SEG_NAME={'p-hi':'4円パチンコ','p-lo':'1円パチンコ','s-hi':'20円スロット','s-lo':'5円スロット'};
 const KIND_NAME={p:'パチンコ',s:'スロット'};
 
-/* 機種（架空） */
+/* 機種（架空）
+   パチンコ：prob＝初当り確率の分母（PROBS から選ぶ）
+   スロット：rates＝設定1〜6の機械割(%)、hit＝初当り確率の分母[設定1,設定6]、vol＝一撃の荒さ(1=Aタイプ 2=AT 3=AT荒波) */
 const MODELS=[
- {id:'ponpoko',name:'CRぽんぽこ合戦',k:'p',spec:'甘デジ',price:220000,pop:40,hit:4000,c:'#ff9a2e',c2:'#ffe08a',rank:1},
- {id:'umineko',name:'CR海ねこパラダイス',k:'p',spec:'ミドル',price:320000,pop:55,hit:15000,c:'#2e9bff',c2:'#bfe4ff',rank:1},
- {id:'manekineko',name:'CR招き猫フィーバー',k:'p',spec:'甘デジ',price:380000,pop:64,hit:5000,c:'#f2c230',c2:'#fff3b0',rank:2},
- {id:'dragon',name:'CR爆炎ドラゴン伝説',k:'p',spec:'荒波',price:450000,pop:68,hit:32000,c:'#e8392e',c2:'#ffb08a',rank:2},
- {id:'karakuri',name:'CR大江戸からくり',k:'p',spec:'ライトミドル',price:520000,pop:74,hit:11000,c:'#b45309',c2:'#fde68a',rank:3},
- {id:'stella',name:'CR銀河特急ステラ',k:'p',spec:'ミドル',price:640000,pop:82,hit:22000,c:'#14b8a6',c2:'#b8fff4',rank:4},
- {id:'neon7',name:'ネオン7',k:'s',spec:'Aタイプ',price:260000,pop:46,hit:6000,c:'#ff4fa3',c2:'#ffd1e8',rank:1},
- {id:'bell',name:'ハッピーベル',k:'s',spec:'Aタイプ',price:300000,pop:52,hit:5500,c:'#facc15',c2:'#fff7b0',rank:1},
- {id:'pirate',name:'パイレーツゴールド',k:'s',spec:'AT機',price:460000,pop:66,hit:28000,c:'#16a34a',c2:'#c8ffe0',rank:2},
- {id:'samurai',name:'サムライ斬',k:'s',spec:'AT機',price:520000,pop:72,hit:36000,c:'#7c3aed',c2:'#d9c4ff',rank:3},
- {id:'panda',name:'ジェットパンダ',k:'s',spec:'AT機',price:600000,pop:78,hit:25000,c:'#0f172a',c2:'#e2e8f0',rank:4},
- {id:'lumina',name:'魔法少女ルミナ',k:'s',spec:'AT機',price:780000,pop:90,hit:30000,c:'#ff6ad5',c2:'#ffffff',rank:5},
- {id:'dragon2',name:'CR爆炎ドラゴン伝説・極',k:'p',spec:'ミドル',price:560000,pop:78,hit:20000,c:'#ff5a36',c2:'#ffd0b0',rank:2,gen:2},
- {id:'samurai2',name:'サムライ斬・零',k:'s',spec:'AT機',price:620000,pop:82,hit:26000,c:'#9b5cff',c2:'#e6d8ff',rank:3,gen:2},
- {id:'umineko2',name:'CR海ねこパラダイス2',k:'p',spec:'ミドル',price:430000,pop:72,hit:14000,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
- {id:'pirate2',name:'パイレーツゴールド2',k:'s',spec:'AT機',price:560000,pop:76,hit:22000,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
+ {id:'ponpoko',name:'CRぽんぽこ合戦',k:'p',prob:99.9,price:220000,pop:40,c:'#ff9a2e',c2:'#ffe08a',rank:1},
+ {id:'umineko',name:'CR海ねこパラダイス',k:'p',prob:319,price:320000,pop:55,c:'#2e9bff',c2:'#bfe4ff',rank:1},
+ {id:'manekineko',name:'CR招き猫フィーバー',k:'p',prob:99.9,price:380000,pop:64,c:'#f2c230',c2:'#fff3b0',rank:2},
+ {id:'dragon',name:'CR爆炎ドラゴン伝説',k:'p',prob:599,price:450000,pop:68,c:'#e8392e',c2:'#ffb08a',rank:2},
+ {id:'karakuri',name:'CR大江戸からくり',k:'p',prob:199,price:520000,pop:74,c:'#b45309',c2:'#fde68a',rank:3},
+ {id:'stella',name:'CR銀河特急ステラ',k:'p',prob:349,price:640000,pop:82,c:'#14b8a6',c2:'#b8fff4',rank:4},
+ {id:'neon7',name:'ネオン7',k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.5,101.1,103.3,105.5],hit:[168,128],vol:1,price:260000,pop:46,c:'#ff4fa3',c2:'#ffd1e8',rank:1},
+ {id:'bell',name:'ハッピーベル',k:'s',spec:'Aタイプ',rates:[97.0,98.5,99.8,102.0,104.3,109.0],hit:[165,120],vol:1,price:300000,pop:52,c:'#facc15',c2:'#fff7b0',rank:1},
+ {id:'pirate',name:'パイレーツゴールド',k:'s',spec:'AT機',rates:[97.5,98.5,100.5,104.0,108.0,112.0],hit:[380,270],vol:2,price:460000,pop:66,c:'#16a34a',c2:'#c8ffe0',rank:2},
+ {id:'samurai',name:'サムライ斬',k:'s',spec:'AT機',rates:[97.0,98.5,101.0,106.0,110.5,114.9],hit:[520,300],vol:3,price:520000,pop:72,c:'#7c3aed',c2:'#d9c4ff',rank:3},
+ {id:'panda',name:'ジェットパンダ',k:'s',spec:'AT機',rates:[97.6,98.6,100.5,105.0,109.0,113.0],hit:[350,250],vol:2,price:600000,pop:78,c:'#0f172a',c2:'#e2e8f0',rank:4},
+ {id:'lumina',name:'魔法少女ルミナ',k:'s',spec:'AT機',rates:[97.8,98.8,101.0,106.0,110.5,114.9],hit:[330,240],vol:2,price:780000,pop:90,c:'#ff6ad5',c2:'#ffffff',rank:5},
+ {id:'dragon2',name:'CR爆炎ドラゴン伝説・極',k:'p',prob:399,price:560000,pop:78,c:'#ff5a36',c2:'#ffd0b0',rank:2,gen:2},
+ {id:'samurai2',name:'サムライ斬・零',k:'s',spec:'AT機',rates:[97.5,98.5,100.8,105.5,110.0,114.0],hit:[400,280],vol:2,price:620000,pop:82,c:'#9b5cff',c2:'#e6d8ff',rank:3,gen:2},
+ {id:'umineko2',name:'CR海ねこパラダイス2',k:'p',prob:319,price:430000,pop:72,c:'#38a3ff',c2:'#d6efff',rank:1,gen:3},
+ {id:'pirate2',name:'パイレーツゴールド2',k:'s',spec:'AT機',rates:[97.6,98.6,100.8,105.5,109.5,113.5],hit:[360,260],vol:2,price:560000,pop:76,c:'#22c55e',c2:'#d9ffe8',rank:2,gen:3},
  ...MACHINE_DB, /* 人気機種をもとにした追加分は machines.js */
 ];
 const byRankPrice=(a,b)=>a.rank-b.rank||a.price-b.price;
@@ -436,7 +451,23 @@ const REGS=[
  {day:110,name:'出玉の新基準',ids:['umineko','pirate'],add:['umineko2','pirate2'],grace:28,desc:'旧基準のミドル・AT機が撤去対象になりました'},
 ];
 const MB=Object.fromEntries(MODELS.map(m=>[m.id,m]));
-const SPEC_INFO={'甘デジ':'当たりが軽く、こまめに当たる','ライトミドル':'当たりやすさと出玉のバランス型','ミドル':'当たりの重さも出玉もふつう','荒波':'当たりは重いが一撃が大きい','Aタイプ':'小さな当たりが続くタイプ','AT機':'当たると一気に出る一撃型'};
+const SPEC_INFO={'甘デジ':'当たりが軽く、こまめに当たる','ライトミドル':'当たりやすさと出玉のバランス型','ミドル':'当たりの重さも出玉もふつう','ハイミドル':'当たりは重めで、当たれば大きい','荒波':'当たりはとても重いが、一撃で万発もある','Aタイプ':'ボーナスがこまめに当たるタイプ','AT機':'当たると一気に出る一撃型'};
+
+/* ---------- 出玉のしくみ ----------
+   パチンコ：初当り確率は6種類から選ぶ。重いほど1回の当りが大きく、連チャン（RUSH）も伸びやすい
+   スロット：設定ごとの機械割（最大114.9%）。初当りの重さは設定1と設定6の間をなめらかにつなぐ */
+const PROBS=[99.9,199,319,349,399,599];
+const PROB_SPEC={99.9:'甘デジ',199:'ライトミドル',319:'ミドル',349:'ミドル',399:'ハイミドル',599:'荒波'};
+/* e=RUSH突入率 q=RUSH継続率 m=RUSH中1回の大きさ（初当り比） lt=上位RUSH(LT)に入る率 ltq=LTの継続率 */
+const PROB_SHAPE={99.9:{e:0.5,q:0.55,m:0.8,lt:0,ltq:0.9},199:{e:0.5,q:0.65,m:1,lt:0,ltq:0.9},319:{e:0.55,q:0.72,m:1,lt:0,ltq:0.9},349:{e:0.55,q:0.75,m:1.2,lt:0.02,ltq:0.88},399:{e:0.5,q:0.75,m:1.4,lt:0.02,ltq:0.9},599:{e:0.5,q:0.78,m:1.6,lt:0.04,ltq:0.9}};
+/* スロットAT：q=継続 up=上位ATに入る率 uq=上位ATの継続 */
+const VOL_SHAPE={2:{q:0.75,up:0.025,uq:0.9},3:{q:0.78,up:0.045,uq:0.92}};
+const VOL_NAME={1:'ボーナス主体（波はおだやか）',2:'AT（一撃あり）',3:'AT（一撃がとても荒い）'};
+const P_SPM=6.5;          // パチンコ：標準の釘で1分あたりの回転数
+const S_GPM=13.3;         // スロット：1分あたりのゲーム数
+const SLOT_EXCH=5/5.6;    // スロットは5.6枚交換（貸しは5枚＝100円）。店に交換差益が残る
+const COMPLETE={p:95000,s:19000}; // コンプリート：1台1日の最大差玉（パチンコ発・スロット枚）
+const SLOT_MAX=114.9,SLOT_MIN=80;
 
 /* 床に置く設備 */
 const DECOR=[
@@ -560,6 +591,7 @@ const TW={
  target:['イベント台ゲット！','狙い台に座れた！'],
  hit:['キター！大当り！','当たった！！','うおお来た！','引いた！'],
  bigwin:['{v}勝ち！最高','今日は勝った！{v}','{v}プラスで撤退'],
+ complete:['コンプリートした！もう打てない','完走！差玉MAXまで出た','コンプリート達成…この店やばい'],
  lose:['今日はもう帰る…','{v}負け…','財布が空っぽ'],
  wait:['店員まだ？','ランプ押してるのに…','呼んでも来ない'],
  broken:['台が壊れた…','故障かよ'],
@@ -613,7 +645,23 @@ const seatOf=m=>({x:m.x+DIRS[m.dir][0],y:m.y+DIRS[m.dir][1]});
 const kindOf=m=>MB[m.type].k;
 const segOf=m=>kindOf(m)+'-'+m.rate;
 const blank=()=>({coin:0,out:0,hits:0,mins:0});
-const machR=m=>kindOf(m)==='s'?SLOT_R[m.set]:NAIL_R[m.nail+2];
+const machR=m=>kindOf(m)==='s'?MB[m.type].rates[m.set-1]/100:NAIL_R[m.nail+2];
+const unitYen=m=>RATE[kindOf(m)][m.rate].unit;
+const unitName=k=>k==='p'?'発':'枚';
+const specOf=md=>md.k==='p'?(PROB_SPEC[md.prob]||'ミドル'):md.spec;
+const slotProb=(md,set)=>md.hit[0]*Math.pow(md.hit[1]/md.hit[0],(set-1)/5);
+/* 1回の当り（RUSH・AT込み）の平均の大きさ。高レートの円で */
+function hitMean(m){const md=MB[m.type];return md.k==='p'?400*NAIL_R[2]*md.prob/P_SPM:500*machR(m)*slotProb(md,m.set)/S_GPM}
+function geoN(q){let n=1;while(n<600&&Math.random()<q)n++;return n}
+function probShape(prob){const P=PROB_SHAPE[prob]||PROB_SHAPE[319];return Object.assign({E:1+P.e*P.m*((1-P.lt)/(1-P.q)+P.lt/(1-P.ltq))},P)}
+/* 当り1回の大きさ（平均を1とした倍率）。パチンコは確率が重いほど、スロットは vol が大きいほど荒れる */
+function payMult(md){
+  if(md.k==='p'){const P=probShape(md.prob);let k=0;if(Math.random()<P.e)k=geoN(Math.random()<P.lt?P.ltq:P.q);return (1+P.m*k)/P.E}
+  if(md.vol===1)return Math.random()<0.65?1.25:0.536;
+  const V=VOL_SHAPE[md.vol]||VOL_SHAPE[2],E=(1-V.up)/(1-V.q)+V.up/(1-V.uq);
+  return geoN(Math.random()<V.up?V.uq:V.q)/E;
+}
+const diffUnits=(m,t)=>t?Math.round((t.out-t.coin)/unitYen(m)):0;
 const dashi=m=>kindOf(m)==='s'?(m.set-1)/5:NAIL_SCORE[m.nail+2];
 const zoneAt=(x,y)=>inB(x,y)&&G.zone[key(x,y)]===1;
 const rateLabel=m=>RATE[kindOf(m)][m.rate].label;
@@ -1107,7 +1155,7 @@ function openStore(){
   const isGo=goActive(),isEv=ev.type!=='none';
   D={coin:0,out:0,drink:0,visitors:0,full:0,satSum:0,satN:0,hunters:0,seg:{},reasons:{},calls:[],ad:cost,shares:fc.shares,expected:fc.expected,
      isGo,goType:isGo?S.go.type:null,goIdx:goDayIdx(),evType:ev.type,evTarget:ev.target,evLabel:isGo?(S.go.type==='grand'?'グランドオープン':'リニューアルオープン'):eventLabel(),bigWins:[],regsVisited:[],rivalClosed:null,nearSmoke:new Set(),smokeSpots:new Map(),
-     goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,broken:0,kiosk:hasDecor('kiosk')};
+     goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,broken:0,kiosk:hasDecor('kiosk'),exch:0,completes:[],hourly:[],lastHr:-1,elders:0,smokers:0};
   todayTargets=new Set(isEv?eventTargets():[]);
   hunterFrac=(isGo?0.4:ev.type==='media'?0.5:isEv?0.35:0.1)*(D.kiosk?1.4:1);
   if(S.day>=10&&Math.random()<0.08+(isGo||isEv?0.12:0)+(rankNo()>=3?0.04:0))D.gotoAt=rnd(660,1140);
@@ -1175,11 +1223,11 @@ function spawnCust(seg,opt={}){
     budget:(hunter?rnd(30000,80000):rnd(8000,40000))*sc*(opt.rich?2.5:1),goal:(hunter?rnd(40000,120000):rnd(10000,50000))*sc,
     maxT:hunter?rnd(240,700):lo?rnd(120,360):rnd(60,240),inv:0,won:0,t:0,sat:0,why:{},plan:[],cur:null,wait:0,emote:null,ph:Math.random()*10,
     nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false};
-  custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;
+  custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;if(elder)D.elders++;if(smoker)D.smokers++;
   return c;
 }
 function chooseMachine(c){
-  const cand=machines().filter(m=>!m.res&&!m.broken&&segOf(m)===c.seg);
+  const cand=machines().filter(m=>!m.res&&!m.broken&&!m.today.done&&segOf(m)===c.seg);
   if(!cand.length)return null;
   const ws=cand.map(m=>{
     const s=seatOf(m),z=zoneAt(s.x,s.y);let w;
@@ -1237,12 +1285,17 @@ function callStaff(c,type){c.st='call';c.callAt=clock;c.callType=type;c.m.call=t
 function play(c,dt){
   const m=c.m,md=MB[m.type],cin=c.coin*dt;
   if(c.goto){gotoStep(c,dt);return}
-  c.inv+=cin;c.t+=dt;S.money+=cin;D.coin+=cin;m.today.coin+=cin;m.today.mins+=dt;
-  const hit=md.hit*c.sc,p=c.coin*machR(m)/hit;
+  c.inv+=cin;c.t+=dt;S.money+=cin;D.coin+=cin;m.today.coin+=cin;m.today.mins+=dt;m.today.g=(m.today.g||0)+dt*(md.k==='s'?S_GPM:P_SPM*machR(m)/NAIL_R[2]);
+  const hit=hitMean(m)*c.sc,p=c.coin*machR(m)/hit;
   if(Math.random()<1-Math.exp(-p*dt)){
-    const pay=Math.round(hit*rnd(0.4,1.6)/100)*100;
-    c.won+=pay;S.money-=pay;D.out+=pay;m.today.out+=pay;m.today.hits++;
+    let pay=Math.max(100,Math.round(hit*payMult(md)/100)*100);
+    /* コンプリート：1台の差玉が上限に届いたら、そこで払い出しを止めて今日は終了 */
+    const cap=COMPLETE[md.k]*unitYen(m),diff=m.today.out-m.today.coin,done=diff+pay>=cap;
+    if(done)pay=Math.max(0,Math.round(cap-diff));
+    const ex=md.k==='s'?SLOT_EXCH:1;
+    c.won+=pay;S.money-=pay*ex;D.out+=pay;D.exch+=pay*(1-ex);m.today.out+=pay;m.today.hits++;
     m.flash=1.6;c.emote={ch:'！',t:10};floatAt(m.x,m.y,'大当り','#ff2d55');sfx('hit');tweet(c,'hit',0.12,1);
+    if(done){completeMachine(m,c);return}
     if(Math.random()<0.1){callStaff(c,'box');return}
   }
   if(Math.random()<dt/450){callStaff(c,'jam');return}
@@ -1252,6 +1305,15 @@ function play(c,dt){
   const net=c.won-c.inv;
   if(c.smoker&&!c.zone&&c.t>=c.nextSmoke){startSmoke(c,true);return}
   if(net<-c.budget||c.t>c.maxT||clock>=LAST||(net>c.goal&&Math.random()<0.03*dt))quit(c);
+}
+function completeMachine(m,c){
+  const md=MB[m.type];
+  m.today.done=true;m.flash=4;
+  D.completes.push({no:m.no,id:m.type,k:md.k});
+  floatAt(m.x,m.y,'コンプリート！','#ffcf3a');sfx('fanfare');
+  news(`${m.no}番台「${shortName(md.name)}」がコンプリート！差玉+${COMPLETE[md.k].toLocaleString('ja-JP')}${unitName(md.k)}で今日は打ち止め`,'good');
+  tweet(c,'complete',1,3);
+  quit(c);
 }
 function startSmoke(c,mid){
   if(!D.smokeSpots.size){
@@ -1465,6 +1527,9 @@ function stepStaff(a,dt){
 /* ---------- 1フレームの更新 ---------- */
 function update(dt){
   clock+=dt;
+  /* 1時間ごとの稼働（毎時30分に数える） */
+  const hr=Math.floor((clock-30)/60);
+  if(hr!==D.lastHr&&clock>=OPEN+30&&clock<LAST){D.lastHr=hr;const pl=custs.filter(c=>c.m&&(c.st==='play'||c.st==='call')&&!c.goto);D.hourly.push({h:hr,p:pl.filter(c=>c.k==='p').length,s:pl.filter(c=>c.k==='s').length})}
   if(clock<LAST-20){
     if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<0.75});tweet(c,'queue',0.06,1)}}
     while(regQueue.length&&regQueue[0].t<=clock){
@@ -1490,10 +1555,10 @@ function closeDay(){
   const ms=machines(),rent=rentOf(),wages=wagesTotal(),power=2500*ms.length;
   const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE);
   ms.forEach(m=>{m.broken=false;m.fixing=false});
-  const gross=D.coin-D.out,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
+  const gross=D.coin-D.out+D.exch,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
   S.money-=rent+wages+power+repairs+interest;
   const rep0=S.rep,trust0=S.trust,avgSat=D.satN?D.satSum/D.satN:0;
-  const payR=D.coin?D.out/D.coin:0.93,feel=clamp((payR-0.92)*30*(D.kiosk?1.5:1),-3.5,3.5);
+  const payR=D.coin?D.out/D.coin:0.93,feel=clamp((payR-0.955)*30*(D.kiosk?1.5:1),-3.5,3.5);
   S.rep=clamp(S.rep+clamp(avgSat*10,-5,5)*(D.isGo?1.5:1)+feel+(30-S.rep)*0.02,0,100);
   let evr=null,gor=null,goodEvent=false;
   if(D.isGo){
@@ -1547,8 +1612,9 @@ function closeDay(){
   const rivalNews=openRivals().filter(r=>r.ev).map(r=>r.name);
   const R={day:S.day,date:dateLong(S.day),visitors:D.visitors,full:D.full,hunters:D.hunters,seg:D.seg,coin:D.coin,out:D.out,gross,drink:D.drink,rent,wages,power,ad:D.ad,net,
     rep0,rep1:S.rep,trust0,trust1:S.trust,ev:evr,go:gor,best:byGive[0],worst:byGive[byGive.length-1],voices,regVoices,share:D.shares.me,rivalNews,rivalClosed:D.rivalClosed,
-    rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc};
+    rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc,exch:D.exch,completes:D.completes};
   S.hist.push({day:S.day,net:Math.round(net),visitors:D.visitors,rep:S.rep,share:D.shares.me});if(S.hist.length>90)S.hist.shift();
+  S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   S.negDays=S.money<0?(S.negDays||0)+1:0;
   dayEndFeatures(R);
   // 翌日へ
@@ -1686,6 +1752,27 @@ function dayEndFeatures(R){
   }
 }
 function score(){return Math.round(S.totalVisitors/10+Math.max(0,S.money-S.loan)/100000+S.rep*20+machines().length*10)}
+
+/* ---------- 機種データベース（名前・出玉率・確率の変更をこの端末に保存） ---------- */
+const MDB_KEY='pachinkasu-mdb1';
+const MDB_DEF=Object.fromEntries(MODELS.map(m=>[m.id,{name:m.name,rates:m.rates?m.rates.slice():null,prob:m.prob??null}]));
+let mdbEdits={};
+const clampRate=v=>Math.round(clamp(v,SLOT_MIN,SLOT_MAX)*10)/10;
+function mdbClean(o){
+  const out={};if(!o||typeof o!=='object')return out;
+  for(const[id,e]of Object.entries(o)){
+    const md=MB[id],d=MDB_DEF[id];if(!md||!d||!e||typeof e!=='object')continue;const r={};
+    if(typeof e.name==='string'&&e.name.trim()&&e.name.trim()!==d.name)r.name=e.name.trim().slice(0,30);
+    if(md.k==='s'&&Array.isArray(e.rates)&&e.rates.length===6&&e.rates.every(v=>isFinite(+v))){const rt=e.rates.map(v=>clampRate(+v));if(rt.join()!==d.rates.join())r.rates=rt}
+    if(md.k==='p'&&PROBS.includes(+e.prob)&&+e.prob!==d.prob)r.prob=+e.prob;
+    if(Object.keys(r).length)out[id]=r;
+  }
+  return out;
+}
+function mdbApply(){for(const md of MODELS){const d=MDB_DEF[md.id],e=mdbEdits[md.id]||{};md.name=e.name||d.name;if(md.k==='s')md.rates=(e.rates||d.rates).slice();else md.prob=e.prob||d.prob}}
+function mdbLoad(){try{const o=JSON.parse(localStorage.getItem(MDB_KEY)||'null');mdbEdits=mdbClean(o&&o.m)}catch(e){mdbEdits={}}mdbApply()}
+function mdbSave(){try{localStorage.setItem(MDB_KEY,JSON.stringify({v:1,m:mdbEdits}))}catch(e){}}
+function mdbSet(o){mdbEdits=mdbClean(o);mdbSave();mdbApply()}
 
 /* ===== render.js : カメラと描画 ===== */
 const cv=$('#cv'),ctx=cv.getContext('2d');
@@ -1864,6 +1951,7 @@ function drawMachine(m,now){
   }
   if(m.call&&Math.floor(now/200)%2===0){R(px+5,py-8,6,4,K);R(px+6,py-7,4,2,'#ff2d55')}
   if(m.broken){R(px+3,py+1,10,7,'#334155');const k=Math.floor(now/180)%3;R(px+5+k,py-6-k,2,2,'rgba(200,200,210,.8)');R(px+9-k,py-8+k,2,2,'rgba(160,160,170,.7)');if(Math.floor(now/300)%2)R(px+7,py+3,2,2,'#facc15')}
+  if(m.today&&m.today.done&&S.phase==='open'){R(px,py-1,16,9,K);R(px+1,py,14,7,Math.floor(now/400)%2?'#ffcf3a':'#ff2d55');txt('完',px+8,py+3.6,6,K)}
   if(m.flash>0){const t=Math.floor(now/80);for(let i=0;i<4;i++){const a=(t+i*5)%12;R(px+1+((a*5+i*4)%14),py-6-(a%4),1,1,i%2?'#fff36b':'#fff')}}
 }
 
@@ -2081,29 +2169,48 @@ const SFX={
 };
 function sfx(n){if(!prefs.sfx)return;if(!audio())return;try{SFX[n]&&SFX[n]()}catch(e){}}
 
-/* ---------- BGM ---------- */
+/* ---------- BGM（クラブ風：4つ打ちキック＋裏打ちハット＋サイドチェイン） ----------
+   1曲 = 8小節のコード進行。前半8小節はグルーヴ、後半8小節でメロディが入る。8小節目の最後でスネアロールと上昇ノイズ */
 const NOTE={C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
 function nf(n){const m=n.match(/^([A-G][#b]?)(\d)$/);if(!m)return 0;return 440*Math.pow(2,(NOTE[m[1]]+(+m[2]+1)*12-69)/12)}
-function parseLine(s){return s.trim().split(/\s+/)}
 const TRACKS={
-  prep:{bpm:132,lead:'square',lv:0.055,arp:false,
-    L:'G5 - B5 - D6 - B5 G5 A5 - F#5 - D5 - . A5 B5 - G5 - E5 - G5 B5 C6 - B5 - A5 - G5 - G5 B5 D6 - E6 D6 B5 - A5 - D6 - F#5 - A5 - G5 - E5 - C6 - B5 A5 G5 - - - D5 E5 F#5 -',
-    C:['G','D','Em','C','G','D','C','D'],stab:'..x...x...x...x.',drum:'k.h.s.h.k.hks.h.'},
-  open:{bpm:150,lead:'square',lv:0.055,arp:true,
-    L:'C6 - G5 - E5 G5 C6 - B5 - G5 - D5 G5 B5 - A5 - E5 - C5 E5 A5 C6 A5 - F5 - C6 - A5 - C6 - D6 - E6 - G6 - D6 - B5 - G5 - B5 D6 C6 - A5 - F5 - A5 C6 D6 - B5 - G5 - - .',
-    C:['C','G','Am','F','C','G','F','G'],stab:'..x...x...x...x.',drum:'k.hhs.hhk.hhs.hk'},
-  event:{bpm:164,lead:'square',lv:0.055,arp:true,
-    L:'D6 - A5 - F#5 A5 D6 E6 C#6 - A5 - E5 A5 C#6 E6 D6 - B5 - F#5 B5 D6 F#6 G6 - D6 - B5 - G5 - A5 A5 D6 - A5 A5 E6 - F#6 - E6 - C#6 - A5 - B5 - D6 - G6 - F#6 E6 E6 - C#6 - A5 B5 C#6 E6',
-    C:['D','A','Bm','G','D','A','G','A'],stab:'x..x..x.x..x..x.',drum:'k.hhs.hkk.hhs.hs'},
-  grand:{bpm:172,lead:'square',lv:0.06,arp:true,dbl:true,
-    L:'F5 - A5 - C6 - F6 - E6 - C6 - G5 - C6 - D6 - A5 - F5 - A5 D6 D6 - Bb5 - F5 - Bb5 D6 F6 - E6 F6 G6 - F6 - E6 - D6 C6 - G5 - - D6 - F6 - Bb5 - D6 - C6 - E6 - G6 - - -',
-    C:['F','C','Dm','Bb','F','C','Bb','C'],stab:'x.x...x.x.x...x.',drum:'kkh.s.hkk.h.s.hs'},
+  /* 準備中：ファンキーなハウス */
+  prep:{bpm:128,C:['Am','F','C','G','Am','F','C','G'],
+    bass:'x.xx..x.x.xx..x.',stab:'..x...x...x..x..',pluck:'0.2.1.2.0.2.3.2.',hat:'hhhhhhhhhhhhhhhh',oh:'..o...o...o...o.',clap:'....c.......c...',
+    L:'A5 . . C6 . . E6 . D6 . C6 . A5 . . . F5 . . A5 . . C6 . A5 . G5 . F5 . . . E5 . . G5 . . C6 . B5 . G5 . E5 . . . D5 . . G5 . . B5 . D6 . B5 . G5 . A5 .'},
+  /* 営業中：明るいエレクトロハウス */
+  open:{bpm:138,C:['C','G','Am','F','C','G','Am','F'],
+    bass:'.xx..xx..xx..xxx',stab:'..x...x...x...x.',pluck:'0.1.2.0.1.2.3.2.',hat:'hhhhhhhhhhhhhhhh',oh:'..o...o...o...o.',clap:'....c.......c...',
+    L:'E5 . G5 . C6 . G5 E5 . G5 . C6 D6 . C6 . D6 . B5 . G5 . B5 D6 . B5 . G5 A5 . B5 . C6 . A5 . E5 . A5 C6 . E6 . D6 C6 . A5 . A5 . C6 . F6 . E6 . D6 . C6 . A5 - - .'},
+  /* イベント日：トランス寄りのアッパー */
+  event:{bpm:146,C:['Dm','Bb','F','C','Dm','Bb','F','C'],
+    bass:'.xxx.xxx.xxx.xxx',stab:'x..x..x...x..x..',pluck:'0123012301230123',hat:'hhhhhhhhhhhhhhhh',oh:'..o...o...o...o.',clap:'....c.......c..c',
+    L:'D6 . A5 . F5 . A5 . D6 . E6 . F6 . E6 . D6 . Bb5 . F5 . Bb5 . D6 . F6 . D6 . Bb5 . C6 . A5 . F5 . A5 . C6 . F6 . E6 . C6 . E6 . C6 . G5 . C6 . E6 . G6 . E6 - - .'},
+  /* グランドオープン：ハードなEDM */
+  grand:{bpm:154,C:['Em','C','G','D','Em','C','G','D'],
+    bass:'.xxx.xxx.xxx.xxx',stab:'x.x...x.x.x...x.',pluck:'0123210301232103',hat:'hhhhhhhhhhhhhhhh',oh:'..o...o...o...o.',clap:'....c.......c.cc',saw:true,
+    L:'E6 - B5 . E6 . G6 . F#6 . E6 . B5 . G5 . C6 - G5 . C6 . E6 . D6 . C6 . G5 . E5 . D6 - B5 . D6 . G6 . F#6 . D6 . B5 . D6 . F#6 - D6 . A5 . D6 . E6 . F#6 . A6 - - .'},
 };
 const CHQ={'':[0,4,7],m:[0,3,7],'7':[0,4,7,10]};
-function chordFreqs(name,oct){const m=name.match(/^([A-G][#b]?)(m|7)?$/);const root=NOTE[m[1]];return CHQ[m[2]||''].map(i=>440*Math.pow(2,(root+i+(oct+1)*12-69)/12))}
-function rootFreq(name,oct,add){const m=name.match(/^([A-G][#b]?)/);return 440*Math.pow(2,(NOTE[m[1]]+(add||0)+(oct+1)*12-69)/12)}
-for(const t of Object.values(TRACKS)){t.Lt=parseLine(t.L)}
-let bgm={cur:null,step:0,next:0,gain:null,timer:null};
+function chordSemis(name){const m=name.match(/^([A-G][#b]?)(m|7)?$/);return {root:NOTE[m[1]],iv:CHQ[m[2]||'']}}
+const mf=(semi,oct)=>440*Math.pow(2,(semi+(oct+1)*12-69)/12);
+for(const t of Object.values(TRACKS)){t.Lt=t.L.trim().split(/\s+/);if(t.Lt.length!==64)console.warn('BGM length',t.Lt.length)}
+let bgm={cur:null,step:0,next:0,gain:null,pump:null,timer:null};
+/* フィルター付きのこぎり波（ベース・スタブ・リード用） */
+function synth(f,d,{v=0.05,at=0,dest,type='sawtooth',cut=1800,q=1,det=0,env=0}){
+  const a=AC,t=a.currentTime+at,o=a.createOscillator(),fl=a.createBiquadFilter(),g=a.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,t);if(det)o.detune.setValueAtTime(det,t);
+  fl.type='lowpass';fl.Q.value=q;fl.frequency.setValueAtTime(cut+env,t);if(env)fl.frequency.exponentialRampToValueAtTime(Math.max(80,cut),t+d*0.8);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(v,t+0.006);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+  o.connect(fl);fl.connect(g);g.connect(dest);o.start(t);o.stop(t+d+0.03);
+}
+function sweep(d,{at=0,dest,v=0.05}){
+  const a=AC;if(!noiseBuf)noise(0.01,{v:0.0001});
+  const t=a.currentTime+at,s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();
+  s.buffer=noiseBuf;s.loop=true;f.type='bandpass';f.Q.value=2;f.frequency.setValueAtTime(300,t);f.frequency.exponentialRampToValueAtTime(8000,t+d);
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(v,t+d*0.95);g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.05);
+  s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+d+0.1);
+}
 function playBgm(name){
   if(!TRACKS[name])return;
   if(bgm.cur===name&&bgm.gain)return;
@@ -2112,28 +2219,45 @@ function playBgm(name){
   const t=AC.currentTime;
   if(bgm.gain){const g=bgm.gain;g.gain.setTargetAtTime(0.0001,t,0.25);setTimeout(()=>{try{g.disconnect()}catch(e){}},1500)}
   const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.setTargetAtTime(1,t+0.05,0.3);g.connect(BGMG);
-  bgm.gain=g;bgm.cur=name;bgm.step=0;bgm.next=AC.currentTime+0.1;
-  if(!bgm.timer)bgm.timer=setInterval(bgmTick,30);
+  const pump=AC.createGain();pump.gain.value=1;pump.connect(g);
+  bgm.gain=g;bgm.pump=pump;bgm.cur=name;bgm.step=0;bgm.next=AC.currentTime+0.1;
+  if(!bgm.timer)bgm.timer=setInterval(bgmTick,25);
 }
-function stopBgm(){if(bgm.gain&&AC){bgm.gain.gain.setTargetAtTime(0.0001,AC.currentTime,0.2)}bgm.cur=null;bgm.gain=null}
+function stopBgm(){if(bgm.gain&&AC){bgm.gain.gain.setTargetAtTime(0.0001,AC.currentTime,0.2)}bgm.cur=null;bgm.gain=null;bgm.pump=null}
 function bgmTick(){
   if(!AC||!bgm.cur||!bgm.gain||AC.state!=='running')return;
-  const tr=TRACKS[bgm.cur],dt=60/tr.bpm/4,dest=bgm.gain,bars=tr.C.length;
+  const tr=TRACKS[bgm.cur],dt=60/tr.bpm/4,out=bgm.gain,mix=bgm.pump,bars=tr.C.length;
   while(bgm.next<AC.currentTime+0.15){
-    const st=bgm.step,at=Math.max(0,bgm.next-AC.currentTime),s16=st%16,bar=Math.floor(st/16)%bars,ch=tr.C[bar];
-    if(s16%2===0){
-      const i=(bar*8+s16/2)%tr.Lt.length,n=tr.Lt[i];
-      if(n!=='-'&&n!=='.'){let len=1;while(tr.Lt[(i+len)%tr.Lt.length]==='-'&&len<8)len++;
-        const f=nf(n);tone(f,dt*2*len*0.9,{type:tr.lead,v:tr.lv,at,dest});if(tr.dbl)tone(f/2,dt*2*len*0.9,{type:'sawtooth',v:tr.lv*0.35,at,dest})}
-      const bp=[0,null,12,null,7,null,12,7][s16/2];
-      if(bp!==null)tone(rootFreq(ch,2,bp),dt*1.7,{type:'triangle',v:0.15,at,dest});
+    const st=bgm.step,at=Math.max(0,bgm.next-AC.currentTime),t0=AC.currentTime+at,s16=st%16,barN=Math.floor(st/16),bar=barN%bars,
+      sec=Math.floor(barN/bars)%2,lastBar=bar===bars-1,{root,iv}=chordSemis(tr.C[bar]);
+    /* キック（4つ打ち）とサイドチェイン。最後の小節の4拍目は抜いてロールを聞かせる */
+    if(s16%4===0&&!(lastBar&&s16===12)){
+      tone(150,0.16,{type:'sine',v:0.42,at,to:42,dest:out});noise(0.012,{v:0.05,at,hp:2500,dest:out});
+      mix.gain.setValueAtTime(0.32,t0);mix.gain.linearRampToValueAtTime(1,t0+dt*2.6);
     }
-    if(tr.stab[s16]==='x')for(const f of chordFreqs(ch,4))tone(f,dt*0.9,{type:'square',v:0.018,at,dest});
-    if(tr.arp){const cf=chordFreqs(ch,5);tone(cf[st%cf.length],dt*0.8,{type:'triangle',v:0.022,at,dest})}
-    const d=tr.drum[s16];
-    if(d==='k')tone(150,0.12,{type:'sine',v:0.3,at,to:45,dest});
-    else if(d==='s'){noise(0.1,{v:0.12,at,bp:1800,dest});noise(0.05,{v:0.05,at,hp:6000,dest})}
-    else if(d==='h')noise(0.03,{v:0.045,at,hp:7500,dest});
+    if(st%(16*bars)===0)noise(0.9,{v:0.07,at,hp:5000,dest:mix});
+    /* ハット・オープンハット・クラップ */
+    if(tr.hat[s16]==='h')noise(0.022,{v:s16%2?0.035:0.018,at,hp:9000,dest:mix});
+    if(tr.oh[s16]==='o')noise(0.11,{v:0.05,at,hp:7000,dest:mix});
+    if(tr.clap[s16]==='c'){noise(0.13,{v:0.11,at,bp:1500,dest:mix});noise(0.05,{v:0.07,at:at+0.012,bp:1200,dest:mix})}
+    if(lastBar&&s16>=12){noise(0.07,{v:0.05+(s16-12)*0.025,at,bp:1700,dest:mix});noise(0.05,{v:0.04+(s16-12)*0.02,at:at+dt/2,bp:1700,dest:mix})}
+    if(lastBar&&s16===0)sweep(dt*16,{at,dest:mix,v:0.035});
+    /* ベース（ルート、ときどきオクターブ上） */
+    if(tr.bass[s16]==='x')synth(mf(root,1)*(s16%8===7?2:1),dt*0.85,{v:0.16,at,dest:mix,cut:320,env:900,q:4});
+    /* コードのスタブ（2本のずらしたノコギリ波） */
+    if(tr.stab[s16]==='x')for(const i of iv){const f=mf(root+i,4);synth(f,dt*1.3,{v:0.016,at,dest:mix,cut:900,env:2600,det:-9});synth(f,dt*1.3,{v:0.016,at,dest:mix,cut:900,env:2600,det:9})}
+    /* プラック（コードのアルペジオ）＋こだま */
+    const pk=tr.pluck[s16];
+    if(pk!=='.'){const n=+pk,f=mf(root+iv[n%iv.length]+(n>=iv.length?12:0),5);tone(f,dt*0.7,{type:'square',v:0.022,at,dest:mix});tone(f,dt*0.6,{type:'square',v:0.009,at:at+dt*3,dest:mix})}
+    /* メロディ（後半8小節だけ） */
+    if(sec===1){
+      const i=(bar*16+s16)%tr.Lt.length,n=tr.Lt[i];
+      if(n!=='-'&&n!=='.'){let len=1;while(tr.Lt[(i+len)%tr.Lt.length]==='-'&&len<8)len++;
+        const f=nf(n),d=dt*len*0.95;
+        synth(f,d,{type:tr.saw?'sawtooth':'square',v:0.045,at,dest:mix,cut:1400,env:3200,q:2});
+        if(tr.saw)synth(f*1.003,d,{v:0.03,at,dest:mix,cut:1600,env:2600});
+        tone(f,d*0.8,{type:'triangle',v:0.016,at:at+dt*3,dest:mix});}
+    }
     bgm.step++;bgm.next+=dt;
   }
 }
@@ -2225,7 +2349,7 @@ function renderDock(){
   if(open){
     const v=prefs.speed,pz=prefs.paused,html=`<button class="ib ${pz?'on':''}" data-dock="pause" type="button">${pz?'▶':'❚❚'}</button>`+
       [1,2,4].map(x=>`<button class="ib ${!pz&&v===x?'on':''}" data-dock="speed" data-v="${x}" type="button">×${x}</button>`).join('')+
-      `<button class="ib" data-dock="list" type="button">データ</button>`;
+      `<button class="ib" data-dock="hall" type="button">データ</button>`;
     if(sp._h!==html){sp.innerHTML=html;sp._h=html}
     d.innerHTML='';return;
   }
@@ -2435,7 +2559,7 @@ function buyWall(id){
 
 /* ---------- シート共通 ---------- */
 let sheetAt=0;
-function openSheet(kind,data){sheetAt=performance.now();sheetKind=kind;sheetData=data;renderSheet();$('#sheet').hidden=false;$('#scrim').hidden=false;$('#sheetBody').scrollTop=0;$('#sheet').classList.toggle('tall',kind==='report'||kind==='guide'||kind==='manage'||kind==='list')}
+function openSheet(kind,data){sheetAt=performance.now();sheetKind=kind;sheetData=data;renderSheet();$('#sheet').hidden=false;$('#scrim').hidden=false;$('#sheetBody').scrollTop=0;$('#sheet').classList.toggle('tall',kind==='report'||kind==='guide'||kind==='manage'||kind==='list'||kind==='hall'||kind==='mdb')}
 function closeSheet(){
   const was=sheetKind,wasData=sheetData;
   $('#sheet').hidden=true;$('#scrim').hidden=true;sheetKind=null;sheetData=null;panelSel=null;
@@ -2459,6 +2583,8 @@ function renderSheet(){
     case 'over':r=overSheet();break;
     case 'end':r=endSheet(sheetData);break;
     case 'transfer':r=transferSheet();break;
+    case 'hall':r=hallSheet(sheetData);break;
+    case 'mdb':r=mdbSheet(sheetData);break;
     default:return;
   }
   if(!r||!sheetKind)return;
@@ -2475,16 +2601,16 @@ const starTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
 function machineSheet(d){
   const m=d.m;if(!G.objs.includes(m)){closeSheet();return null}
   const md=MB[m.type],k=md.k,prep=S.phase==='prep',age=S.day-m.installDay,s=seatOf(m),z=zoneAt(s.x,s.y);
-  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${md.spec}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
+  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
   if(d.swap){
     const trade=Math.round(md.price*0.3/1000)*1000;
     h+=`<div class="lbl">入れ替える機種（いまの台は${yen(trade)}で下取り）</div>`;
-    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${x.spec}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
+    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
     h+=`<button class="btn" data-act="m-swap-back" type="button">もどる</button>`;
     return [`${m.no}番台を入れ替え`,h];
   }
   h+=`<div class="lbl">レート</div><div class="chips">${['hi','lo'].map(r=>`<button class="chip ${m.rate===r?'cur':''}" data-act="m-rate" data-v="${r}" ${prep?'':'disabled'} type="button">${RATE[k][r].label}${k==='p'?'パチンコ':'スロット'}</button>`).join('')}</div>`;
-  h+=`<div class="lbl">${k==='s'?'設定':'釘'}${prep?'':'（営業中は変えられません）'}</div>${lvBtns(m,'m-lv','',!prep)}<div class="sub">${k==='s'?SLOT_HINT[m.set]:NAIL_HINT[m.nail+2]}</div>`;
+  h+=`<div class="lbl">${k==='s'?'設定':'釘'}${prep?'':'（営業中は変えられません）'}</div>${lvBtns(m,'m-lv','',!prep)}<div class="sub">${k==='s'?`<b>設定${m.set}：出玉率${md.rates[m.set-1].toFixed(1)}%</b>（初当り約1/${Math.round(slotProb(md,m.set))}）${(md.none||[]).includes(m.set)?'※実機にない設定':''}<br>${SLOT_HINT[m.set]}`:`<b>初当り1/${md.prob}（${specOf(md)}）</b>・平均約${Math.round(400*NAIL_R[2]*md.prob/P_SPM/4).toLocaleString('ja-JP')}発/初当り<br>${NAIL_HINT[m.nail+2]}`}</div>`;
   const t=S.phase==='open'?m.today:m.yest,lab=S.phase==='open'?'今日':'昨日';
   if(t)h+=`<div class="box stats"><span>${lab}の稼働 <b>${Math.round(t.mins)}分</b></span><span>大当り <b>${t.hits}回</b></span><span>店の収支 <b class="${t.coin-t.out>=0?'pos':'neg'}">${sgn(t.coin-t.out)}</b></span></div>`;
   else h+=`<div class="sub">まだデータがありません</div>`;
@@ -2527,7 +2653,7 @@ function shopSheet(tab){
   if(tab==='m'){
     for(const k of ['p','s']){
       h+=`<div class="lbl">${KIND_NAME[k]}</div>`;
-      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${x.spec}・人気${x.pop}<br>${SPEC_INFO[x.spec]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
+      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${specLine(x)}・人気${x.pop}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
     }
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
@@ -2564,6 +2690,7 @@ function listSheet(scope){
   const sl=ms.filter(m=>kindOf(m)==='s'),pc=ms.filter(m=>kindOf(m)==='p');
   let h='';
   h+=`<div class="box stats"><span>スロット平均設定 <b>${sl.length?avgOf(sl.map(m=>m.set)).toFixed(1):'-'}</b></span><span>パチンコ平均釘 <b>${pc.length?(avgOf(pc.map(m=>m.nail))>=0?'+':'')+avgOf(pc.map(m=>m.nail)).toFixed(1):'-'}</b></span><span>出し具合 <b>${Math.round(avgOf(ms.map(dashi))*100)}%</b></span></div>`;
+  h+=`<button class="btn sm" data-act="open-hall" type="button">ホールデータを見る（${prep?'昨日':'今日'}の出玉ランキング・稼働率）</button>`;
   if(prep){
     const sc=[['all','全台'],['p','パチンコ'],['s','スロット'],...(S.event.type!=='none'&&S.event.type!=='renewal'?[['ev','イベント対象']]:[]),...islands.map(i=>[i.label,i.label+'島'])];
     h+=`<div class="lbl">まとめて変える範囲</div>`+tabs(sc,scope,'ls-scope');
@@ -2711,7 +2838,7 @@ function reportSheet(R){
   if(R.ev){h+=`<div class="stampbox"><div class="stamp ${R.ev.cls}">${R.ev.judge}</div><div><div class="lbl">${esc(R.ev.label)}</div><div class="sub">対象${R.ev.n}台・出し具合${Math.round(R.ev.avg*100)}%</div><div>信用 ${R.trust0} → ${R.trust1}</div></div></div>`}
   h+=`<div class="kpis"><div><b>${R.visitors}</b><span>来店</span></div><div><b class="${R.full?'neg':''}">${R.full}</b><span>満席で帰った</span></div><div><b>${Math.round(R.share*100)}%</b><span>町のシェア</span></div></div>`;
   h+=`<div class="segs">${SEGS.filter(s=>R.seg[s]).map(s=>`<span>${SEG_NAME[s]} ${R.seg[s]}人</span>`).join('')}</div>`;
-  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr><tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
+  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>スロットの交換差益（5.6枚交換）</td><td>${yen(R.exch)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
   const dr=R.rep1-R.rep0,fl=R.feel>=1?['よく出る店','pos']:R.feel<=-1?['出ない店','neg']:['ふつう',''];
   h+=`<div class="box">出玉率 <b>${Math.round(R.payR*100)}%</b>　お客さんの体感：<b class="${fl[1]}">${fl[0]}</b></div>`;
   h+=`<div class="box">評判 <b>${Math.round(R.rep0)} → ${Math.round(R.rep1)}</b> <span class="${dr>=0?'pos':'neg'}">(${dr>=0?'+':''}${dr.toFixed(1)})</span>　信用 <b>${R.trust1}</b>　資金 <b class="${R.money<0?'neg':''}">${yen(R.money)}</b></div>`;
@@ -2721,6 +2848,7 @@ function reportSheet(R){
   if(R.voices.length)h+=`<div class="lbl">お客さんの声</div>`+R.voices.map(v=>`<div class="voice ${v.good?'':'bad'}">${esc(WHY[v.k].t)}<span class="cnt">${v.n}人</span></div>`).join('');
   if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
   if(R.brokenN)h+=`<div class="sub">今日は${R.brokenN}台が故障しました。ホール係が多いと早く直せます</div>`;
+  if(R.completes&&R.completes.length)h+=`<div class="box neg">コンプリート ${R.completes.length}台：${R.completes.map(c=>`${c.no}番（${esc(shortName(MB[c.id].name))}）`).join('・')}<br><span class="sub">差玉の上限（パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚）まで出て、その日は打ち止めになりました</span></div>`;
   if(R.gotoCaught)h+=`<div class="box">ゴト師を${R.gotoCaught}人捕まえました！</div>`;
   if(R.gotoEsc)h+=`<div class="box neg">ゴト師に逃げられ、${yen(R.gotoEsc)}の被害。防犯カメラを付けると見つけやすくなります</div>`;
   if(R.goals&&R.goals.length)h+=R.goals.map(g=>`<div class="rankup">目標達成「${esc(g.name)}」<br><span>ボーナス ${man(g.reward)}</span></div>`).join('');
@@ -2729,6 +2857,7 @@ function reportSheet(R){
   if(R.rankUp)h+=`<div class="rankup">ランクアップ！ ランク${R.rankNo}「${esc(R.rankUp)}」<br><span>新しい台・設備・物件が解放されました</span></div>`;
   const t=R.tomorrow;
   h+=`<div class="box tmr"><b>明日 ${dateLong(R.day+1)}</b>　${WEATHER[t.weather].name}${t.info.tags.length?'・'+t.info.tags.join('・'):''}${t.go?'・オープン期間':''}${t.rivals.length?`<br><span class="neg">${t.rivals.map(esc).join('・')}がイベント予定</span>`:''}</div>`;
+  h+=`<div class="actions"><button class="btn sm wide2" data-act="open-hall" type="button">ホールデータ（出玉ランキング・稼働率）</button></div>`;
   h+=`<button class="btn primary" data-act="close" type="button">明日の準備へ</button>`;
   return [`${R.date}の日報`,h];
 }
@@ -2786,6 +2915,11 @@ const GUIDE={
   people:['店員と常連',`<ul><li><b>ホール係</b>：呼び出しランプに対応します。台12台につき1人が目安。足りないとお客さんが待たされて不満になります。</li><li><b>カウンター係</b>：景品カウンター1つに1人必要。いないと勝ったお客さんが交換できません。</li><li><b>清掃係</b>：床のゴミを片付けます。汚い店は満足度が下がります。</li><li>店員は「速さ」と「接客」が高いほど優秀です。研修でレベルを上げられます。</li></ul>
 <h3>名物常連客</h3><p>頭に★がついているのは名前つきの常連さんです。好きなことと苦手なことがあり、満足するほど通ってくれます。不満が続くと来なくなります。</p>`],
   biz:['物件とライバル',`<ul><li>町には<b>ライバル店</b>があり、お客さんを取り合っています。評判・台数・イベントでシェアが決まります。</li><li>ライバル店がイベントの日は、お客さんを取られやすくなります。</li><li>シェアを奪われ続けたライバル店は閉店し、<b>居抜き物件</b>として売りに出ることがあります。</li><li><b>物件</b>：今の店を広げるほか、居抜き物件や、更地に新築（マス数で値段が決まる）で移転できます。新築には設備のプレゼントがつきます。</li><li>移転すると今の店は売却され、台と設備は倉庫に入ります。新しい店はグランドオープンから。</li><li>毎日の経費は家賃・店員の給料・電気代です。資金のマイナスが7日続くと倒産します。</li><li><b>銀行</b>（経営 → 銀行）でお金を借りられます。利息は毎日かかります。</li></ul>`],
+  kishu:['機種と出玉',`<h3>パチンコ</h3><p>機種ごとに<b>初当り確率</b>（1/99.9・1/199・1/319・1/349・1/399・1/599）が決まっています。確率が重いほど当たるまで時間がかかりますが、1回の当りが大きく、RUSHの連チャンで一撃数万発になることもあります。<b>釘</b>は回りやすさ（＝お店の出し具合）を決めます。</p>
+<h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります。</p>
+<h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
+<h3>ホールデータ</h3><p>営業中の「データ」、設定一覧、日報から見られます。<b>出玉ランキング</b>・<b>台番号別の稼働率</b>・<b>機種別の稼働率</b>・<b>客層と時間ごとの稼働</b>で、どんなお客さんがどの台を打っているかがわかります。稼働の低い機種は入れ替え候補です。</p>
+<h3>機種データベース</h3><p>メニューの「機種データベース」で、機種の名前・出玉率・初当り確率を変えられます。変えた内容はこの端末に保存されます。</p>`],
   more:['規制・取材・トラブル',`<h3>規制</h3><p>ときどき国の規制が発表され、対象の機種は期限までに撤去されます（期限を過ぎると自動で撤去・下取りなし）。代わりに「新基準」の新しい機種が買えるようになります。</p>
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
@@ -2797,6 +2931,100 @@ function guideSheet(tab){
   tab=tab||'start';
   return ['遊び方',tabs(Object.entries(GUIDE).map(([k,v])=>[k,v[0]]),tab,'g-tab')+`<div class="guide">${GUIDE[tab][1]}</div><button class="btn primary" data-act="close" type="button">わかった</button>`];
 }
+const specLine=x=>x.k==='p'?`1/${x.prob}・${specOf(x)}`:`${x.spec}・出玉率${x.rates[0].toFixed(1)}〜${x.rates[5].toFixed(1)}%`;
+const pctS=v=>Math.round(clamp(v,0,1)*100)+'%';
+const hbar=(v,cls='')=>`<span class="hb ${cls}"><i style="width:${Math.round(clamp(v,0,1)*100)}%"></i></span>`;
+const fmtD=(d,k)=>`${d>=0?'+':''}${d.toLocaleString('ja-JP')}${unitName(k)}`;
+
+/* ---------- ホールデータ（出玉ランキング・台番号別／機種別の稼働率・客層） ---------- */
+function hallSrc(){
+  const open=S.phase==='open';
+  return {open,get:m=>open?m.today:m.yest,span:open?Math.max(1,Math.min(clock,LAST)-OPEN):LAST-OPEN,
+    label:open?'今日（営業中・いまの時点）':S.lastDay?`昨日（${dateStr(S.lastDay.day)}）`:'昨日',
+    day:open?{seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly}:S.lastDay};
+}
+function hallModels(src,ms){
+  const g=new Map();
+  for(const m of ms){const t=src.get(m),k=m.type+'|'+m.rate;let e=g.get(k);if(!e){e={md:MB[m.type],m,n:0,mins:0,d:0,hits:0,done:0};g.set(k,e)}
+    e.n++;e.mins+=t.mins;e.d+=diffUnits(m,t);e.hits+=t.hits;if(t.done)e.done++}
+  return [...g.values()].map(e=>Object.assign(e,{util:e.mins/(e.n*src.span)})).sort((a,b)=>b.util-a.util);
+}
+function hallSheet(tab){
+  tab=tab||'rank';
+  const src=hallSrc(),ms=machines().filter(m=>src.get(m));
+  let h=tabs([['rank','出玉ランキング'],['no','台番号別'],['model','機種別'],['cust','客層と時間']],tab,'hall-tab');
+  h+=`<div class="sub">${src.label}のデータ</div>`;
+  if(!ms.length){h+=`<div class="box">まだデータがありません。営業するとたまります。</div>`;return ['ホールデータ',h]}
+  if(tab==='rank'){
+    for(const k of ['s','p']){
+      const list=ms.filter(m=>kindOf(m)===k).map(m=>({m,t:src.get(m),d:diffUnits(m,src.get(m))})).sort((a,b)=>b.d-a.d);
+      if(!list.length)continue;
+      h+=`<div class="isl-h">${KIND_NAME[k]}の差${k==='s'?'枚':'玉'}ランキング</div>`;
+      h+=list.map((x,i)=>`<div class="lrow"><div class="l1"><span class="rk ${i<3?'top':''}">${i+1}</span><span class="no">${x.m.no}</span><span class="nm">${esc(MB[x.m.type].name)}</span><span class="dv ${x.d>=0?'pos':'neg'}">${fmtD(x.d,k)}</span></div><div class="sub">${rateLabel(x.m)}・${Math.round(x.t.g||0).toLocaleString('ja-JP')}${k==='s'?'G':'回転'}・大当り${x.t.hits}回・稼働${pctS(x.t.mins/src.span)}${x.t.done?'・<b class="pos">コンプリート</b>':''}</div></div>`).join('');
+    }
+  }else if(tab==='no'){
+    const list=[...ms].sort((a,b)=>a.no-b.no),avg=avgOf(list.map(m=>src.get(m).mins/src.span));
+    h+=`<div class="box stats"><span>全体の稼働率 <b>${pctS(avg)}</b></span><span>パチンコ <b>${pctS(avgOf(list.filter(m=>kindOf(m)==='p').map(m=>src.get(m).mins/src.span))||0)}</b></span><span>スロット <b>${pctS(avgOf(list.filter(m=>kindOf(m)==='s').map(m=>src.get(m).mins/src.span))||0)}</b></span></div>`;
+    h+=list.map(m=>{const t=src.get(m),u=t.mins/src.span,d=diffUnits(m,t),k=kindOf(m);return `<div class="hrow"><span class="no">${m.no}</span><span class="nm">${esc(shortName(MB[m.type].name))}<small>${rateLabel(m)}・${k==='s'?`設定${m.set}`:`釘${NAIL_SHORT[m.nail+2]}`}</small></span>${hbar(u,u<0.25?'low':u>=0.7?'high':'')}<span class="pc">${pctS(u)}</span><span class="dv ${d>=0?'pos':'neg'}">${fmtD(d,k)}</span></div>`}).join('');
+  }else if(tab==='model'){
+    const list=hallModels(src,ms);
+    h+=`<div class="sub">稼働率の高い順。同じ機種でもレートが違えば別に数えます</div>`;
+    h+=list.map(e=>`<div class="lrow"><div class="l1"><span class="nm">${esc(e.md.name)}</span><span class="rs sub">${rateLabel(e.m)}・${e.n}台</span></div><div class="hrow in">${hbar(e.util,e.util<0.25?'low':e.util>=0.7?'high':'')}<span class="pc">${pctS(e.util)}</span><span class="dv ${e.d>=0?'pos':'neg'}">合計${fmtD(e.d,e.md.k)}</span></div><div class="sub">1台平均${fmtD(Math.round(e.d/e.n),e.md.k)}・大当り${e.hits}回${e.done?`・コンプリート${e.done}台`:''}・${specLine(e.md)}</div></div>`).join('');
+  }else{
+    const dy=src.day;
+    if(!dy||!dy.visitors){h+=`<div class="box">お客さんのデータがまだありません。</div>`;return ['ホールデータ',h]}
+    const ml=hallModels(src,ms),best=ml[0],worst=ml[ml.length-1];
+    const segs=SEGS.filter(s=>dy.seg[s]).sort((a,b)=>dy.seg[b]-dy.seg[a]);
+    const hr=dy.hourly||[],nP=ms.filter(m=>kindOf(m)==='p').length,nS=ms.filter(m=>kindOf(m)==='s').length,nAll=nP+nS;
+    const peak=hr.length?hr.reduce((a,b)=>(b.p+b.s>a.p+a.s?b:a)):null;
+    h+=`<div class="box col"><div class="lbl">${src.open?"今日":"この日"}の傾向</div>`
+      +(best?`<div>いちばん人気：<b>${esc(shortName(best.md.name))}</b>（${rateLabel(best.m)}・稼働${pctS(best.util)}）</div>`:'')
+      +(worst&&worst!==best?`<div>いちばん空いていた：<b>${esc(shortName(worst.md.name))}</b>（${rateLabel(worst.m)}・稼働${pctS(worst.util)}）${worst.util<0.25?'<span class="neg"> 入れ替え候補</span>':''}</div>`:'')
+      +(segs.length?`<div>多かった客層：<b>${SEG_NAME[segs[0]]}</b>（${pctS(dy.seg[segs[0]]/dy.visitors)}）</div>`:'')
+      +(peak&&nAll?`<div>いちばん混んだ時間：<b>${peak.h}時台</b>（${peak.p+peak.s}人が遊技）</div>`:'')+`</div>`;
+    h+=`<div class="lbl">客層（来店${dy.visitors}人）</div>`+segs.map(s=>`<div class="hrow"><span class="nm">${SEG_NAME[s]}</span>${hbar(dy.seg[s]/dy.visitors)}<span class="pc">${dy.seg[s]}人</span></div>`).join('');
+    h+=`<div class="box stats"><span>設定・釘狙い <b>${pctS(dy.hunters/dy.visitors)}</b></span><span>年配の客 <b>${pctS((dy.elders||0)/dy.visitors)}</b></span><span>たばこを吸う客 <b>${pctS((dy.smokers||0)/dy.visitors)}</b></span></div>`;
+    if(hr.length){
+      h+=`<div class="lbl">時間ごとの稼働（毎時30分の時点）</div>`;
+      h+=hr.map(x=>`<div class="hrow"><span class="nm">${x.h}時台</span>${hbar(nAll?(x.p+x.s)/nAll:0)}<span class="pc">${nAll?pctS((x.p+x.s)/nAll):'-'}</span><span class="dv sub">パ${x.p}・ス${x.s}</span></div>`).join('');
+    }
+  }
+  h+=`<div class="actions"><button class="btn sm" data-act="open-list" type="button">${S.phase==='prep'?'設定一覧へ':'台データへ'}</button></div>`;
+  return ['ホールデータ',h];
+}
+
+/* ---------- 機種データベースの画面 ---------- */
+function probInfo(p){
+  const P=probShape(p),balls=Math.round(400*NAIL_R[2]*p/P_SPM/4/10)*10,star={99.9:1,199:2,319:3,349:3,399:4,599:5}[p]||3;
+  return `<div class="box col"><div><b>1/${p}（${PROB_SPEC[p]}）</b>　一撃 ${'★'.repeat(star)}${'☆'.repeat(5-star)}</div><div class="sub">初当り1回の平均 約${balls.toLocaleString('ja-JP')}発（RUSH込み・標準の釘）／RUSH突入${Math.round(P.e*100)}%・継続${Math.round(P.q*100)}%${P.lt?`・まれに上位RUSH（継続${Math.round(P.ltq*100)}%）`:''}<br>${SPEC_INFO[PROB_SPEC[p]]}</div></div>`;
+}
+function mdbSheet(d){
+  d=d||{tab:'s'};const prep=S.phase==='prep';
+  if(d.id){
+    const md=MB[d.id],def=MDB_DEF[d.id],dis=prep?'':'disabled',nm=d.name??md.name;
+    let h=`<div class="mp-head"><span class="sw big" style="background:${md.c}"></span><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${md.k}">${KIND_NAME[md.k]}</span><span class="tag">${specOf(md)}</span>${mdbEdits[md.id]?'<span class="tag new">変更あり</span>':''}</div></div></div>`;
+    h+=`<label class="lbl" for="mdbName">名前（30文字まで）</label><input class="field" id="mdbName" maxlength="30" value="${esc(nm)}" ${dis}>`;
+    if(nm!==def.name)h+=`<div class="sub">元の名前：${esc(def.name)}</div>`;
+    if(md.k==='s'){
+      h+=`<div class="lbl">設定ごとの出玉率（機械割％・${SLOT_MIN}〜${SLOT_MAX}）</div><div class="rgrid">${md.rates.map((v,i)=>{const f=(md.none||[]).includes(i+1)?'<em>実機なし</em>':(md.est||[]).includes(i+1)?'<em>推定</em>':'';return `<label class="rcell c${i+1}"><span>設定${i+1}${f}</span><input class="field" id="mdbR${i}" type="number" inputmode="decimal" step="0.1" min="${SLOT_MIN}" max="${SLOT_MAX}" value="${(d.rates?d.rates[i]:v).toFixed(1)}" ${dis}></label>`}).join('')}</div>`;
+      h+=`<div class="sub">初当り 1/${md.hit[0]}（設定1）〜1/${md.hit[1]}（設定6）・${VOL_NAME[md.vol]}<br>元の値：${def.rates.map(v=>v.toFixed(1)).join(' / ')}</div>`;
+    }else{
+      const cur=d.prob??md.prob;
+      h+=`<div class="lbl">初当り確率（重いほど1回の当りが大きく、一撃が荒くなる）</div><div class="chips">${PROBS.map(p=>`<button class="chip ${cur===p?'cur':''}" data-act="mdb-prob" data-v="${p}" ${dis} type="button">1/${p}</button>`).join('')}</div>`+probInfo(cur);
+      if(cur!==def.prob)h+=`<div class="sub">元の確率：1/${def.prob}</div>`;
+    }
+    if(md.real)h+=`<div class="sub">実機のデータ：${esc(md.real)}</div>`;
+    h+=prep?`<div class="actions"><button class="btn sm" data-act="mdb-back" type="button">もどる</button><button class="btn sm" data-act="mdb-reset1" type="button">最初の値に戻す</button><button class="btn sm primary wide2" data-act="mdb-save" type="button">保存</button></div>`
+      :`<div class="box">営業中は見るだけです。閉店後に変えられます。</div><button class="btn sm" data-act="mdb-back" type="button">もどる</button>`;
+    return ['機種データベース',h];
+  }
+  let h=tabs([['s','スロット'],['p','パチンコ']],d.tab,'mdb-tab');
+  h+=`<div class="box">機種の<b>名前</b>・<b>出玉率</b>（スロット）・<b>初当り確率</b>（パチンコ）を変えられます。変えた内容はこの端末に保存され、どのお店でも使われます。</div>`;
+  h+=MODELS.filter(x=>x.k===d.tab).sort(byRankPrice).map(x=>`<div class="item"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}${mdbEdits[x.id]?' <span class="tag new">変更あり</span>':''}</div><div class="ds">${specLine(x)}・ランク${x.rank}</div></div><button class="btn sm" data-act="mdb-edit" data-id="${x.id}" type="button">${prep?'編集':'見る'}</button></div>`).join('');
+  const n=Object.keys(mdbEdits).length;
+  h+=`<div class="sub">変更した機種：${n}</div><div class="actions"><button class="btn sm wide2" data-act="mdb-export" type="button" ${n?'':'disabled'}>変更を書き出す（コピー）</button>${d.confirm?`<button class="btn sm" data-act="mdb-resetall-no" type="button">やめる</button><button class="btn sm danger" data-act="mdb-resetall-yes" type="button">本当に全部戻す</button>`:`<button class="btn sm danger" data-act="mdb-resetall" type="button" ${n&&prep?'':'disabled'}>すべて最初に戻す</button>`}</div><textarea class="field" id="mdbOut" rows="3" hidden style="font-family:var(--f-body);font-size:11px;resize:none" readonly></textarea>`;
+  return ['機種データベース',h];
+}
 function transferSheet(){
   const intro=sheetData==='title'?'別の場所（アーティファクト版など）で遊んでいたお店を、ここで続きから遊べます。<br>移す元のメニュー →「セーブの引っ越し」→「セーブをコピー」で写したテキストを、下の欄に貼り付けて「読み込む」を押してください。'
     :'アーティファクト版とホーム画面アプリ版は、セーブが別々に保存されます。進み具合を移すには：<br>① 移す元のメニューで「セーブをコピー」<br>② 移す先のメニュー →「セーブの引っ越し」で下の欄に貼り付けて「読み込む」';
@@ -2807,7 +3035,7 @@ ${sheetData==='title'?'':'<button class="btn" data-act="tr-copy" type="button">�
 <button class="btn primary" data-act="tr-load" type="button">読み込む（今のセーブは上書きされます）</button>`];
 }
 function menuSheet(confirm){
-  let h=`<div class="actions"><button class="btn sm" data-act="menu-guide" type="button">遊び方</button><button class="btn sm" data-act="menu-bgm" type="button">BGM ${prefs.bgm?'ON':'OFF'}</button><button class="btn sm" data-act="menu-sfx" type="button">効果音 ${prefs.sfx?'ON':'OFF'}</button><button class="btn sm" data-act="menu-manage" type="button">経営の記録</button><button class="btn sm" data-act="menu-tweet" type="button">つぶやき ${prefs.tweets?'ON':'OFF'}</button><button class="btn sm wide2" data-act="menu-transfer" type="button">セーブの引っ越し（${window.APP_MODE?'コピー・読み込み':'アプリ版へ移す'}）</button></div>`;
+  let h=`<div class="actions"><button class="btn sm" data-act="menu-guide" type="button">遊び方</button><button class="btn sm" data-act="menu-bgm" type="button">BGM ${prefs.bgm?'ON':'OFF'}</button><button class="btn sm" data-act="menu-sfx" type="button">効果音 ${prefs.sfx?'ON':'OFF'}</button><button class="btn sm" data-act="menu-manage" type="button">経営の記録</button><button class="btn sm" data-act="menu-tweet" type="button">つぶやき ${prefs.tweets?'ON':'OFF'}</button><button class="btn sm wide2" data-act="menu-mdb" type="button">機種データベース（名前・出玉率・確率）</button><button class="btn sm wide2" data-act="menu-transfer" type="button">セーブの引っ越し（${window.APP_MODE?'コピー・読み込み':'アプリ版へ移す'}）</button></div>`;
   h+=`<div class="lbl">画面の向き（縦持ちのとき）</div><div class="chips">${[['auto','横画面にする'],['flip','横画面（反対向き）'],['off','縦のまま']].map(([k,l])=>`<button class="chip ${prefs.rot===k?'cur':''}" data-act="menu-rot" data-v="${k}" type="button">${l}</button>`).join('')}</div>`;
   h+=`<label class="lbl" for="mName">お店の名前</label><div class="inrow"><input class="field" id="mName" maxlength="10" value="${esc(S.name)}"><button class="btn sm" data-act="menu-rename" type="button">変更</button></div>`;
   h+=confirm?`<div class="box">本当にデータを消して最初からやり直しますか？元には戻せません。</div><div class="actions"><button class="btn sm" data-act="menu-reset-no" type="button">やめる</button><button class="btn sm danger" data-act="restart" type="button">消してやり直す</button></div>`:`<button class="btn danger" data-act="menu-reset" type="button">データを消して最初から</button>`;
@@ -2865,15 +3093,46 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'bk-repay':{const n=repay(v==='all'?S.loan:Number(v));if(n){sfx('cash');toast(`${man(n)}返しました`);save();refreshAll()}break}
     case 'menu-tweet':prefs.tweets=!prefs.tweets;savePrefs();renderSheet();break;
     case 'menu-transfer':openSheet('transfer');break;
+    case 'menu-mdb':openSheet('mdb',{tab:'s'});break;
+    case 'hall-tab':sheetData=v;renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'open-hall':if(sheetKind==='report'){closeSheet();refreshAll();if(sheetKind)break}openSheet('hall','rank');break;
+    case 'open-list':openSheet('list','all');break;
+    case 'mdb-tab':sheetData={tab:v};renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'mdb-edit':sheetData={tab:sheetData.tab,id};renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'mdb-back':sheetData={tab:sheetData.tab};renderSheet();break;
+    case 'mdb-prob':{const nm=$('#mdbName');sheetData=Object.assign({},sheetData,{prob:Number(v),name:nm?nm.value:undefined});sfx('tap');renderSheet();break}
+    case 'mdb-save':{
+      const d=sheetData,md=MB[d.id],nm=(($('#mdbName')||{}).value||'').trim();
+      if(!nm){toast('名前を入れてください');sfx('bad');break}
+      const e={name:nm};let bad=-1,clipped=false;
+      if(md.k==='s'){e.rates=[];for(let i=0;i<6;i++){const v=parseFloat($('#mdbR'+i).value);if(!isFinite(v)){bad=i;break}const c=clampRate(v);if(c!==Math.round(v*10)/10)clipped=true;e.rates.push(c)}}
+      else e.prob=d.prob??md.prob;
+      if(bad>=0){toast(`設定${bad+1}の出玉率を数字で入れてください`);sfx('bad');break}
+      mdbSet(Object.assign({},mdbEdits,{[d.id]:e}));
+      sfx('good');toast(clipped?`保存しました（${SLOT_MIN}〜${SLOT_MAX}%の外の値は直しました）`:'保存しました');
+      sheetData={tab:md.k,id:d.id};refreshAll();break}
+    case 'mdb-reset1':{const o=Object.assign({},mdbEdits);delete o[sheetData.id];mdbSet(o);sheetData={tab:sheetData.tab,id:sheetData.id};sfx('tap');toast('最初の値に戻しました');refreshAll();break}
+    case 'mdb-resetall':sheetData=Object.assign({},sheetData,{confirm:true});renderSheet();break;
+    case 'mdb-resetall-no':sheetData={tab:sheetData.tab};renderSheet();break;
+    case 'mdb-resetall-yes':mdbSet({});sheetData={tab:sheetData.tab};sfx('tap');toast('すべて最初の値に戻しました');refreshAll();break;
+    case 'mdb-export':{
+      const code='PKDB1:'+JSON.stringify(mdbEdits),ta=$('#mdbOut');
+      const fallback=()=>{ta.hidden=false;ta.value=code;ta.focus();ta.select();toast('欄のテキストを全部選んでコピーしてください')};
+      try{navigator.clipboard.writeText(code).then(()=>{toast('コピーしました。「セーブの引っ越し」の欄に貼ると読み込めます');sfx('good')},fallback)}catch(err){fallback()}
+      break;}
     case 'tr-copy':{
-      const code='PHJ1:'+(S.phase==='open'&&openSnap?openSnap:ser()),ta=$('#trText');
+      const code='PHJ2:'+JSON.stringify({save:S.phase==='open'&&openSnap?openSnap:ser(),mdb:mdbEdits}),ta=$('#trText');
       const fallback=()=>{ta.value=code;ta.focus();ta.select();toast('欄のテキストを全部選んでコピーしてください')};
       try{navigator.clipboard.writeText(code).then(()=>{toast('セーブをコピーしました');sfx('good')},fallback)}catch(err){fallback()}
       break;}
     case 'tr-load':{
       if(S.phase==='open'){toast('営業中は読み込めません。営業が終わってから読み込んでください');sfx('bad');break}
-      const raw=($('#trText').value||'').trim(),str=raw.startsWith('PHJ1:')?raw.slice(5):raw;
+      const raw=($('#trText').value||'').trim();
+      if(raw.startsWith('PKDB1:')){try{mdbSet(JSON.parse(raw.slice(6)));sfx('good');toast('機種データベースを読み込みました');closeSheet();refreshAll()}catch(err){toast('読み込めませんでした');sfx('bad')}break}
+      let str=raw.startsWith('PHJ1:')?raw.slice(5):raw,mdb=null;
+      if(raw.startsWith('PHJ2:')){try{const o=JSON.parse(raw.slice(5));str=o.save;mdb=o.mdb}catch(err){str=''}}
       let ok=false;try{ok=!!str&&load(str)}catch(err){ok=false}
+      if(ok&&mdb)mdbSet(mdb);
       if(!ok){toast('読み込めませんでした。コピーしたテキストを全部貼り付けてください');sfx('bad');break}
       save();custs=[];staffA=[];tool='view';sheetData=null;closeSheet();cam.fit=true;applyLayout();refreshAll();sfx('fanfare');telop('引っ越し完了！',S.name,'good');
       break;}
@@ -2904,7 +3163,7 @@ $('#sheetBody').addEventListener('click',e=>{
 function manageTabFromData(){return typeof sheetData==='string'?sheetData:(sheetData&&sheetData.tab)||'staff'}
 
 /* ---------- ドック ---------- */
-$('#dock').addEventListener('click',e=>{
+function onDock(e){
   const b=e.target.closest('[data-dock]');if(!b||b.disabled)return;audio();
   switch(b.dataset.dock){
     case 'build':openSheet('shop','m');break;
@@ -2912,6 +3171,7 @@ $('#dock').addEventListener('click',e=>{
     case 'remove':tool='remove';renderDock();break;
     case 'undo':if(undo()){moveSel=null;resizeCanvas();clampCam();save();refreshAll();sfx('tap');toast('ひとつ前に戻しました')}break;
     case 'list':openSheet('list','all');break;
+    case 'hall':openSheet('hall','rank');break;
     case 'event':openSheet('event');break;
     case 'manage':openSheet('manage','staff');break;
     case 'open':startDay();break;
@@ -2928,7 +3188,8 @@ $('#dock').addEventListener('click',e=>{
     case 'pause':prefs.paused=!prefs.paused;renderDock();break;
     case 'speed':prefs.speed=Number(b.dataset.v);prefs.paused=false;savePrefs();renderDock();break;
   }
-});
+}
+$('#dock').addEventListener('click',onDock);$('#speed').addEventListener('click',onDock);
 function startDay(){
   const wasGo=goActive(),ev=S.event.type;
   if(!openStore())return;
@@ -3010,6 +3271,7 @@ function releaseWake(){try{wakeLock&&wakeLock.release();wakeLock=null}catch(e){}
 
 /* ===== main.js : ループと起動 ===== */
 let lastT=performance.now(),hudT=0;const PERF={u:0,r:0,n:0};
+let hallT=0;
 function loop(now){
   const dtR=Math.min(0.1,Math.max(0,(now-lastT)/1000));lastT=now;
   try{
@@ -3018,7 +3280,7 @@ function loop(now){
       let g=dtR*MIN_PER_SEC*prefs.speed;
       while(g>0&&S.phase==='open'){const s=Math.min(1.5,g);update(s);g-=s}
       hudT+=dtR;
-      if(hudT>0.25&&S.phase==='open'){hudT=0;refreshHud();renderStatus();if(sheetKind==='machine'||sheetKind==='list'||sheetKind==='door')renderSheet()}
+      if(hudT>0.25&&S.phase==='open'){hudT=0;refreshHud();renderStatus();if(sheetKind==='machine'||sheetKind==='list'||sheetKind==='door')renderSheet();else if(sheetKind==='hall'&&(hallT=(hallT+1)%4)===0)renderSheet()}
     }
     for(const o of G.objs)if(o.flash>0)o.flash-=dtR;
     for(const f of floats)f.t+=dtR;
@@ -3031,7 +3293,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 function boot(data){
-  loadPrefs();
+  loadPrefs();mdbLoad();
   let ok=false,src=data&&data.save;
   if(!src){try{src=localStorage.getItem(SAVE_KEY)}catch(e){src=null}}
   if(src){try{ok=load(src)}catch(e){console.error(e);ok=false}}
@@ -3046,7 +3308,7 @@ function boot(data){
 }
 try{window.claude?.hot?.snapshot?.(()=>({save:S?(S.phase==='open'?openSnap:ser()):null}))}catch(e){}
 window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
-window.__dbg={eventTargets,machines,hireStaff,makeCandidate,needStaff,staffOf,forecast,decorRate,addObj,newMachine,validate,layoutChanged,openRivals,dayInfo,get G(){return G},get islands(){return islands}};
+window.__dbg={MB,mdb:()=>mdbEdits,playBgm,ac:()=>AC&&AC.state,eventTargets,machines,hireStaff,makeCandidate,needStaff,staffOf,forecast,decorRate,addObj,newMachine,validate,layoutChanged,openRivals,dayInfo,get G(){return G},get islands(){return islands}};
 window.__perf=PERF;
 window.__game={get S(){return S},get custs(){return custs},get D(){return D},get staffA(){return staffA},get cam(){return cam},startDay,closeSheet,openSheet,ff:n=>{for(let i=0;i<n&&S.phase==='open';i++)update(1)}};
 

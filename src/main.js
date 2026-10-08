@@ -1,5 +1,6 @@
 /* ===== main.js : ループと起動 ===== */
 let lastT=performance.now(),hudT=0;const PERF={u:0,r:0,n:0};
+let hallT=0;
 function loop(now){
   const dtR=Math.min(0.1,Math.max(0,(now-lastT)/1000));lastT=now;
   try{
@@ -8,7 +9,7 @@ function loop(now){
       let g=dtR*MIN_PER_SEC*prefs.speed;
       while(g>0&&S.phase==='open'){const s=Math.min(1.5,g);update(s);g-=s}
       hudT+=dtR;
-      if(hudT>0.25&&S.phase==='open'){hudT=0;refreshHud();renderStatus();if(sheetKind==='machine'||sheetKind==='list'||sheetKind==='door')renderSheet()}
+      if(hudT>0.25&&S.phase==='open'){hudT=0;refreshHud();renderStatus();if(sheetKind==='machine'||sheetKind==='list'||sheetKind==='door')renderSheet();else if(sheetKind==='hall'&&(hallT=(hallT+1)%4)===0)renderSheet()}
     }
     for(const o of G.objs)if(o.flash>0)o.flash-=dtR;
     for(const f of floats)f.t+=dtR;
@@ -21,7 +22,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 function boot(data){
-  loadPrefs();
+  loadPrefs();mdbLoad();
   let ok=false,src=data&&data.save;
   if(!src){try{src=localStorage.getItem(SAVE_KEY)}catch(e){src=null}}
   if(src){try{ok=load(src)}catch(e){console.error(e);ok=false}}
@@ -36,6 +37,6 @@ function boot(data){
 }
 try{window.claude?.hot?.snapshot?.(()=>({save:S?(S.phase==='open'?openSnap:ser()):null}))}catch(e){}
 window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
-window.__dbg={eventTargets,machines,hireStaff,makeCandidate,needStaff,staffOf,forecast,decorRate,addObj,newMachine,validate,layoutChanged,openRivals,dayInfo,get G(){return G},get islands(){return islands}};
+window.__dbg={MB,mdb:()=>mdbEdits,playBgm,ac:()=>AC&&AC.state,eventTargets,machines,hireStaff,makeCandidate,needStaff,staffOf,forecast,decorRate,addObj,newMachine,validate,layoutChanged,openRivals,dayInfo,get G(){return G},get islands(){return islands}};
 window.__perf=PERF;
 window.__game={get S(){return S},get custs(){return custs},get D(){return D},get staffA(){return staffA},get cam(){return cam},startDay,closeSheet,openSheet,ff:n=>{for(let i=0;i<n&&S.phase==='open';i++)update(1)}};

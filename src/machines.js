@@ -1,52 +1,50 @@
 /* ===== machines.js : 機種データベース（追加分） =====
-   2026年10月はじめの人気ランキングをもとに選んだ機種です。
-   - パチンコ17機種・スロット16機種
-   - 元にしたランキング：P-WORLDの設置台数ランキング、パチビーの全国稼働ランキング
+   2026年10月はじめの人気ランキング（P-WORLD設置台数・パチビー全国稼働）から選んだ、パチンコ17・スロット16機種。
+   出玉の数値は、解析サイト（P-WORLD・パチ7・ちょんぼりすた・一撃・DMMぱちタウン・アルテマ）で2つ以上一致したもの（2026年10月調べ）。
 
-   ★ name はゲームに表示される名前です。いまは実機の名前のままなので、公開する前に変えてください。
-   ★ id は変えないでください（セーブデータが台の機種を id で覚えています）。
+   ★ name はゲームに表示される名前。いまは実機の名前のままなので、公開する前に変える。
+     ゲームの中（メニュー →「機種データベース」）でも変えられる。
+   ★ id は変えない（セーブデータが台の機種を id で覚えているため）。
 
-   k     … p=パチンコ／s=スロット
-   spec  … 甘デジ・ライトミドル・ミドル・荒波（パチンコ）／Aタイプ・AT機（スロット）
-   price … 買う値段（円）
-   pop   … 人気（0〜100）。高いほどお客さんが座りたがる
-   hit   … 大当り1回の出玉の目安（円）
-   rank  … 買えるようになるお店のランク（1〜5）
-   c・c2 … 台の色（本体・ランプ） */
+   共通 … k：p=パチンコ／s=スロット、price：値段、pop：人気(0〜100)、rank：買えるお店のランク、c・c2：台の色
+   パチンコ … prob：初当り確率の分母。ゲームで選べる 99.9／199／319／349／399／599 のどれか
+   スロット … rates：設定1〜6の機械割(%)、hit：初当り確率の分母[設定1, 設定6]、vol：一撃の荒さ(1=Aタイプ 2=AT 3=AT荒波)
+              none：実機にない設定（ゲームでは前後の間の値を入れている）、est：非公表で推定した設定
+   real … 実機のスペックのメモ（画面の「機種データベース」に出る） */
 const MACHINE_DB=[
  /* ---------- パチンコ ---------- */
- {id:'x_eva_mirai',  name:'新世紀エヴァンゲリオン〜未来への咆哮〜',     k:'p',spec:'ミドル',      price:680000,pop:88,hit:22000,rank:4,c:'#6d28d9',c2:'#a3e635'},
- {id:'x_ghoul_p',    name:'e東京喰種',                                 k:'p',spec:'荒波',        price:820000,pop:94,hit:34000,rank:5,c:'#1f2937',c2:'#ef4444'},
- {id:'x_sao_p',      name:'eソードアート・オンライン アリシゼーション', k:'p',spec:'荒波',        price:780000,pop:91,hit:32000,rank:5,c:'#1e3a8a',c2:'#fbbf24'},
- {id:'x_umi5sp',     name:'P大海物語5スペシャル',                       k:'p',spec:'ミドル',      price:560000,pop:84,hit:18000,rank:3,c:'#0284c7',c2:'#fde047'},
- {id:'x_umi5',       name:'P大海物語5',                                 k:'p',spec:'ミドル',      price:480000,pop:78,hit:17000,rank:2,c:'#0ea5e9',c2:'#fef08a'},
- {id:'x_umi5ag',     name:'PA大海物語5 With アグネス・ラム',            k:'p',spec:'甘デジ',      price:380000,pop:72,hit:5000, rank:1,c:'#38bdf8',c2:'#fbcfe8'},
- {id:'x_oki6',       name:'Pスーパー海物語IN沖縄6',                     k:'p',spec:'ミドル',      price:460000,pop:74,hit:16000,rank:2,c:'#06b6d4',c2:'#fda4af'},
- {id:'x_eva_hajime', name:'e新世紀エヴァンゲリオン〜はじまりの記憶〜',   k:'p',spec:'ミドル',      price:600000,pop:82,hit:21000,rank:3,c:'#7c3aed',c2:'#f97316'},
- {id:'x_rezero_p',   name:'eRe:ゼロから始める異世界生活 鬼がかり2',     k:'p',spec:'荒波',        price:720000,pop:87,hit:30000,rank:4,c:'#93c5fd',c2:'#f0f9ff'},
- {id:'x_garo12',     name:'e牙狼12 黄金騎士極限',                       k:'p',spec:'荒波',        price:740000,pop:88,hit:36000,rank:4,c:'#a16207',c2:'#fde68a'},
- {id:'x_takt',       name:'e takt op. Destiny',                         k:'p',spec:'ミドル',      price:640000,pop:85,hit:20000,rank:4,c:'#be123c',c2:'#fecdd3'},
- {id:'x_lyco_p',     name:'eリコリス・リコイル',                        k:'p',spec:'ライトミドル',price:560000,pop:83,hit:12000,rank:3,c:'#dc2626',c2:'#bfdbfe'},
- {id:'x_seed',       name:'eF機動戦士ガンダムSEED クライマックス',      k:'p',spec:'ミドル',      price:620000,pop:82,hit:20000,rank:3,c:'#1d4ed8',c2:'#f8fafc'},
- {id:'x_hokuto11',   name:'e北斗の拳11 暴凶星',                         k:'p',spec:'荒波',        price:700000,pop:84,hit:33000,rank:4,c:'#7f1d1d',c2:'#fca5a5'},
- {id:'x_umi3r3',     name:'PA海物語3R3',                                k:'p',spec:'甘デジ',      price:320000,pop:64,hit:4500, rank:1,c:'#0369a1',c2:'#bae6fd'},
- {id:'x_shinumi',    name:'PA新海物語',                                 k:'p',spec:'甘デジ',      price:300000,pop:62,hit:4200, rank:1,c:'#0891b2',c2:'#fef9c3'},
- {id:'x_odabuta2',   name:'Pポチッと一発!おだてブタ2',                  k:'p',spec:'甘デジ',      price:340000,pop:68,hit:5500, rank:2,c:'#f472b6',c2:'#fff1f2'},
+ {id:'x_eva_mirai',  name:'新世紀エヴァンゲリオン〜未来への咆哮〜',     k:'p',prob:319, price:680000,pop:88,rank:4,c:'#6d28d9',c2:'#a3e635',real:'約1/319.7・ST163回・RUSH突入約70%・継続約81%'},
+ {id:'x_ghoul_p',    name:'e東京喰種',                                 k:'p',prob:399, price:820000,pop:94,rank:5,c:'#1f2937',c2:'#ef4444',real:'図柄揃い約1/399.9（チャージ込み約1/199.9）・LTあり・突入約51%・継続約75%'},
+ {id:'x_sao_p',      name:'eソードアート・オンライン アリシゼーション', k:'p',prob:199, price:780000,pop:91,rank:5,c:'#1e3a8a',c2:'#fbbf24',real:'1/199.9・LTあり・突入50%・継続約65%（LT中約75%）'},
+ {id:'x_umi5sp',     name:'P大海物語5スペシャル',                       k:'p',prob:319, price:560000,pop:84,rank:3,c:'#0284c7',c2:'#fde047',real:'約1/319.6・確変54%（次回まで）＋時短・初当り期待出玉4452個'},
+ {id:'x_umi5',       name:'P大海物語5',                                 k:'p',prob:319, price:480000,pop:78,rank:2,c:'#0ea5e9',c2:'#fef08a',real:'約1/319.6・確変60%（次回まで）＋時短100回'},
+ {id:'x_umi5ag',     name:'PA大海物語5 With アグネス・ラム',            k:'p',prob:99.9,price:380000,pop:72,rank:1,c:'#38bdf8',c2:'#fbcfe8',real:'約1/99.9・ST10回（突入100%）'},
+ {id:'x_oki6',       name:'Pスーパー海物語IN沖縄6',                     k:'p',prob:319, price:460000,pop:74,rank:2,c:'#06b6d4',c2:'#fda4af',real:'約1/319.6・確変60%・トータル継続約78.8%'},
+ {id:'x_eva_hajime', name:'e新世紀エヴァンゲリオン〜はじまりの記憶〜',   k:'p',prob:349, price:600000,pop:82,rank:3,c:'#7c3aed',c2:'#f97316',real:'トータル約1/349.9（図柄揃い約1/399.9）・LT突入約61%・継続約80%'},
+ {id:'x_rezero_p',   name:'eRe:ゼロから始める異世界生活 鬼がかり2',     k:'p',prob:349, price:720000,pop:87,rank:4,c:'#93c5fd',c2:'#f0f9ff',real:'1/349.9・RUSH突入55%・継続約77%'},
+ {id:'x_garo12',     name:'e牙狼12 黄金騎士極限',                       k:'p',prob:349, price:740000,pop:88,rank:4,c:'#a16207',c2:'#fde68a',real:'1/349.99・LT継続約76%・初当り期待出玉5114個'},
+ {id:'x_takt',       name:'e takt op. Destiny',                         k:'p',prob:349, price:640000,pop:85,rank:4,c:'#be123c',c2:'#fecdd3',real:'合算約1/348.6・LTあり・継続約77%'},
+ {id:'x_lyco_p',     name:'eリコリス・リコイル',                        k:'p',prob:319, price:560000,pop:83,rank:3,c:'#dc2626',c2:'#bfdbfe',real:'1/259.7（選べる確率にないので近い1/319に）・LTあり・突入50%・継続約75%'},
+ {id:'x_seed',       name:'eF機動戦士ガンダムSEED クライマックス',      k:'p',prob:399, price:620000,pop:82,rank:3,c:'#1d4ed8',c2:'#f8fafc',real:'1/399.9・LTあり・突入約52%・継続約75%'},
+ {id:'x_hokuto11',   name:'e北斗の拳11 暴凶星',                         k:'p',prob:399, price:700000,pop:84,rank:4,c:'#7f1d1d',c2:'#fca5a5',real:'約1/399.8・LTあり・突入約61%・継続約75%'},
+ {id:'x_umi3r3',     name:'PA海物語3R3',                                k:'p',prob:99.9,price:320000,pop:64,rank:1,c:'#0369a1',c2:'#bae6fd',real:'約1/99.9・確変51%＋時短40回・初当り期待出玉1410個'},
+ {id:'x_shinumi',    name:'PA新海物語',                                 k:'p',prob:99.9,price:300000,pop:62,rank:1,c:'#0891b2',c2:'#fef9c3',real:'約1/99.9・ST5回（突入100%）＋時短'},
+ {id:'x_odabuta2',   name:'Pポチッと一発!おだてブタ2',                  k:'p',prob:99.9,price:340000,pop:68,rank:2,c:'#f472b6',c2:'#fff1f2',real:'羽根物（固定の確率なし。当たりやすさは甘デジ並み）・初当り期待出玉562個'},
  /* ---------- スロット ---------- */
- {id:'x_neoim',      name:'ネオアイムジャグラーEX',                     k:'s',spec:'Aタイプ',     price:360000,pop:80,hit:6000, rank:1,c:'#1f2937',c2:'#fde047'},
- {id:'x_myj5',       name:'マイジャグラーV',                            k:'s',spec:'Aタイプ',     price:420000,pop:82,hit:6500, rank:2,c:'#1e293b',c2:'#f472b6'},
- {id:'x_gogo3',      name:'ゴーゴージャグラー3',                        k:'s',spec:'Aタイプ',     price:380000,pop:74,hit:6200, rank:1,c:'#312e81',c2:'#fde047'},
- {id:'x_funky2',     name:'ファンキージャグラー2',                      k:'s',spec:'Aタイプ',     price:400000,pop:72,hit:6400, rank:2,c:'#581c87',c2:'#22d3ee'},
- {id:'x_hana',       name:'ニューキングハナハナV-30',                   k:'s',spec:'Aタイプ',     price:380000,pop:70,hit:6000, rank:1,c:'#be185d',c2:'#fef08a'},
- {id:'x_okidoki',    name:'沖ドキ!ゴージャス',                          k:'s',spec:'Aタイプ',     price:520000,pop:80,hit:9000, rank:3,c:'#f59e0b',c2:'#ecfccb'},
- {id:'x_ghoul_s',    name:'L東京喰種',                                  k:'s',spec:'AT機',        price:760000,pop:92,hit:34000,rank:5,c:'#0f172a',c2:'#f43f5e'},
- {id:'x_kabaneri',   name:'スマスロ 甲鉄城のカバネリ 海門決戦',         k:'s',spec:'AT機',        price:720000,pop:88,hit:30000,rank:4,c:'#3f3f46',c2:'#4ade80'},
- {id:'x_monkey',     name:'スマスロ モンキーターンV',                   k:'s',spec:'AT機',        price:700000,pop:90,hit:32000,rank:4,c:'#1d4ed8',c2:'#fde047'},
- {id:'x_hokuto_s',   name:'スマスロ北斗の拳',                           k:'s',spec:'AT機',        price:740000,pop:92,hit:36000,rank:5,c:'#450a0a',c2:'#f87171'},
- {id:'x_tensei2',    name:'スマスロ 北斗の拳 転生の章2',                k:'s',spec:'AT機',        price:680000,pop:84,hit:34000,rank:4,c:'#292524',c2:'#fb923c'},
- {id:'x_lyco_s',     name:'スマスロ リコリス・リコイル',                k:'s',spec:'AT機',        price:640000,pop:86,hit:26000,rank:3,c:'#b91c1c',c2:'#e0f2fe'},
- {id:'x_god',        name:'スマスロ ミリオンゴッド-神々の軌跡-',        k:'s',spec:'AT機',        price:700000,pop:82,hit:38000,rank:4,c:'#a16207',c2:'#fef3c7'},
- {id:'x_otome5',     name:'L戦国乙女5 業火を穿つ宿焔の双刃',            k:'s',spec:'AT機',        price:600000,pop:80,hit:26000,rank:3,c:'#9d174d',c2:'#fbcfe8'},
- {id:'x_sao_s',      name:'Lスロット ソードアート・オンラインII',       k:'s',spec:'AT機',        price:760000,pop:93,hit:30000,rank:5,c:'#1e40af',c2:'#e0f2fe'},
- {id:'x_aobuta',     name:'L青春ブタ野郎はバニーガール先輩の夢を見ない', k:'s',spec:'AT機',        price:660000,pop:88,hit:26000,rank:3,c:'#4c1d95',c2:'#f9a8d4'},
+ {id:'x_neoim',      name:'ネオアイムジャグラーEX',                     k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.5,101.1,103.3,105.5],hit:[168.5,127.5],vol:1,price:360000,pop:80,rank:1,c:'#1f2937',c2:'#fde047',real:'ボーナス合算 1/168.5（設定1）〜1/127.5（設定6）'},
+ {id:'x_myj5',       name:'マイジャグラーV',                            k:'s',spec:'Aタイプ',rates:[97.0,98.0,99.9,102.8,105.3,109.4],hit:[163.8,114.6],vol:1,price:420000,pop:82,rank:2,c:'#1e293b',c2:'#f472b6',real:'ボーナス合算 1/163.8〜1/114.6'},
+ {id:'x_gogo3',      name:'ゴーゴージャグラー3',                        k:'s',spec:'Aタイプ',rates:[97.2,98.2,99.4,101.6,103.8,106.5],hit:[149.6,117.4],vol:1,price:380000,pop:74,rank:1,c:'#312e81',c2:'#fde047',real:'ボーナス合算 1/149.6〜1/117.4'},
+ {id:'x_funky2',     name:'ファンキージャグラー2',                      k:'s',spec:'Aタイプ',rates:[97.0,98.5,99.8,102.0,104.3,109.0],hit:[165.9,119.6],vol:1,price:400000,pop:72,rank:2,c:'#581c87',c2:'#22d3ee',real:'ボーナス合算 1/165.9〜1/119.6'},
+ {id:'x_hana',       name:'ニューキングハナハナV-30',                   k:'s',spec:'Aタイプ',rates:[97.0,99.0,101.0,104.0,106.0,108.0],none:[5],hit:[186,150],vol:1,price:380000,pop:70,rank:1,c:'#be185d',c2:'#fef08a',real:'設定は1・2・3・4・V（ゲームの設定6＝V）。機械割は整数のみ公表。合算 1/186〜1/150'},
+ {id:'x_okidoki',    name:'沖ドキ!ゴージャス',                          k:'s',spec:'Aタイプ',rates:[97.2,98.7,101.9,103.4,104.9,109.0],none:[4],hit:[288.7,246.4],vol:2,price:520000,pop:80,rank:3,c:'#f59e0b',c2:'#ecfccb',real:'設定4なし。ボーナス初当り 1/288.7〜1/246.4・連チャンあり'},
+ {id:'x_ghoul_s',    name:'L東京喰種',                                  k:'s',spec:'AT機',rates:[97.5,99.0,101.6,105.6,110.3,114.9],hit:[394.4,261.3],vol:2,price:760000,pop:92,rank:5,c:'#0f172a',c2:'#f43f5e',real:'AT初当り 1/394.4〜1/261.3'},
+ {id:'x_kabaneri',   name:'スマスロ 甲鉄城のカバネリ 海門決戦',         k:'s',spec:'AT機',rates:[97.5,98.5,100.8,106.0,111.0,114.9],hit:[254.2,195.1],vol:2,price:720000,pop:88,rank:4,c:'#3f3f46',c2:'#4ade80',real:'ボーナス初当り 1/254.2〜1/195.1'},
+ {id:'x_monkey',     name:'スマスロ モンキーターンV',                   k:'s',spec:'AT機',rates:[97.9,98.9,101.7,104.5,110.2,114.9],none:[3],hit:[299.8,222.9],vol:2,price:700000,pop:90,rank:4,c:'#1d4ed8',c2:'#fde047',real:'設定3なし。AT初当り 1/299.8〜1/222.9'},
+ {id:'x_hokuto_s',   name:'スマスロ北斗の拳',                           k:'s',spec:'AT機',rates:[98.0,98.9,102.3,105.7,110.0,113.0],none:[3],hit:[383.4,235.1],vol:3,price:740000,pop:92,rank:5,c:'#450a0a',c2:'#f87171',real:'設定3なし（別に設定Lあり・数値非公表）。BB初当り 1/383.4〜1/235.1'},
+ {id:'x_tensei2',    name:'スマスロ 北斗の拳 転生の章2',                k:'s',spec:'AT機',rates:[97.6,98.4,100.7,106.2,111.1,114.9],hit:[366.0,273.1],vol:2,price:680000,pop:84,rank:4,c:'#292524',c2:'#fb923c',real:'AT初当り 1/366.0〜1/273.1'},
+ {id:'x_lyco_s',     name:'スマスロ リコリス・リコイル',                k:'s',spec:'AT機',rates:[97.9,98.9,101.3,106.1,110.4,114.6],hit:[328.8,256.7],vol:2,price:640000,pop:86,rank:3,c:'#b91c1c',c2:'#e0f2fe',real:'ST初当り 1/328.8〜1/256.7'},
+ {id:'x_god',        name:'スマスロ ミリオンゴッド-神々の軌跡-',        k:'s',spec:'AT機',rates:[97.2,99.1,102.1,106.9,111.7,114.6],hit:[532.8,294.8],vol:3,price:700000,pop:82,rank:4,c:'#a16207',c2:'#fef3c7',real:'AT初当り 1/532.8〜1/294.8（奇数設定は重め）'},
+ {id:'x_otome5',     name:'L戦国乙女5 業火を穿つ宿焔の双刃',            k:'s',spec:'AT機',rates:[97.9,98.9,101.0,106.2,111.1,114.9],hit:[359.5,262.9],vol:2,price:600000,pop:80,rank:3,c:'#9d174d',c2:'#fbcfe8',real:'AT初当り 1/359.5〜1/262.9'},
+ {id:'x_sao_s',      name:'Lスロット ソードアート・オンラインII',       k:'s',spec:'AT機',rates:[97.6,98.8,100.2,105.3,110.4,114.9],hit:[386.2,269.6],vol:2,price:760000,pop:93,rank:5,c:'#1e40af',c2:'#e0f2fe',real:'AT初当り 1/386.2〜1/269.6'},
+ {id:'x_aobuta',     name:'L青春ブタ野郎はバニーガール先輩の夢を見ない', k:'s',spec:'AT機',rates:[97.0,98.1,99.3,105.3,108.4,110.3],est:[1],hit:[360,207.8],vol:2,price:660000,pop:88,rank:3,c:'#4c1d95',c2:'#f9a8d4',real:'設定1の機械割・初当りは非公表（推定値）。初当り 設定2 1/350.8〜設定6 1/207.8'},
 ];

@@ -120,3 +120,24 @@ function dayEndFeatures(R){
   }
 }
 function score(){return Math.round(S.totalVisitors/10+Math.max(0,S.money-S.loan)/100000+S.rep*20+machines().length*10)}
+
+/* ---------- 機種データベース（名前・出玉率・確率の変更をこの端末に保存） ---------- */
+const MDB_KEY='pachinkasu-mdb1';
+const MDB_DEF=Object.fromEntries(MODELS.map(m=>[m.id,{name:m.name,rates:m.rates?m.rates.slice():null,prob:m.prob??null}]));
+let mdbEdits={};
+const clampRate=v=>Math.round(clamp(v,SLOT_MIN,SLOT_MAX)*10)/10;
+function mdbClean(o){
+  const out={};if(!o||typeof o!=='object')return out;
+  for(const[id,e]of Object.entries(o)){
+    const md=MB[id],d=MDB_DEF[id];if(!md||!d||!e||typeof e!=='object')continue;const r={};
+    if(typeof e.name==='string'&&e.name.trim()&&e.name.trim()!==d.name)r.name=e.name.trim().slice(0,30);
+    if(md.k==='s'&&Array.isArray(e.rates)&&e.rates.length===6&&e.rates.every(v=>isFinite(+v))){const rt=e.rates.map(v=>clampRate(+v));if(rt.join()!==d.rates.join())r.rates=rt}
+    if(md.k==='p'&&PROBS.includes(+e.prob)&&+e.prob!==d.prob)r.prob=+e.prob;
+    if(Object.keys(r).length)out[id]=r;
+  }
+  return out;
+}
+function mdbApply(){for(const md of MODELS){const d=MDB_DEF[md.id],e=mdbEdits[md.id]||{};md.name=e.name||d.name;if(md.k==='s')md.rates=(e.rates||d.rates).slice();else md.prob=e.prob||d.prob}}
+function mdbLoad(){try{const o=JSON.parse(localStorage.getItem(MDB_KEY)||'null');mdbEdits=mdbClean(o&&o.m)}catch(e){mdbEdits={}}mdbApply()}
+function mdbSave(){try{localStorage.setItem(MDB_KEY,JSON.stringify({v:1,m:mdbEdits}))}catch(e){}}
+function mdbSet(o){mdbEdits=mdbClean(o);mdbSave();mdbApply()}
