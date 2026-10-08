@@ -115,7 +115,8 @@ function applyLayout(){
   VIEW={w,h};
   const prep=S&&S.phase!=='open';
   INSET=land?{t:44+ins.t,b:(prep?56:10)+ins.b,l:8+ins.l,r:8+ins.r}:{t:150+ins.t,b:(prep?108:56)+ins.b,l:6,r:6};
-  resizeCanvas();
+  resizeCanvas();syncFields();
+  if(!ROT&&kb)closeKb();
 }
 function toLocal(cx,cy){if(ROT===90)return {x:cy,y:window.innerWidth-cx};if(ROT===-90)return {x:window.innerHeight-cy,y:cx};return {x:cx,y:cy}}
 function toLocalD(dx,dy){if(ROT===90)return {x:dy,y:-dx};if(ROT===-90)return {x:-dy,y:dx};return {x:dx,y:dy}}
@@ -130,6 +131,96 @@ function toLocalD(dx,dy){if(ROT===90)return {x:dy,y:-dx};if(ROT===-90)return {x:
   b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);
   b.addEventListener('click',e=>{if(b._drag&&performance.now()-b._drag<80){e.stopPropagation();e.preventDefault()}},true);
 })();
+/* ---------- 画面を回しているときの文字入力 ----------
+   スマホのキーボードは本体の向きでしか出ないので、画面を回しているときは画面と同じ向きのキーボードをゲーム内に出す。
+   漢字を使いたいときは「スマホのキーボード」で本体のキーボードに切り替えられる */
+const KB_KANA=[['あ','い','う','え','お'],['か','き','く','け','こ'],['さ','し','す','せ','そ'],['た','ち','つ','て','と'],['な','に','ぬ','ね','の'],['は','ひ','ふ','へ','ほ'],['ま','み','む','め','も'],['や','（','ゆ','）','よ'],['ら','り','る','れ','ろ'],['わ','を','ん','ー','〜']];
+const KB_SIDE=[['゛','d'],['゜','h'],['小','s'],['、','、'],['。','。']];
+const KB_ABC=['1234567890','QWERTYUIOP','ASDFGHJKL-','ZXCVBNM.!?'];
+const KB_SYM=['！？・…☆★♪♡＆＃','「」『』（）【】＋＝','％＄￥＠＊／：；〜＿','※→←↑↓○×△□◇'];
+const KD1='かきくけこさしすせそたちつてとはひふへほうカキクケコサシスセソタチツテトハヒフヘホウ',KD2='がぎぐげござじずぜぞだぢづでどばびぶべぼゔガギグゲゴザジズゼゾダヂヅデドバビブベボヴ';
+const KH1='はひふへほハヒフヘホ',KH2='ぱぴぷぺぽパピプペポ',KS1='あいうえおつやゆよわアイウエオツヤユヨワ',KS2='ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮ';
+let kb=null;
+const toKata=c=>/[ぁ-ゖ]/.test(c)?String.fromCharCode(c.charCodeAt(0)+0x60):c;
+function syncFields(){
+  document.querySelectorAll('input.field,textarea.field').forEach(el=>{if(el.id==='mdbOut'||el.dataset.native)return;el.readOnly=!!ROT});
+}
+function fieldLabel(el){
+  const c=el.closest('label');if(c&&c.querySelector('span'))return c.querySelector('span').textContent.replace(/実機なし|推定/g,'')+'（%）';
+  const l=el.id&&document.querySelector(`label[for="${el.id}"]`);return l?l.textContent:'入力';
+}
+function openKb(el){
+  const num=el.type==='number';
+  kb={el,num,mode:num?'num':'hira',caps:true,val:String(el.value||''),max:num?6:(el.maxLength>0?el.maxLength:30),label:fieldLabel(el)};
+  $('#kb').hidden=false;renderKb();sfx('tap');
+}
+function closeKb(){kb=null;const k=$('#kb');k.hidden=true;k.innerHTML=''}
+function kbKey(ch,cls=''){return `<button class="kb-k ${cls}" data-k="${esc(ch)}" type="button">${esc(ch)}</button>`}
+function renderKb(){
+  if(!kb)return;const k=kb;let keys='';
+  if(k.mode==='num'){
+    keys=`<div class="kb-num">${['7','8','9','4','5','6','1','2','3','0','.'].map(c=>kbKey(c)).join('')}<button class="kb-k u" data-kc="bs" type="button">⌫</button></div>`;
+  }else if(k.mode==='hira'||k.mode==='kata'){
+    const conv=k.mode==='kata'?toKata:(c=>c);
+    keys=`<div class="kb-g" style="grid-template-columns:repeat(11,1fr)">`+[0,1,2,3,4].map(r=>KB_KANA.map(col=>kbKey(conv(col[r]))).join('')+(KB_SIDE[r][1].length===1&&KB_SIDE[r][1]!==KB_SIDE[r][0]?`<button class="kb-k u" data-kc="${KB_SIDE[r][1]}" type="button">${KB_SIDE[r][0]}</button>`:kbKey(KB_SIDE[r][0],'u'))).join('')+`</div>`;
+  }else{
+    const rows=k.mode==='abc'?KB_ABC.map(r=>k.caps?r:r.toLowerCase()):KB_SYM;
+    keys=`<div class="kb-g" style="grid-template-columns:repeat(10,1fr)">`+rows.map(r=>[...r].map(c=>kbKey(c)).join('')).join('')+`</div>`;
+  }
+  const modes=k.num?'':[['hira','ひら'],['kata','カナ'],['abc','英数'],['sym','記号']].map(([m,l])=>`<button class="kb-k ${k.mode===m?'cur':''}" data-kc="m-${m}" type="button">${l}</button>`).join('')+(k.mode==='abc'?`<button class="kb-k" data-kc="caps" type="button">${k.caps?'abc':'ABC'}</button>`:'')+`<button class="kb-k" data-kc="sp" type="button">空白</button>`;
+  $('#kb').innerHTML=`<div class="kb-p"><div class="kb-top"><span class="kb-lbl">${esc(k.label)}</span><div class="kb-disp"><span>${esc([...k.val].slice(-28).join(''))}</span><i></i></div><span class="kb-cnt">${[...k.val].length}/${k.max}</span></div>${keys}
+<div class="kb-row">${modes}<button class="kb-k" data-kc="bs" type="button">⌫ 消す</button><button class="kb-k" data-kc="clr" type="button">全部消す</button>${k.num?'':'<button class="kb-k nat" data-kc="nat" type="button">スマホのキーボード（漢字）</button>'}<button class="kb-k" data-kc="cancel" type="button">やめる</button><button class="kb-k ok" data-kc="ok" type="button">決定</button></div></div>`;
+}
+function kbType(ch){
+  const k=kb,arr=[...k.val];
+  if(k.num){if(ch==='.'&&k.val.includes('.'))return;if(arr.length>=k.max)return}
+  else if(arr.length>=k.max){toast(`${k.max}文字までです`);return}
+  k.val+=ch;
+}
+function kbMod(kind){
+  const arr=[...kb.val],c=arr.pop();if(!c)return;let n=c,i;
+  if(kind==='d'){if((i=KD1.indexOf(c))>=0)n=KD2[i];else if((i=KD2.indexOf(c))>=0)n=KD1[i];else if((i=KH2.indexOf(c))>=0)n=KD2[KD1.indexOf(KH1[i])]}
+  else if(kind==='h'){if((i=KH1.indexOf(c))>=0)n=KH2[i];else if((i=KH2.indexOf(c))>=0)n=KH1[i];else if((i=KD2.indexOf(c))>=0&&KH1.includes(KD1[i]))n=KH2[KH1.indexOf(KD1[i])]}
+  else{if((i=KS1.indexOf(c))>=0)n=KS2[i];else if((i=KS2.indexOf(c))>=0)n=KS1[i]}
+  kb.val=arr.join('')+n;
+}
+function kbDone(){
+  const k=kb,el=k.el;let v=k.val;
+  if(k.num){const f=parseFloat(v);if(v!==''&&!isFinite(f)){toast('数字を入れてください');sfx('bad');return}}
+  el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));
+  closeKb();sfx('tap');
+}
+function nativeFocus(el){el.dataset.native='1';el.readOnly=false;el.focus();el.addEventListener('blur',()=>{delete el.dataset.native;syncFields()},{once:true})}
+function pasteInto(el){
+  if(!el)return;
+  const fail=()=>{if(ROT)nativeFocus(el);else el.focus();toast('長押しして「ペースト」を選んでください')};
+  try{navigator.clipboard.readText().then(t=>{if(t&&t.trim()){el.value=t.trim();sfx('good');toast('貼り付けました')}else fail()},fail)}catch(e){fail()}
+}
+$('#kb').addEventListener('click',e=>{
+  if(!kb)return;
+  if(e.target.id==='kb'){closeKb();return}
+  const b=e.target.closest('[data-k],[data-kc]');if(!b)return;
+  if(b.dataset.k!=null){kbType(b.dataset.k);renderKb();return}
+  const c=b.dataset.kc;
+  if(c==='ok'){kbDone();return}
+  if(c==='cancel'){closeKb();return}
+  if(c==='nat'){const el=kb.el;el.value=kb.val;closeKb();nativeFocus(el);return}
+  if(c==='bs'){const a=[...kb.val];a.pop();kb.val=a.join('')}
+  else if(c==='clr')kb.val='';
+  else if(c==='sp')kbType('　');
+  else if(c==='caps')kb.caps=!kb.caps;
+  else if(c.startsWith('m-'))kb.mode=c.slice(2);
+  else if(c==='d'||c==='h'||c==='s')kbMod(c);
+  renderKb();
+});
+/* 回転中に入力欄をタップしたら、ゲーム内キーボード（貼り付け欄は貼り付け）を出す */
+document.addEventListener('click',e=>{
+  if(!ROT)return;
+  const el=e.target.closest&&e.target.closest('input.field,textarea.field');
+  if(!el||el.disabled||el.dataset.native||el.id==='mdbOut')return;
+  e.preventDefault();
+  if(el.id==='trText')pasteInto(el);else openKb(el);
+},true);
 /* ---------- つぶやき欄 ---------- */
 function pushFeed(tw){
   const f=$('#feed'),el=document.createElement('div');el.className='tw';
@@ -323,7 +414,7 @@ function renderSheet(){
     default:return;
   }
   if(!r||!sheetKind)return;
-  $('#sheetTitle').textContent=r[0];b.innerHTML=r[1];b.scrollTop=top;
+  $('#sheetTitle').textContent=r[0];b.innerHTML=r[1];b.scrollTop=top;syncFields();
 }
 const tabs=(list,cur,act)=>`<div class="tabs">${list.map(([k,l])=>`<button class="chip ${cur===k?'cur':''}" data-act="${act}" data-v="${k}" type="button">${l}</button>`).join('')}</div>`;
 const lvBtns=(m,act,extra='',dis=false,small=false)=>{
@@ -654,6 +745,7 @@ const GUIDE={
 <h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります。</p>
 <h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
 <h3>ホールデータ</h3><p>営業中の「データ」、設定一覧、日報から見られます。<b>出玉ランキング</b>・<b>台番号別の稼働率</b>・<b>機種別の稼働率</b>・<b>客層と時間ごとの稼働</b>で、どんなお客さんがどの台を打っているかがわかります。稼働の低い機種は入れ替え候補です。</p>
+<h3>文字の入力</h3><p>スマホを縦のまま持って横画面で遊んでいるときは、入力欄をタップするとゲームの中にキーボードが出ます（ひらがな・カタカナ・英数・記号）。漢字を使いたいときは「スマホのキーボード（漢字）」を押してください。スマホの画面の回転ロックを外して横にすれば、いつものキーボードも横向きで使えます。</p>
 <h3>機種データベース</h3><p>メニューの「機種データベース」で、機種の名前・出玉率・初当り確率を変えられます。変えた内容はこの端末に保存されます。</p>`],
   more:['規制・取材・トラブル',`<h3>規制</h3><p>ときどき国の規制が発表され、対象の機種は期限までに撤去されます（期限を過ぎると自動で撤去・下取りなし）。代わりに「新基準」の新しい機種が買えるようになります。</p>
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
@@ -765,7 +857,7 @@ function transferSheet(){
     :'アーティファクト版とホーム画面アプリ版は、セーブが別々に保存されます。進み具合を移すには：<br>① 移す元のメニューで「セーブをコピー」<br>② 移す先のメニュー →「セーブの引っ越し」で下の欄に貼り付けて「読み込む」';
   return ['セーブの引っ越し',`<div class="box">${intro}</div>
 ${sheetData==='title'?'':'<button class="btn" data-act="tr-copy" type="button">セーブをコピー</button>'}
-<label class="lbl" for="trText">ここに貼り付け</label>
+<div class="inrow"><label class="lbl" for="trText" style="flex:1;align-self:center">ここに貼り付け</label><button class="btn sm" data-act="tr-paste" type="button">コピーした内容を貼り付け</button></div>
 <textarea class="field" id="trText" rows="4" style="font-family:var(--f-body);font-size:12px;resize:none"></textarea>
 <button class="btn primary" data-act="tr-load" type="button">読み込む（今のセーブは上書きされます）</button>`];
 }
@@ -860,6 +952,7 @@ $('#sheetBody').addEventListener('click',e=>{
       const fallback=()=>{ta.value=code;ta.focus();ta.select();toast('欄のテキストを全部選んでコピーしてください')};
       try{navigator.clipboard.writeText(code).then(()=>{toast('セーブをコピーしました');sfx('good')},fallback)}catch(err){fallback()}
       break;}
+    case 'tr-paste':pasteInto($('#trText'));break;
     case 'tr-load':{
       if(S.phase==='open'){toast('営業中は読み込めません。営業が終わってから読み込んでください');sfx('bad');break}
       const raw=($('#trText').value||'').trim();
@@ -993,7 +1086,7 @@ function onTap(hit,w){
 }
 
 /* ---------- タイトル ---------- */
-function showTitle(){$('#title').hidden=false;$('#tName').value=S.name}
+function showTitle(){$('#title').hidden=false;$('#tName').value=S.name;syncFields()}
 $('#tTransfer').addEventListener('click',()=>{audio();$('#title').hidden=true;openSheet('transfer','title')});
 $('#tStart').addEventListener('click',()=>{
   audio();const n=($('#tName').value||'').trim().slice(0,10)||'パーラー満天';
