@@ -3,6 +3,7 @@ const $=s=>document.querySelector(s);
 const TS=16, OX=8, OY=24, BOT=10;
 const DIRS=[[0,1],[-1,0],[0,-1],[1,0]];
 const SEAT_ARROW=['↓','←','↑','→'];
+const DIR_ORDER=[2,3,0,1], DIR_NAME=['下','左','上','右'], DIR_TRI=['▼','◀','▲','▶'];
 const OPEN=600, CLOSE=1365, LAST=1350, MIN_PER_SEC=8.5;
 const SAVE_KEY='pachinko-hanjoki-v2', PREF_KEY='pachinko-hanjoki-prefs2';
 

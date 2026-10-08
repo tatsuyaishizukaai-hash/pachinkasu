@@ -75,6 +75,8 @@ function renderStatus(){
   const bo=$('#bOverlay'),bt=`<span class="ibs">表示</span>${ov}`;if(bo._h!==bt){bo.innerHTML=bt;bo._h=bt}
 }
 const hhmm=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+/* 道具バーが高くなっても、お知らせがかぶらないようにする */
+function fitToast(){requestAnimationFrame(()=>{const h=$('#dock').offsetHeight||48;$('#root').style.setProperty('--dockh',h+'px')})}
 function renderDock(){
   const d=$('#dock'),sp=$('#speed'),open=S.phase==='open';
   $('#root').classList.toggle('prep',!open);
@@ -86,7 +88,7 @@ function renderDock(){
     if(sp._h!==html){sp.innerHTML=html;sp._h=html}
     d.innerHTML='';return;
   }
-  if(tool!=='view'){d.innerHTML=`<div class="toolbar chipc">${toolText()}</div>`;return}
+  if(tool!=='view'){d.innerHTML=`<div class="toolbar chipc">${toolText()}</div>`;fitToast();return}
   d.innerHTML=`<button class="btn" data-dock="build" type="button">建設</button>
 <button class="btn" data-dock="move" type="button">動かす</button>
 <button class="btn" data-dock="remove" type="button">片付け</button>
@@ -95,6 +97,7 @@ function renderDock(){
 <button class="btn ${S.event.type!=='none'||goActive()?'hot':''}" data-dock="event" type="button">イベント</button>
 <button class="btn" data-dock="manage" type="button">経営</button>
 <button class="btn primary" data-dock="open" type="button">開店!</button>`;
+  fitToast();
 }
 /* ---------- 画面の向き ---------- */
 let ROT=0;
@@ -143,13 +146,13 @@ function toolText(){
     const left=it.store?S.storage.filter(s=>s.kind===it.kind&&s.type===it.type).length:null;
     const how=it.kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ（続けて置けます）';
     return `<div class="tt">配置：<b>${esc(nm)}</b> ${price}${left!=null?` ・ 残り${left}`:''}<br><span class="sub">${how}</span></div>
-<div class="row">${it.kind==='m'?`<button class="btn sm" data-dock="dir" type="button">客席 ${SEAT_ARROW[buildDir]}</button>`:''}${undoB}${end}</div>`;
+<div class="row">${it.kind==='m'?dirButtons(buildDir):''}${undoB}${end}</div>`;
   }
   if(tool==='move'){
     const isM=moveSel&&moveSel.kind==='m';
     const t=moveSel?(moveSel.side?'新しい壁の場所をタップ':'移動先のマスをタップ'):'動かしたい台・設備・扉をタップ';
     return `<div class="tt"><b>動かす</b> ${t}${isM?`<br><span class="sub">${moveIsland?`${moveSel.island}島をまとめて動かします`:'この台だけ動かします'}</span>`:''}</div>
-<div class="row">${isM?`<button class="btn sm ${moveIsland?'':'hot'}" data-dock="mone" type="button">この台だけ</button><button class="btn sm ${moveIsland?'hot':''}" data-dock="misl" type="button">島ごと</button>`:''}${undoB}${end}</div>`;
+<div class="row">${isM?`<button class="btn sm ${moveIsland?'':'hot'}" data-dock="mone" type="button">この台だけ</button><button class="btn sm ${moveIsland?'hot':''}" data-dock="misl" type="button">島ごと</button><button class="btn sm" data-dock="mrot" type="button">↻ 回す</button>`:''}${undoB}${end}</div>`;
   }
   if(tool==='remove')return `<div class="tt"><b>片付け</b> タップした物を${removeMode==='sell'?'売ります（買値の半額）':'倉庫にしまいます'}</div>
 <div class="row"><button class="btn sm ${removeMode==='sell'?'hot':''}" data-dock="rsell" type="button">売る</button><button class="btn sm ${removeMode==='store'?'hot':''}" data-dock="rstore" type="button">倉庫へ</button>${undoB}${end}</div>`;
@@ -203,6 +206,29 @@ function removeThing(o,mode){
   const p=o.side?frontOf(o):o;
   floatAt(p.x,p.y,mode==='store'?'倉庫へ':'+'+yen(sellPrice(o)),'#22c55e');
   layoutChanged();sfx('cash');save();refreshAll();
+}
+const dirButtons=cur=>`<span class="dirset"><span class="dl">向き</span>${DIR_ORDER.map(d=>`<button class="btn sm dbtn ${cur===d?'hot':''}" data-dock="dir" data-v="${d}" type="button" aria-label="${DIR_NAME[d]}向き">${DIR_TRI[d]}</button>`).join('')}</span>`;
+function setDirM(m,nd){
+  if(m.dir===nd)return true;
+  const why=validate(G.objs.map(o=>o===m?{...o,dir:nd}:o),G.doors);
+  if(why){toast(`${DIR_NAME[nd]}向きにできません：${why}`);sfx('bad');return false}
+  pushUndo();m.dir=nd;layoutChanged();save();sfx('place');return true;
+}
+/* 島（台のかたまり）を90度回す。cw=true で右回り。置けない時は少しずらして探す */
+function rotateGroup(group,cw){
+  const gset=new Set(group),xs=group.map(o=>o.x),ys=group.map(o=>o.y);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+  const base=group.map(o=>{const dx=o.x-cx,dy=o.y-cy;return {x:cw?cx-dy:cx+dy,y:cw?cy+dx:cy-dx,dir:(o.dir+(cw?1:3))%4}});
+  const rest=G.objs.filter(o=>!gset.has(o));
+  const offs=[[0,0],[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1],[2,0],[-2,0],[0,2],[0,-2]];
+  let why=null;
+  for(const[ox,oy]of offs){
+    const moved=base.map((b,i)=>({...group[i],x:Math.floor(b.x)+ox,y:Math.floor(b.y)+oy,dir:b.dir}));
+    const w=validate(rest.concat(moved),G.doors);
+    if(!w){pushUndo();group.forEach((o,i)=>{o.x=moved[i].x;o.y=moved[i].y;o.dir=moved[i].dir});layoutChanged();save();sfx('place');return true}
+    why=why||w;
+  }
+  toast(`回せる場所がありません：${why}`);sfx('bad');return false;
 }
 function rotateM(m){
   for(let k=1;k<=3;k++){
@@ -325,7 +351,12 @@ function machineSheet(d){
     const c=custs.find(x=>x.m===m&&(x.st==='play'||x.st==='call'));
     h+=c?`<div class="box">遊技中：${c.reg?esc(REG_BY[c.reg].name):c.hunter?'設定狙いの客':'一般客'} ・ <span class="${c.won-c.inv>=0?'pos':'neg'}">${sgn(c.won-c.inv)}</span>${c.st==='call'?' ・ <b class="neg">呼び出し中</b>':''}</div>`:m.brk?`<div class="sub">休憩中（たばこ）</div>`:`<div class="sub">いまは空き台です</div>`;
   }
-  if(prep)h+=`<div class="actions"><button class="btn sm" data-act="m-rot" type="button">向きを変える</button><button class="btn sm" data-act="o-move" type="button">動かす</button><button class="btn sm" data-act="m-swap" type="button">機種を入れ替え</button><button class="btn sm" data-act="o-store" type="button">倉庫へしまう</button><button class="btn sm danger wide2" data-act="o-sell" type="button">売る ${yen(sellPrice(m))}</button></div>`;
+  if(prep){
+    const isl=islandOf(m);
+    h+=`<div class="lbl">台の向き（お客さんが座る側）</div><div class="chips">${DIR_ORDER.map(d=>`<button class="chip ${m.dir===d?'cur':''}" data-act="m-dir" data-v="${d}" type="button">${DIR_TRI[d]} ${DIR_NAME[d]}</button>`).join('')}</div>`;
+    if(isl.ms.length>1)h+=`<div class="chips"><button class="chip" data-act="isl-rot" data-v="ccw" type="button">↺ ${m.island}島ごと左に回す</button><button class="chip" data-act="isl-rot" data-v="cw" type="button">↻ ${m.island}島ごと右に回す</button></div>`;
+  }
+  if(prep)h+=`<div class="actions"><button class="btn sm" data-act="o-move" type="button">動かす</button><button class="btn sm" data-act="m-swap" type="button">機種を入れ替え</button><button class="btn sm" data-act="o-store" type="button">倉庫へしまう</button><button class="btn sm danger wide2" data-act="o-sell" type="button">売る ${yen(sellPrice(m))}</button></div>`;
   return [`${m.no}番台`,h];
 }
 function decorSheet(o){
@@ -610,7 +641,7 @@ const GUIDE={
 <h3>判定</h3><p>対象台の出し具合が80%以上で「激アツ」、40%未満で「ガセ」。信用が上下します。信用が高いほど、イベントの日に朝から行列ができます。</p>
 <h3>オープン期間の判定</h3><p>グランドオープン（3日）とリニューアル（2日）は、全台の出し具合と満足度で毎日採点されます。期間の平均が悪いと、信用と評判が大きく下がり、しばらく客付きが悪くなります。</p>
 <h3>客足の波</h3><p>土日・祝日・ゴールデンウィーク・お盆・年末年始は客が多く、年金支給日（偶数月15日）は1円パチの年配客、給料日（25日）は高レートの客が増えます。雨の日は少し増えますが、床が汚れやすくなります。</p>`],
-  shop:['店づくり',`<ul><li><b>島</b>：くっついて並んだ台のかたまり。自動でA島・B島…と名前がつきます。</li><li>台は「客席の向き」を決めて置きます。通路がふさがる置き方はできません。</li><li><b>トイレと喫煙室は壁に付きます</b>。マスを使わず、お客さんは扉から出入りします。</li><li><b>たばこゾーン</b>：床を「喫煙OK」に塗れます。たばこを吸う客は喫煙OK席を喜び、吸わない客は嫌がります。喫煙OKの隣の禁煙席は「煙が流れてくる」と不満になります。空気清浄機で防げます。</li><li>禁煙席のたばこ客は、途中で喫煙所（ブース・喫煙室・喫煙OKの通路）へ吸いに行きます。どこにもないと不満です。</li><li>内装の★が多いほど満足度と客足が上がります。</li><li>「片付け」で売るか倉庫にしまえます。倉庫の物は無料で置き直せます。</li></ul>`],
+  shop:['店づくり',`<ul><li><b>島</b>：くっついて並んだ台のかたまり。自動でA島・B島…と名前がつきます。</li><li>台は上下左右どの向きにも置けます。置くときは下の矢印で向きを選び、置いたあとも台をタップ→「台の向き」で変えられます。「島ごと回す」で島をまるごと縦や横に回せます。通路がふさがる置き方はできません。</li><li><b>トイレと喫煙室は壁に付きます</b>。マスを使わず、お客さんは扉から出入りします。</li><li><b>たばこゾーン</b>：床を「喫煙OK」に塗れます。たばこを吸う客は喫煙OK席を喜び、吸わない客は嫌がります。喫煙OKの隣の禁煙席は「煙が流れてくる」と不満になります。空気清浄機で防げます。</li><li>禁煙席のたばこ客は、途中で喫煙所（ブース・喫煙室・喫煙OKの通路）へ吸いに行きます。どこにもないと不満です。</li><li>内装の★が多いほど満足度と客足が上がります。</li><li>「片付け」で売るか倉庫にしまえます。倉庫の物は無料で置き直せます。</li></ul>`],
   people:['店員と常連',`<ul><li><b>ホール係</b>：呼び出しランプに対応します。台12台につき1人が目安。足りないとお客さんが待たされて不満になります。</li><li><b>カウンター係</b>：景品カウンター1つに1人必要。いないと勝ったお客さんが交換できません。</li><li><b>清掃係</b>：床のゴミを片付けます。汚い店は満足度が下がります。</li><li>店員は「速さ」と「接客」が高いほど優秀です。研修でレベルを上げられます。</li></ul>
 <h3>名物常連客</h3><p>頭に★がついているのは名前つきの常連さんです。好きなことと苦手なことがあり、満足するほど通ってくれます。不満が続くと来なくなります。</p>`],
   biz:['物件とライバル',`<ul><li>町には<b>ライバル店</b>があり、お客さんを取り合っています。評判・台数・イベントでシェアが決まります。</li><li>ライバル店がイベントの日は、お客さんを取られやすくなります。</li><li>シェアを奪われ続けたライバル店は閉店し、<b>居抜き物件</b>として売りに出ることがあります。</li><li><b>物件</b>：今の店を広げるほか、居抜き物件や、更地に新築（マス数で値段が決まる）で移転できます。新築には設備のプレゼントがつきます。</li><li>移転すると今の店は売却され、台と設備は倉庫に入ります。新しい店はグランドオープンから。</li><li>毎日の経費は家賃・店員の給料・電気代です。資金のマイナスが7日続くと倒産します。</li><li><b>銀行</b>（経営 → 銀行）でお金を借りられます。利息は毎日かかります。</li></ul>`],
@@ -660,6 +691,8 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'm-lv':{const m=sheetData.m;if(kindOf(m)==='s')m.set=Number(v);else m.nail=Number(v);sfx('tap');save();refreshAll();break}
     case 'm-rate':{const m=sheetData.m;m.rate=v;sfx('tap');save();refreshAll();break}
     case 'm-rot':rotateM(sheetData.m);refreshAll();break;
+    case 'm-dir':setDirM(sheetData.m,Number(v));refreshAll();break;
+    case 'isl-rot':rotateGroup(islandOf(sheetData.m).ms,v==='cw');refreshAll();break;
     case 'o-move':{const t=sheetData.m||sheetData;closeSheet();tool='move';moveIsland=false;moveSel=t;renderDock();toast(t.side?'新しい壁の場所をタップ':'移動先のマスをタップ');break}
     case 'o-store':case 'o-sell':{const t=sheetData.m||sheetData;closeSheet();removeThing(t,a==='o-store'?'store':'sell');break}
     case 'm-swap':sheetData.swap=true;renderSheet();$('#sheetBody').scrollTop=0;break;
@@ -742,7 +775,8 @@ $('#dock').addEventListener('click',e=>{
     case 'manage':openSheet('manage','staff');break;
     case 'open':startDay();break;
     case 'endtool':tool='view';buildItem=null;moveSel=null;renderDock();break;
-    case 'dir':buildDir=(buildDir+1)%4;sfx('tap');renderDock();break;
+    case 'dir':buildDir=b.dataset.v!=null?Number(b.dataset.v):(buildDir+1)%4;sfx('tap');renderDock();break;
+    case 'mrot':if(moveSel&&moveSel.kind==='m'){if(moveIsland)rotateGroup(islandOf(moveSel).ms,true);else rotateM(moveSel);refreshAll()}break;
     case 'mone':moveIsland=false;renderDock();break;
     case 'misl':moveIsland=true;renderDock();break;
     case 'rsell':removeMode='sell';renderDock();break;

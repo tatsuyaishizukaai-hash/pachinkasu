@@ -163,10 +163,15 @@ function drawMachine(m,now){
       R(px+3,py+1,10,11,'#2b2b3a');for(let i=0;i<4;i++)R(px+4,py+3+i*2,8,1,'#3f3f55');
     }
   }else{
-    const r=m.dir===3;
-    R(px+3,py-4,10,20,K);R(px+4,py-3,8,18,md.c);
-    R(px+4,py-2,8,2,fl?'#fff':md.c2);
-    R(r?px+9:px+4,py+1,3,8,K);R(r?px+10:px+5,py+2,1,6,fl?'#fff36b':'#1b1f4a');
+    /* 横向き：客席側に画面と受け皿が見える */
+    const r=m.dir===3,scr=fl?(Math.floor(now/60)%3?'#fff36b':'#fff'):'#1b1f4a';
+    R(px+2,py-4,12,20,K);R(px+3,py-3,10,18,md.c);
+    R(px+3,py-2,10,2,fl?'#fff':md.c2);
+    R(r?px+5:px+10,py+1,1,10,md.c2);R(r?px+7:px+8,py+1,1,10,md.c2);
+    R(r?px+10:px+3,py,3,10,K);R(r?px+11:px+4,py+1,1,8,scr);
+    if(!fl)R(r?px+11:px+4,py+3,1,1,'#ff4fa3');
+    R(r?px+13:px,py+8,3,4,K);R(r?px+13:px+1,py+9,2,2,md.k==='s'?'#fff':'#d4d8e3');
+    R(px+3,py+13,10,2,'#2b2b3a');
   }
   if(m.call&&Math.floor(now/200)%2===0){R(px+5,py-8,6,4,K);R(px+6,py-7,4,2,'#ff2d55')}
   if(m.broken){R(px+3,py+1,10,7,'#334155');const k=Math.floor(now/180)%3;R(px+5+k,py-6-k,2,2,'rgba(200,200,210,.8)');R(px+9-k,py-8+k,2,2,'rgba(160,160,170,.7)');if(Math.floor(now/300)%2)R(px+7,py+3,2,2,'#facc15')}
