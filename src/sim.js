@@ -548,9 +548,9 @@ function closeDay(){
   ms.forEach(m=>{m.yest=m.today;m.today=blank()});
   const byGive=[...ms].sort((a,b)=>(b.yest.out-b.yest.coin)-(a.yest.out-a.yest.coin));
   const voices=Object.entries(D.reasons).filter(([k,r])=>WHY[k]&&k!=='win'&&k!=='lose').map(([k,r])=>({k,n:r.n,score:Math.abs(r.sum),good:!!WHY[k].good})).sort((a,b)=>b.score-a.score).slice(0,5);
-  const rivalNews=openRivals().filter(r=>r.ev).map(r=>r.name);
+  const rivalNews=openRivals().filter(r=>r.ev||r.evKind==='newm'||r.evKind==='go').map(r=>r.name+(r.ev?'':`（${RIV_EV_LABEL[r.evKind]}）`));
   const R={day:S.day,date:dateLong(S.day),visitors:D.visitors,full:D.full,hunters:D.hunters,seg:D.seg,coin:D.coin,out:D.out,gross,drink:D.drink,rent,wages,power,ad:D.ad,net,
-    rep0,rep1:S.rep,trust0,trust1:S.trust,ev:evr,go:gor,best:byGive[0],worst:byGive[byGive.length-1],voices,regVoices,share:D.shares.me,rivalNews,rivalClosed:D.rivalClosed,
+    rep0,rep1:S.rep,trust0,trust1:S.trust,ev:evr,go:gor,best:byGive[0],worst:byGive[byGive.length-1],voices,regVoices,share:D.shares.me,rivalNews,rivalClosed:D.rivalClosed,rivalHit:D.rivalHit,
     rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc,exch:D.exch,completes:D.completes};
   S.hist.push({day:S.day,net:Math.round(net),visitors:D.visitors,rep:S.rep,share:D.shares.me});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
@@ -560,9 +560,11 @@ function closeDay(){
   S.day++;S.event={type:'none',target:null,ad:false};S.phase='prep';
   S.weather.today=S.weather.tomorrow;S.weather.tomorrow=rollWeather(S.day+1);
   if(S.mod&&S.day>S.mod.until)S.mod=null;
-  planRivals();refreshCands(false);refreshOffers(false);
+  refreshCands(false);refreshOffers(false);
+  R.rivalClosures=D.rivalClosures;R.rivalTalks=D.rivalTalks;
   dayStartFeatures(R);
-  R.tomorrow={info:dayInfo(S.day),weather:S.weather.today,rivals:openRivals().filter(r=>r.ev).map(r=>r.name),go:goActive()};
+  rivalsDayStart(R);
+  R.tomorrow={info:dayInfo(S.day),weather:S.weather.today,rivals:openRivals().filter(r=>r.evKind).map(r=>({name:r.name,label:RIV_EV_LABEL[r.evKind],boss:r.boss,say:rivalSay(r).text})),plans:visiblePlans().filter(p=>p.open-S.day<=7).map(p=>({shop:p.shop,open:p.open})),go:goActive()};
   custs=[];staffA=[];undoStack=[];openSnap=null;
   save();
   onDayClosed(R);

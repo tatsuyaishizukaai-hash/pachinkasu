@@ -133,16 +133,6 @@ const ROLES={
 const FAMILY=['佐藤','鈴木','高橋','田中','伊藤','渡辺','山本','中村','小林','加藤','吉田','山田','松本','井上','木村','林','清水','山口','森','池田','阿部','石川','前田','藤田'];
 const GIVEN=['陽太','蓮','結衣','葵','大和','美咲','翔','さくら','颯','ひなた','健太','真央','拓海','彩','悠真','優花','湊','凛','樹','楓'];
 
-/* ライバル店 */
-const RIVAL_POOL=[
- {name:'パーラーキング',col:'#e8392e',rep:52,size:60,pat:{t:'tail',v:5}},
- {name:'ゴールデン会館',col:'#eab308',rep:46,size:44,pat:{t:'wd',v:6}},
- {name:'ミラクル777',col:'#7c3aed',rep:38,size:32,pat:{t:'tail',v:7}},
- {name:'ダイヤモンドホール',col:'#0ea5e9',rep:48,size:50,pat:{t:'tail',v:8}},
- {name:'ラッキープラザ',col:'#16a34a',rep:42,size:36,pat:{t:'wd',v:0}},
- {name:'夢屋',col:'#f97316',rep:40,size:30,pat:{t:'tail',v:3}},
-];
-
 /* 名物常連客 */
 const REG_DEFS=[
  {id:'taka',name:'スロプロのタカシ',seg:'s-hi',hunter:1,smoker:0,elder:0,sched:'event',likes:'イベント日と高設定',hates:'ガセイベント',look:{shirt:'#0f172a',hair:'#1b1b1b',skin:'#f3cfa9',cap:'#ff2d55'}},

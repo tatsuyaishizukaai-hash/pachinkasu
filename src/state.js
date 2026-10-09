@@ -8,6 +8,7 @@ const sgn=n=>(n>=0?'+':'-')+'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP')
 const man=n=>{const a=Math.abs(n);return (n<0?'-':'')+(a>=1e8?(a/1e8).toFixed(1)+'億':a>=1e4?Math.round(a/1e4).toLocaleString('ja-JP')+'万':Math.round(a))+'円'};
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
+const rndi=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const key=(x,y)=>y*G.W+x;
@@ -108,8 +109,9 @@ function ser(){return JSON.stringify(S,(k,v)=>SKIP_KEYS.has(k)?undefined:v)}
 let openSnap=null;
 function save(){try{localStorage.setItem(SAVE_KEY,S.phase==='open'?openSnap:ser())}catch(e){}}
 function fillDefaults(){
-  const d={loan:0,regu:[],gen:1,goals:{},moved:0,ended:null,yearLog:[],negDays:0};
+  const d={loan:0,regu:[],gen:1,goals:{},moved:0,ended:null,yearLog:[],negDays:0,rivalPlans:[],rivalLog:[],incidents:[],selfScout:0};
   for(const k in d)if(S[k]==null)S[k]=JSON.parse(JSON.stringify(d[k]));
+  migrateRivals();
   S.v=3;
 }
 function load(str){

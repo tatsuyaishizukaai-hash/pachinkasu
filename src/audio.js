@@ -34,6 +34,7 @@ function noise(d,{v=0.1,at=0,hp=1000,dest=null,bp=null}={}){
 function duck(){if(!AC||!prefs.bgm)return;const t=AC.currentTime;BGMG.gain.cancelScheduledValues(t);BGMG.gain.setValueAtTime(0.07,t);BGMG.gain.setTargetAtTime(0.2,t+0.6,0.3)}
 const SFX={
   tap:()=>tone(1046,0.05,{v:0.05}),
+  blip:()=>tone(1320,0.022,{type:'square',v:0.012}),
   place:()=>{tone(523,0.07,{v:0.09});tone(784,0.1,{v:0.09,at:0.06});noise(0.06,{v:0.05,bp:3000})},
   cash:()=>{tone(1319,0.06,{v:0.07});tone(1760,0.14,{v:0.07,at:0.05})},
   bad:()=>{tone(180,0.22,{type:'sawtooth',v:0.08,to:80});tone(120,0.3,{type:'square',v:0.05,at:0.05,to:60})},

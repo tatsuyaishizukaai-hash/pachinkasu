@@ -58,8 +58,8 @@ function pills(){
   else if(S.event.type!=='none')p.push(`<span class="pill ev">${esc(eventLabel())}</span>`);
   for(const r of regPending())if(r.n)p.push(`<span class="pill reg">規制 あと${r.until-S.day+1}日で${r.n}台撤去</span>`);
   info.tags.forEach(t=>p.push(`<span class="pill cal">${t}</span>`));
-  const re=openRivals().filter(r=>r.ev||S.day<=r.goUntil);
-  if(re.length)p.push(`<span class="pill riv">${re.map(r=>esc(r.name)).join('・')}がイベント</span>`);
+  for(const r of openRivals())if(r.evKind)p.push(`<span class="pill riv">${esc(r.name)}が${RIV_EV_LABEL[r.evKind]}</span>`);
+  for(const pl of visiblePlans())p.push(`<span class="pill riv">${esc(pl.shop)} オープンまで${pl.open-S.day}日</span>`);
   return p.join('');
 }
 function renderStatus(){
@@ -484,6 +484,20 @@ ${openRivals().some(r=>r.ev)?'<div class="sub neg">今日はライバル店も�
 }
 
 /* ---------- 経営 ---------- */
+const ptImg=(face,ex,col,cls)=>`<span class="pt ${cls||''}" style="--fc:${col||'#ffd23f'}"><img src="${portraitURL(face,ex)}" alt=""></span>`;
+function rivalCard(r,fc){
+  const B=bossOf(r),T=typeOf(r),sh=fc.shares[r.id]||0,say=rivalSay(r),sc=scoutOn(r)?r.scout:null,lab=r.evKind?RIV_EV_LABEL[r.evKind]:null,prep=S.phase==='prep';
+  let h=`<div class="rv" style="--rc:${r.col}"><div class="rv-top">${ptImg(B.face,say.ex,B.col)}<div class="rv-t">
+<div class="rv-h"><b>${esc(r.name)}</b><span class="tb" style="background:${T.col}">${T.name}</span><span class="tag ${r.health<=30?'new':''}">${rivalState(r)}</span></div>
+<div class="rv-boss">店長 ${esc(B.name)}<span>${esc(B.title)}</span></div>
+<div class="say">「${esc(say.text)}」</div></div></div>
+<div class="ds">台数${r.size}台・評判${Math.round(r.rep)}・${patLabel(r.pat)}がイベント${r.next?'・<b class="neg">隣の店</b>':''}${lab?`・<b class="neg">今日は${lab}</b>`:''}</div>
+<div class="bar2"><i style="width:${Math.round(sh*100)}%;background:${r.col}"></i></div><div class="sub">今日の見込みシェア ${Math.round(sh*100)}%</div>`;
+  if(sc)h+=`<div class="scout"><div class="sc-h">偵察メモ<span>${sc.lv>=2?'自分で打った':'店員の報告'}・${dateStr(sc.until)}まで</span></div>
+<div class="sc-g"><span>還元率</span><b>約${Math.round(sc.pay*100)}%</b><span>1日の客</span><b>約${sc.vis}人</b><span>次のイベント</span><b>${sc.nextEv?dateStr(sc.nextEv):'不明'}</b>${sc.newm?`<span>次の新台入替</span><b>${dateStr(sc.newm)}ごろ</b>`:''}<span>経営の体力</span><b><i class="hp"><i style="width:${clamp(sc.health,0,100)}%"></i></i></b>${sc.lv>=2?`<span>弱点</span><b class="neg">${esc(WEAK_TXT[B.weak])}</b>`:''}</div>${sc.lv>=2?`<div class="sub">あなたの店の${SEG_NAME[B.weak]}は${Math.round(mySegRatio(B.weak)*100)}%（${weakPen(r)<0.99?'お客さんを奪えています':'増やすと効果が出ます'}）</div>`:''}</div>`;
+  h+=`<div class="actions"><button class="btn sm" data-act="rv-scout" data-v="staff" data-id="${r.id}" ${!prep||S.money<SCOUT_COST||(r.scout&&r.scout.day===S.day)||!S.staff.length?'disabled':''} type="button">店員を偵察に出す<br><span class="sub">${yen(SCOUT_COST)}</span></button><button class="btn sm" data-act="rv-scout" data-v="self" data-id="${r.id}" ${!prep||S.selfScout===S.day?'disabled':''} type="button">自分で打ちに行く<br><span class="sub">1日1回・弱点もわかる</span></button></div>`;
+  return h+`<div class="sub tdesc">${esc(T.desc)}</div></div>`;
+}
 function manageSheet(tab){
   tab=tab||'staff';
   let h=tabs([['staff','店員'],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
@@ -496,14 +510,18 @@ function manageSheet(tab){
     h+=S.cands.map(c=>`<div class="item"><span class="sw" style="background:${ROLES[c.role].col}"></span><div class="it"><div class="nm">${esc(c.name)}</div><div class="ds">${ROLES[c.role].name}・速さ${starTxt(c.spd)}・接客${starTxt(c.srv)}<br>給料 ${yen(c.wage)}／日</div></div><button class="btn sm" data-act="st-hire" data-id="${c.id}" type="button">雇う</button></div>`).join('')||'<div class="empty">今日の応募はもういません</div>';
     h+=`<div class="sub">${Object.values(ROLES).map(r=>`${r.name}：${r.desc}`).join('<br>')}</div>`;
   }else if(tab==='rival'){
-    const fc=forecast();
+    const fc=forecast(),vp=visiblePlans(),rp=rumorPlans();
     h+=`<div class="box">今日の見込みシェア：<b>${Math.round(fc.shares.me*100)}%</b>（あなたの店）</div>`;
-    h+=S.rivals.map(r=>{
-      const sh=fc.shares[r.id]||0,state=!r.open?'閉店':r.health>60?'好調':r.health>30?'ふつう':r.health>12?'苦しい':'危ない';
-      return `<div class="rv ${r.open?'':'closed'}"><div class="rv-h"><span class="sw" style="background:${r.col}"></span><b>${esc(r.name)}</b><span class="tag ${r.health<=30&&r.open?'smk':''}">${state}</span></div>
-${r.open?`<div class="ds">台数${r.size}台・評判${Math.round(r.rep)}・${patLabel(r.pat)}がイベント${S.day<=r.goUntil?'・<b class="neg">オープン中</b>':''}${r.ev?'・<b class="neg">今日イベント</b>':''}</div>
-<div class="bar2"><i style="width:${Math.round(sh*100)}%;background:${r.col}"></i></div><div class="sub">今日の見込みシェア ${Math.round(sh*100)}%</div>`:`<div class="ds">${dateStr(r.closedDay)}に閉店</div>`}</div>`}).join('');
-    h+=`<div class="sub">あなたの店が評判を上げてお客さんを集めるほど、ライバル店の経営は苦しくなります。閉店した店は居抜き物件として買えることがあります。</div>`;
+    if(vp.length||rp.length){
+      h+=`<div class="lbl">新店オープン情報</div>`;
+      h+=vp.map(p=>{const B=BOSS_BY[p.boss],T=RIVAL_TYPES[B.type];return `<div class="rv plan" style="--rc:${B.col}"><div class="rv-top">${ptImg(B.face,B.ex,B.col)}<div class="rv-t"><div class="rv-h"><b>${esc(p.shop)}</b><span class="tb" style="background:${T.col}">${T.name}</span></div><div class="rv-boss">店長 ${esc(B.name)}<span>${esc(B.title)}</span></div><div class="ds"><b class="neg">${dateStr(p.open)} グランドオープン（あと${p.open-S.day}日）</b><br>場所：${esc(p.site)}${p.next?'　<span class="tag new">隣に出店</span>':''}${p.revenge?'　<span class="tag dark">リベンジ</span>':''}</div></div></div><div class="sub">${esc(T.desc)}</div></div>`}).join('');
+      h+=rp.map(p=>`<div class="rv plan rumor"><div class="rv-top"><span class="pt q">？</span><div class="rv-t"><div class="rv-h"><b>工事中…</b></div><div class="ds">${esc(p.site)}で工事が始まった。新しいパチンコ店ができるらしい</div></div></div></div>`).join('');
+    }
+    h+=`<div class="lbl">営業中のライバル店</div>`;
+    h+=openRivals().map(r=>rivalCard(r,fc)).join('')||'<div class="empty">いま営業中のライバル店はありません</div>';
+    const log=S.rivalLog.slice(-8).reverse();
+    if(log.length)h+=`<div class="lbl">倒したライバル店（${S.rivalLog.length}軒）</div><div class="rv-logs">${log.map(l=>{const B=BOSS_BY[l.boss];return `<div class="rv-log">${ptImg(B.face,'sad',B.col,'sm')}<div><b>${esc(l.shop)}</b><br><span class="sub">${esc(B.name)}・${dateStr(l.day)}に閉店</span></div></div>`}).join('')}</div>`;
+    h+=`<div class="sub">・相手のイベント日にあなたの店が「激アツ」を出すと、相手に大きなダメージ。<br>・偵察すると、還元率・次のイベント日・店の弱点がわかります。弱点の客層の台を増やすと、相手のお客さんを奪いやすくなります。<br>・閉店させた店は居抜き物件として買えることがあります。しばらくすると、別のライバル店が出店してきます。</div>`;
   }else if(tab==='reg'){
     h+=REG_DEFS.map(def=>{const st=S.regs[def.id],hearts=Math.round(st.loy/20);return `<div class="item ${st.st==='gone'?'locked':''}"><span class="sw face" style="background:${def.look.shirt}"></span><div class="it"><div class="nm">${esc(def.name)} ${st.loy>=70?'<span class="tag new">常連</span>':''}</div><div class="ds">${'♥'.repeat(hearts)}${'♡'.repeat(5-hearts)} ・ ${regStatus(st)}・来店${st.visits}回<br>${st.met?`好き：${esc(def.likes)}／苦手：${esc(def.hates)}`:'まだ好みがわかりません'}${st.say?`<br>「${esc(st.say)}」`:''}</div></div></div>`}).join('');
     h+=`<div class="sub">常連になった人が多いほど、お店の評判が少しずつ上がります。離れた人も、評判が高くなるとまた来てくれることがあります。</div>`;
@@ -573,17 +591,18 @@ function reportSheet(R){
   if(R.best&&R.best.yest){const g=m=>m.yest.out-m.yest.coin,lv=m=>kindOf(m)==='s'?`設定${m.set}`:`釘${NAIL_SHORT[m.nail+2]}`;h+=`<div class="box stats"><span>いちばん出た台：<b>${R.best.no}番</b>（${lv(R.best)}・客${sgn(g(R.best))}）</span><span>いちばん吸った台：<b>${R.worst.no}番</b>（${lv(R.worst)}・客${sgn(g(R.worst))}）</span></div>`}
   if(R.regVoices.length)h+=`<div class="lbl">常連さんの声</div>`+R.regVoices.map(v=>`<div class="voice ${v.good?'':'bad'}"><b>${esc(v.name)}</b>「${esc(v.say)}」</div>`).join('');
   if(R.voices.length)h+=`<div class="lbl">お客さんの声</div>`+R.voices.map(v=>`<div class="voice ${v.good?'':'bad'}">${esc(WHY[v.k].t)}<span class="cnt">${v.n}人</span></div>`).join('');
-  if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
+  if(R.rivalHit&&R.rivalHit.length)h+=`<div class="box pos">${R.rivalHit.map(esc).join('・')}のイベント日に激アツをぶつけた！ 相手の経営に大ダメージ</div>`;
+  else if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
   if(R.brokenN)h+=`<div class="sub">今日は${R.brokenN}台が故障しました。ホール係が多いと早く直せます</div>`;
   if(R.completes&&R.completes.length)h+=`<div class="box neg">コンプリート ${R.completes.length}台：${R.completes.map(c=>`${c.no}番（${esc(shortName(MB[c.id].name))}）`).join('・')}<br><span class="sub">差玉の上限（パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚）まで出て、その日は打ち止めになりました</span></div>`;
   if(R.gotoCaught)h+=`<div class="box">ゴト師を${R.gotoCaught}人捕まえました！</div>`;
   if(R.gotoEsc)h+=`<div class="box neg">ゴト師に逃げられ、${yen(R.gotoEsc)}の被害。防犯カメラを付けると見つけやすくなります</div>`;
   if(R.goals&&R.goals.length)h+=R.goals.map(g=>`<div class="rankup">目標達成「${esc(g.name)}」<br><span>ボーナス ${man(g.reward)}</span></div>`).join('');
   if(R.year)h+=`<div class="box col"><div class="lbl">${R.year.year-1}年度 年間ランキング</div>${R.year.rows.map((r,i)=>`<div>${i+1}位 ${r.me?'<b>':''}${esc(r.name)}${r.me?'</b>':''}（シェア${Math.round(r.share*100)}%）</div>`).join('')}${R.year.bonus?`<div class="pos">賞金 ${man(R.year.bonus)}</div>`:''}</div>`;
-  if(R.morning&&R.morning.length)h+=R.morning.map(m=>`<div class="box neg">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
+  if(R.morning&&R.morning.length)h+=R.morning.map(m=>`<div class="box ${m.good?'pos':'neg'}">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
   if(R.rankUp)h+=`<div class="rankup">ランクアップ！ ランク${R.rankNo}「${esc(R.rankUp)}」<br><span>新しい台・設備・物件が解放されました</span></div>`;
   const t=R.tomorrow;
-  h+=`<div class="box tmr"><b>明日 ${dateLong(R.day+1)}</b>　${WEATHER[t.weather].name}${t.info.tags.length?'・'+t.info.tags.join('・'):''}${t.go?'・オープン期間':''}${t.rivals.length?`<br><span class="neg">${t.rivals.map(esc).join('・')}がイベント予定</span>`:''}</div>`;
+  h+=`<div class="box tmr col"><div><b>明日 ${dateLong(R.day+1)}</b>　${WEATHER[t.weather].name}${t.info.tags.length?'・'+t.info.tags.join('・'):''}${t.go?'・オープン期間':''}</div>${t.rivals.map(x=>{const B=BOSS_BY[x.boss];return `<div class="tm-rv">${ptImg(B.face,B.ex,B.col,'sm')}<div><b class="neg">${esc(x.name)}が${esc(x.label)}</b><br><span class="sub">${esc(B.name)}「${esc(x.say)}」</span></div></div>`}).join('')}${(t.plans||[]).map(p=>`<div class="neg">${esc(p.shop)}のオープンまであと${p.open-R.day-1}日</div>`).join('')}</div>`;
   h+=`<div class="actions"><button class="btn sm wide2" data-act="open-hall" type="button">ホールデータ（出玉ランキング・稼働率）</button></div>`;
   h+=`<button class="btn primary" data-act="close" type="button">明日の準備へ</button>`;
   return [`${R.date}の日報`,h];
@@ -597,12 +616,11 @@ function onDayClosed(R){
     else if(R.ev){R.ev.cls==='bad'?sfx('gagan'):sfx('stamp')}
     else if(R.go)sfx('stamp');
     if(R.rankUp){setTimeout(()=>{sfx('fanfare');telop('ランクアップ！',R.rankUp,'good')},R.go&&R.go.final?2000:300)}
-    if(R.rivalClosed){setTimeout(()=>telop('ライバル閉店！',R.rivalClosed+'が閉店しました','good'),R.rankUp?4200:2200)}
   },350);
   applyLayout();
-  pendingEnding=R.ending||null;pendingMorning=R.morning||[];
+  pendingEnding=R.ending||null;pendingMorning=R.morning||[];pendingTalks=R.talks||[];
 }
-let pendingEnding=null,pendingMorning=[];
+let pendingEnding=null,pendingMorning=[],pendingTalks=[];
 function endSheet(type){
   const clear=type==='clear';
   return [clear?'エンディング':'3年が過ぎました',`<div class="burstcard ${clear?'gold':''}"><div class="bc-main">${clear?'伝説のホール誕生！':'営業3年の結果'}</div><div class="bc-sub">${esc(S.name)}・${dateLong(S.day-1)}</div></div>
@@ -613,8 +631,13 @@ function endSheet(type){
 function afterReport(){
   if((S.negDays||0)>=7){openSheet('over');return}
   if(pendingEnding){const t=pendingEnding;pendingEnding=null;openSheet('end',t);sfx('fanfare');telop(t==='clear'?'伝説達成！':'3年経過','','good');return}
-  if(pendingMorning.length){const m=pendingMorning.shift();setTimeout(()=>{telop(m.title,m.sub,'bad');sfx('gagan')},200)}
-  if(goActive()&&goDayIdx()===0)setTimeout(()=>telop(S.go.type==='grand'?'グランドオープン準備':'リニューアル準備','今日からオープン期間！','good'),200);
+  const steps=[done=>setTimeout(done,200)];
+  for(const t of pendingTalks)steps.push(done=>talk(t,done));
+  for(const m of pendingMorning){steps.push(telopStep(m.title,m.sub,m.good?'good':'bad'));if(m.talk)steps.push(done=>talk(m.talk,done))}
+  pendingTalks=[];pendingMorning=[];
+  steps.push(done=>runIncidents(done));
+  if(goActive()&&goDayIdx()===0)steps.push(done=>{telop(S.go.type==='grand'?'グランドオープン準備':'リニューアル準備','今日からオープン期間！','good');done()});
+  runSeq(steps);
 }
 function overSheet(){
   return ['倒産…',`<div class="burstcard bad"><div class="bc-main">倒産</div><div class="bc-sub">資金のマイナスが7日続きました</div></div><div class="box">${esc(S.name)}は${S.day-1}日間営業しました。来店者の合計は${S.totalVisitors.toLocaleString('ja-JP')}人でした。</div><button class="btn primary" data-act="restart" type="button">新しいお店で最初から</button>`];
@@ -642,7 +665,11 @@ const GUIDE={
   shop:['店づくり',`<ul><li><b>島</b>：くっついて並んだ台のかたまり。自動でA島・B島…と名前がつきます。</li><li>台は上下左右どの向きにも置けます。置くときは下の矢印で向きを選び、置いたあとも台をタップ→「台の向き」で変えられます。「島ごと回す」で島をまるごと縦や横に回せます。通路がふさがる置き方はできません。</li><li><b>トイレと喫煙室は壁に付きます</b>。マスを使わず、お客さんは扉から出入りします。</li><li><b>たばこゾーン</b>：床を「喫煙OK」に塗れます。たばこを吸う客は喫煙OK席を喜び、吸わない客は嫌がります。喫煙OKの隣の禁煙席は「煙が流れてくる」と不満になります。空気清浄機で防げます。</li><li>禁煙席のたばこ客は、途中で喫煙所（ブース・喫煙室・喫煙OKの通路）へ吸いに行きます。どこにもないと不満です。</li><li>内装の★が多いほど満足度と客足が上がります。</li><li>「片付け」で売るか倉庫にしまえます。倉庫の物は無料で置き直せます。</li></ul>`],
   people:['店員と常連',`<ul><li><b>ホール係</b>：呼び出しランプに対応します。台12台につき1人が目安。足りないとお客さんが待たされて不満になります。</li><li><b>カウンター係</b>：景品カウンター1つに1人必要。いないと勝ったお客さんが交換できません。</li><li><b>清掃係</b>：床のゴミを片付けます。汚い店は満足度が下がります。</li><li>店員は「速さ」と「接客」が高いほど優秀です。研修でレベルを上げられます。</li></ul>
 <h3>名物常連客</h3><p>頭に★がついているのは名前つきの常連さんです。好きなことと苦手なことがあり、満足するほど通ってくれます。不満が続くと来なくなります。</p>`],
-  biz:['物件とライバル',`<ul><li>町には<b>ライバル店</b>があり、お客さんを取り合っています。評判・台数・イベントでシェアが決まります。</li><li>ライバル店がイベントの日は、お客さんを取られやすくなります。</li><li>シェアを奪われ続けたライバル店は閉店し、<b>居抜き物件</b>として売りに出ることがあります。</li><li><b>物件</b>：今の店を広げるほか、居抜き物件や、更地に新築（マス数で値段が決まる）で移転できます。新築には設備のプレゼントがつきます。</li><li>移転すると今の店は売却され、台と設備は倉庫に入ります。新しい店はグランドオープンから。</li><li>毎日の経費は家賃・店員の給料・電気代です。資金のマイナスが7日続くと倒産します。</li><li><b>銀行</b>（経営 → 銀行）でお金を借りられます。利息は毎日かかります。</li></ul>`],
+  biz:['物件とお金',`<ul><li><b>物件</b>：今の店を広げるほか、居抜き物件や、更地に新築（マス数で値段が決まる）で移転できます。新築には設備のプレゼントがつきます。</li><li>移転すると今の店は売却され、台と設備は倉庫に入ります。新しい店はグランドオープンから。</li><li>毎日の経費は家賃・店員の給料・電気代です。資金のマイナスが7日続くと倒産します。</li><li><b>銀行</b>（経営 → 銀行）でお金を借りられます。利息は毎日かかります。</li></ul>`],
+  riv:['ライバル店',`<p>町には<b>ライバル店</b>があり、お客さんを取り合っています。評判・台数・イベントでシェアが決まります。どの店にも<b>店長</b>がいて、それぞれのやり方で攻めてきます。</p>
+<h3>4つのタイプ</h3><ul><li><b>大手チェーン</b>：台が多く資金も豊富。10日〜2週間ごとに新台入替。傾くと一度だけ本部がテコ入れに来ます。</li><li><b>地域密着の老舗</b>：常連が多くしぶとい。年金支給日に強い。</li><li><b>煽り系イベント店</b>：イベントの日はすごい人。ふだんは弱く、あなたの店の信用が高いとガセがばれて評判が落ちます。</li><li><b>優良店</b>：いつもそこそこ出していて評判が高い。崩れにくい。</li></ul>
+<h3>戦い方</h3><ul><li><b>偵察</b>（経営 → ライバル）：店員を送ると還元率・客数・次のイベント日がわかります。自分で打ちに行くと、店の<b>弱点</b>もわかります。</li><li>弱点の客層（例：1円パチンコが少ない）の台をあなたの店で増やすと、その店のお客さんを奪いやすくなります。</li><li>相手のイベント日にあなたの店が<b>激アツ</b>を出すと、相手の経営に大ダメージ。</li><li>シェアを奪われ続けた店は閉店し、居抜き物件として売りに出ることがあります。</li></ul>
+<h3>新しいライバル</h3><ul><li>店が閉まると、しばらくして跡地などに<b>新しい店</b>が出店してきます。工事のうわさ → オープン告知 → グランドオープンの順。オープン期間はお客さんを大きく取られます。</li><li>あなたの店のランクや大きさに合わせて、新しい店も強くなります。ランク3からは<b>隣に出店</b>してくることも。</li><li>ライバル店は、あなたの店員や常連さんを<b>引き抜き</b>に来ます。引き抜きの相談には、昇給・説得・送り出すの3つで答えます。</li></ul>`],
   kishu:['機種と出玉',`<h3>パチンコ</h3><p>機種ごとに<b>初当り確率</b>（1/99.9・1/199・1/319・1/349・1/399・1/599）が決まっています。確率が重いほど当たるまで時間がかかりますが、1回の当りが大きく、RUSHの連チャンで一撃数万発になることもあります。<b>釘</b>は回りやすさ（＝お店の出し具合）を決めます。</p>
 <h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります。</p>
 <h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
@@ -884,6 +911,7 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'menu-rot':prefs.rot=v;savePrefs();applyLayout();renderSheet();break;
     case 'ev-fill':eventTargets().forEach(m=>{if(kindOf(m)==='s')m.set=v==='max'?6:5;else m.nail=v==='max'?2:1});sfx('good');save();refreshAll();break;
     case 'mg-tab':sheetData=v;renderSheet();$('#sheetBody').scrollTop=0;break;
+    case 'rv-scout':{const r=S.rivals.find(x=>x.id===Number(id));if(!r||S.phase!=='prep')break;const o=v==='self'?scoutBySelf(r):scoutByStaff(r);if(o.err){toast(o.err);break}save();refreshAll();sfx(v==='self'?(o.res>=0?'cash':'bad'):'tap');talk(o.lines,()=>{if(sheetKind==='manage')renderSheet()});break}
     case 'mg-back':openSheet('manage','prop');break;
     case 'st-hire':{const c=S.cands.find(x=>x.id===Number(id));if(c){hireStaff(c);S.cands=S.cands.filter(x=>x!==c);sfx('good');toast(`${c.name}さんを雇いました`);save();refreshAll()}break}
     case 'st-fire':{const s=findStaff(id);if(s){S.staff=S.staff.filter(x=>x!==s);sfx('tap');toast(`${s.name}さんがやめました`);save();refreshAll()}break}
@@ -940,7 +968,7 @@ function onDock(e){
     case 'hall':openSheet('hall','rank');break;
     case 'event':openSheet('event');break;
     case 'manage':openSheet('manage','staff');break;
-    case 'open':startDay();break;
+    case 'open':if(S.incidents.length)runIncidents(()=>{if(S.phase==='prep')startDay()});else startDay();break;
     case 'endtool':tool='view';buildItem=null;moveSel=null;renderDock();break;
     case 'dir':buildDir=b.dataset.v!=null?Number(b.dataset.v):(buildDir+1)%4;sfx('tap');renderDock();break;
     case 'mrot':if(moveSel&&moveSel.kind==='m'){if(moveIsland)rotateGroup(islandOf(moveSel).ms,true);else rotateM(moveSel);refreshAll()}break;

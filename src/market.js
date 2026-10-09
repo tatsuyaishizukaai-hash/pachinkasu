@@ -36,45 +36,11 @@ const goActive=()=>!!(S.go&&S.day>=S.go.start&&S.day<S.go.start+S.go.len);
 const goDayIdx=()=>S.go?S.day-S.go.start:-1;
 const GO_MULT={grand:[3.2,2.7,2.3],renewal:[2.4,2.0]};
 
-/* ---------- ライバル ---------- */
-const capF=n=>Math.pow((n+10)/30,0.6);
-function newRival(def){return {id:S.nid++,name:def.name,col:def.col,rep:def.rep,base:def.rep,size:def.size,health:rnd(60,90),pat:def.pat,open:true,goUntil:0,ev:false,closedDay:0}}
-function initRivals(){S.rivals=RIVAL_POOL.slice(0,3).map(newRival)}
-const openRivals=()=>S.rivals.filter(r=>r.open);
-const patLabel=p=>p.t==='tail'?`${p.v}のつく日`:`毎週${WD[p.v]}曜`;
-function planRivals(){
-  const d=dateOf(S.day);
-  for(const r of openRivals()){
-    r.ev=(r.pat.t==='tail'&&d.getDate()%10===r.pat.v)||(r.pat.t==='wd'&&d.getDay()===r.pat.v)||Math.random()<0.06;
-  }
-}
-const rivalBase=r=>(10+r.base)*capF(r.size);
-const rivalAttract=r=>(10+r.rep)*capF(r.size)*(r.ev?1.7:1)*(S.day<=r.goUntil?2.4:1);
-function rivalsEndDay(shares,goodEvent){
-  const op=openRivals();
-  const totalRef=op.reduce((a,r)=>a+rivalBase(r),0)+36;
-  for(const r of op){
-    const ref=rivalBase(r)/totalRef,sh=shares[r.id]||0;
-    r.health=clamp(r.health+(sh-ref)*22+rnd(-1.2,1.2)+(r.health<60?0.25:0)-(r.ev&&goodEvent?1.5:0),-5,100);
-    r.rep=clamp(r.rep+(r.base-r.rep)*0.03+rnd(-0.8,0.8)-Math.max(0,(S.rep-r.rep)/60),5,95);
-    if(r.health<=0&&S.day>20){
-      r.open=false;r.closedDay=S.day;
-      news(`${r.name}が閉店しました。居抜き物件として売りに出ています`,'big');
-      S.offers.unshift(inukiFromRival(r));
-      D.rivalClosed=r.name;
-    }
-  }
-  const closed=S.rivals.filter(r=>!r.open);
-  if(op.length<3&&closed.length&&S.day-Math.max(...closed.map(r=>r.closedDay))>=25&&Math.random()<0.05){
-    const used=new Set(S.rivals.map(r=>r.name));const def=RIVAL_POOL.find(p=>!used.has(p.name));
-    if(def){const r=newRival(def);r.goUntil=S.day+3;S.rivals.push(r);news(`新しいライバル店「${r.name}」が明日グランドオープン！`,'big')}
-  }
-}
-
 /* ---------- 名物常連 ---------- */
 function initRegs(){S.regs={};REG_DEFS.forEach(r=>{S.regs[r.id]={loy:Math.round(rnd(18,34)),st:'new',visits:0,say:null,met:false}})}
 function regWantsVisit(def,st,info){
   if(st.st==='gone'){if(S.rep>60&&Math.random()<0.02){st.st='new';st.loy=22;news(`${def.name}がまた来てくれるようになった`);}else return false}
+  if(st.away)return false;
   const ev=S.event.type!=='none'||goActive();
   let p=0;
   switch(def.sched){
@@ -92,7 +58,7 @@ function regWantsVisit(def,st,info){
 function regArrival(def){
   switch(def.sched){case 'event':case 'nail':return OPEN;case 'pension':return OPEN+rnd(0,40);case 'evening':return rnd(1080,1170);case 'daily':return rnd(660,960);case 'afternoon':return rnd(780,900);default:return rnd(600,840)}
 }
-const regStatus=st=>st.st==='gone'?'来なくなった':st.loy>=70?'常連':st.met?'ときどき来る':'まだ来ていない';
+const regStatus=st=>st.st==='gone'?'来なくなった':st.away?`${st.away.name}に浮気中（${dateStr(st.away.until+1)}ごろ戻る）`:st.loy>=70?'常連':st.met?'ときどき来る':'まだ来ていない';
 
 /* ---------- 店員 ---------- */
 function makeCandidate(role,spd,srv){
