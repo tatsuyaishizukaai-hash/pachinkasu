@@ -206,6 +206,12 @@ function drawCust(c,now){
   const by=drawPerson(px,py,c.L,face,pose,walk?ph:0);
   if(c.st==='smoking'||(seated&&c.smoker&&c.zone&&Math.floor(now/700+c.ph)%3===0)){const k=Math.floor(now/150)%4;R(px+4,by-6-k,1,1,'rgba(240,240,240,.9)');R(px+5,by-8-k,1,1,'rgba(240,240,240,.6)');R(px+3,by-5,1.5,0.5,'#f8fafc')}
   if(c.reg){R(px-2,by-16,5,5,K);R(px-1,by-15,3,3,'#facc15')}
+  /* 検査の人：書類ばさみ */
+  if(c.insp){R(px+3,by-7,4,5,K);R(px+3.5,by-6.5,3,4,'#f8fafc');R(px+4,by-5.5,2,0.5,'#94a3b8');R(px+4,by-4.5,2,0.5,'#94a3b8')}
+  /* ハイエナ：歩いているあいだは、ハマり台を探す目のマーク */
+  if(c.hyena&&!seated&&!c.emote&&!(c.bubble&&now<c.bubble.until)){const yy=by-18;R(px-4,yy,9,6,K);R(px-3,yy+1,7,4,'#e4e4e7');R(px-1,yy+1.5,3,3,K);R(px-0.5,yy+2,1,1,'#fff')}
+  /* 抽選入場の番号札（入ってすぐのあいだ） */
+  if(c.ticket&&(c.st==='enter'||c.st==='toSeat')&&!c.emote){const t=String(c.ticket),w=t.length*4+5,yy=by-19;R(px-w/2-1,yy-1,w+2,9,K);R(px-w/2,yy,w,7,'#fff7cc');R(px-w/2,yy,w,1.5,'#ff2d55');txt(t,px,yy+4,5,'#16121f')}
   if(c.bubble&&now<c.bubble.until&&!c.emote&&cam.s/dpr>=1.4){
     const t=c.bubble.text.length>11?c.bubble.text.slice(0,10)+'…':c.bubble.text,w=t.length*5+6,yy=(c.reg?by-24:by-19);
     R(px-w/2-1,yy-1,w+2,9,K);R(px-w/2,yy,w,7,'#fff');R(px-1,yy+7,2,2,K);txt(t,px,yy+3.7,5,'#16121f');
@@ -257,6 +263,9 @@ function drawOverlay(now,tool){
         else{R(px+8,py-12,9,7,K);R(px+8.75,py-11.25,7.5,5.5,NAIL_COL[m.nail+2]);txt(NAIL_SHORT[m.nail+2],px+12.5,py-8.4,4,'#fff')}
       }else if(mode==='no'){R(px+3,py-12,10,7,K);R(px+3.75,py-11.25,8.5,5.5,'#fff');txt(String(m.no),px+8,py-8.4,5,K)}
       else if(mode==='rate'){const lo=m.rate==='lo';R(px+3,py-12,10,7,K);R(px+3.75,py-11.25,8.5,5.5,lo?'#22c55e':'#ff2d55');txt(rateLabel(m),px+8,py-8.4,4,'#fff')}
+      else if(mode==='hama'){const tj=tenjoOf(m);if(tj){const hm=hamaOf(m),f=hm/tj,col=f>=0.75?'#ff2d55':f>=0.5?'#f97316':f>=0.25?'#eab308':'#64748b',t=String(hm);
+        R(px,py-13,16,8,K);R(px+0.75,py-12.25,14.5,6.5,'#1f2937');R(px+0.75,py-7.25,14.5*Math.min(1,f),1.5,col);txt(t,px+8,py-9.6,4,f>=0.5?col:'#fff');
+        if(S.phase==='prep'&&hm&&willReset(m)){R(px+12,py-17,6,6,K);R(px+12.75,py-16.25,4.5,4.5,'#38bdf8');txt('R',px+15,py-13.9,4,'#fff')}}}
     }
     const rg=regulatedIds();
     if(rg.size&&S.phase==='prep'&&Math.floor(now/500)%2)for(const m of machines())if(rg.has(m.type)){const px=OX+m.x*TS,py=OY+m.y*TS;R(px+1,py+4,14,7,K);R(px+2,py+5,12,5,'#ff2d55');txt('撤去',px+8,py+7.6,4,'#fff')}
@@ -279,7 +288,9 @@ function drawQueuePreview(now){
   const n=Math.min(goActive()?14:8,Math.round(G.W*0.7)),d=doorPos(),gy=OY+G.H*TS+BOT-2;
   for(let i=0;i<n;i++){
     const px=OX+d.x*TS+8-(i+1)*9-6;if(px<4)break;
-    drawPerson(px,gy,fullLook({shirt:SHIRTS[i%SHIRTS.length],hair:HAIRS[i%HAIRS.length],skin:SKINS[i%4],cap:i%3===0?'#1c1c24':null},i*7+3,i%5===4),'up','stand',0);
+    const by=drawPerson(px,gy,fullLook({shirt:SHIRTS[i%SHIRTS.length],hair:HAIRS[i%HAIRS.length],skin:SKINS[i%4],cap:i%3===0?'#1c1c24':null},i*7+3,i%5===4),'up','stand',0);
+    /* 抽選入場の日は、番号札を持って並ぶ */
+    if(S.mn&&S.mn.lot&&Math.floor(now/900+i)%3!==0){const t=String((i*7+3)%n+1),w=t.length*4+5,yy=by-19;R(px-w/2-1,yy-1,w+2,9,K);R(px-w/2,yy,w,7,'#fff7cc');R(px-w/2,yy,w,1.5,'#ff2d55');txt(t,px,yy+4,5,'#16121f')}
   }
 }
 

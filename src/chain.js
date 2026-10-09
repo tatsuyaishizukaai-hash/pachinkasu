@@ -107,10 +107,10 @@ function branchDay(b,info){
   const wx=WEATHER[rollWeather(S.day)].mult;
   let vis=Math.round(LOCS[st.loc].town*info.mult*wx*share*rnd(0.85,1.15));
   vis=Math.min(vis,n*(goOn?7:6));
-  /* 出玉率：スロットは機械割、パチンコは釘（交換差益はスロットだけ） */
+  /* 出玉率：スロットは機械割、パチンコは釘（交換差益は、お店の交換率で決まる） */
   /* 実際の営業では途中でやめるお客さんやコンプリートがあるので、出玉率は機械割より少し低くなる（いま見ているお店の実績に合わせる） */
   const pr=avgOf(ms.map(m=>machR(m)))*(S.prFactor||0.92)*rnd(0.96,1.04),slotEq=ms.filter(m=>MB[m.type].k==='s').reduce((a,m)=>a+(m.rate==='lo'?0.25:1),0);
-  const coin=vis*(S.cpvHi||30000)*(eq/n)*rnd(0.9,1.1),out=coin*pr,exch=out*(eq?slotEq/eq:0)*(1-SLOT_EXCH);
+  const coin=vis*(S.cpvHi||30000)*(eq/n)*rnd(0.9,1.1),out=coin*pr,sh=eq?slotEq/eq:0,exch=out*(sh*(1-exHit('s'))+(1-sh)*(1-exHit('p')))+out*0.25*(sh*Math.max(0,exBase('s')-exRate('s'))+(1-sh)*Math.max(0,exBase('p')-exRate('p')));
   const gross=coin-out+exch,drink=st.objs.some(o=>o.kind==='d'&&o.type==='vending')?vis*40:0;
   const rent=st.W*st.H*LOCS[st.loc].rentTile,wages=Math.round(b.staff.reduce((a,s)=>a+s.wage,0)*skWage()),power=2500*n;
   const net=Math.round(gross+drink-rent-wages-power);

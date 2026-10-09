@@ -65,7 +65,7 @@ function pills(){
   return p.join('');
 }
 function renderStatus(){
-  const ov={set:'設定',no:'番号',rate:'レート',off:'なし'}[prefs.overlay];
+  const ov={set:'設定',no:'番号',rate:'レート',hama:'ハマり',off:'なし'}[prefs.overlay];
   let msg='',h='';
   if(S.phase==='prep'){h=hint();msg=`<span class="tm prep">準備中</span>${pills()}`}
   else if(S.phase==='open'){
@@ -98,7 +98,7 @@ function renderDock(){
 <button class="btn" data-dock="list" type="button">設定</button>
 <button class="btn ${S.event.type!=='none'||goActive()?'hot':''}" data-dock="event" type="button">イベント</button>
 <button class="btn" data-dock="manage" type="button">経営</button>
-<button class="btn primary" data-dock="open" type="button">開店!</button>`;
+${stopToday()?'<button class="btn primary stopb" data-dock="open" type="button">営業停止<br><small>休む</small></button>':'<button class="btn primary" data-dock="open" type="button">開店!</button>'}`;
   fitToast();
 }
 /* ---------- 画面の向き ---------- */
@@ -160,7 +160,7 @@ function refreshAll(){refreshHud();renderStatus();renderDock();if(sheetKind&&she
 const itemName=it=>it.kind==='m'?MB[it.type].name:it.kind==='d'?DB[it.type].name:WB[it.type].name;
 const itemPrice=it=>it.kind==='m'?MB[it.type].price:it.kind==='d'?DB[it.type].price:WB[it.type].price;
 /* 買うときの値段（交換上手・佐藤さんの割引） */
-const priceOf=it=>Math.round(itemPrice(it)*skPrice()/1000)*1000;
+const priceOf=it=>Math.round(itemPrice(it)*(it.kind==='m'?pxF(it.type):1)*skPrice()/1000)*1000;
 function startBuild(kind,type,store){buildItem={kind,type,store:!!store};buildDir=0;tool='build';moveSel=null;closeSheet();renderDock();toast(kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ')}
 function tryPlace(hit){
   const it=buildItem,price=it.store?0:priceOf(it);
@@ -193,7 +193,7 @@ function tryPlace(hit){
   if(it.store&&!S.storage.some(s=>s.kind===it.kind&&s.type===it.type)){tool='view';buildItem=null;toast('倉庫の分を置き終わりました')}
   refreshAll();
 }
-const sellPrice=o=>{const it=o.side?{kind:'w',type:o.type}:o;return Math.round(Math.min(itemPrice(it)*0.5*skSell(),priceOf(it)*0.9)/1000)*1000};
+const sellPrice=o=>{const it=o.side?{kind:'w',type:o.type}:o;return Math.round(Math.min(itemPrice(it)*0.5*(it.kind==='m'?pxF(it.type):1)*skSell(),priceOf(it)*0.9)/1000)*1000};
 function removeThing(o,mode){
   pushUndo();
   if(o.side){G.doors=G.doors.filter(d=>d!==o);if(mode==='store')toStorage({kind:'w',type:o.type});else S.money+=sellPrice(o)}
@@ -340,22 +340,31 @@ const starTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
 function machineSheet(d){
   const m=d.m;if(!G.objs.includes(m)){closeSheet();return null}
   const md=MB[m.type],k=md.k,prep=S.phase==='prep',age=S.day-m.installDay,s=seatOf(m),z=zoneAt(s.x,s.y);
-  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
+  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}${hypeOn(m.type)?'<span class="tag hot">話題の新台</span>':''}${prep?chgTag(m):''}</div></div></div>`;
   if(d.swap){
     const trade=Math.round(md.price*0.3*skSell()/1000)*1000;
     h+=`<div class="lbl">入れ替える機種（いまの台は${yen(trade)}で下取り）</div>`;
-    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id})-trade)}</button>`}</div>`}).join('');
+    h+=MODELS.filter(x=>(x.gen||1)<=S.gen&&!relLocked(x.id)).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id)||!!usedFrom(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${machSw(x)}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':usedFrom(x.id)?`<span class="sub">中古待ち</span>`:lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id})-trade)}</button>`}</div>`}).join('');
     h+=`<button class="btn" data-act="m-swap-back" type="button">もどる</button>`;
     return [`${m.no}番台を入れ替え`,h];
   }
   h+=`<div class="lbl">レート</div><div class="chips">${['hi','lo'].map(r=>`<button class="chip ${m.rate===r?'cur':''}" data-act="m-rate" data-v="${r}" ${prep?'':'disabled'} type="button">${RATE[k][r].label}${k==='p'?'パチンコ':'スロット'}</button>`).join('')}</div>`;
   h+=`<div class="lbl">${k==='s'?'設定':'釘'}${prep?'':'（営業中は変えられません）'}</div>${lvBtns(m,'m-lv','',!prep)}<div class="sub">${k==='s'?`<b>設定${m.set}：出玉率${md.rates[m.set-1].toFixed(1)}%</b>（初当り約1/${Math.round(slotProb(md,m.set))}）${(md.none||[]).includes(m.set)?'※実機にない設定':''}<br>${SLOT_HINT[m.set]}`:`<b>初当り1/${md.prob}（${specOf(md)}）</b>・平均約${Math.round(400*NAIL_R[2]*md.prob/P_SPM/4).toLocaleString('ja-JP')}発/初当り<br>${NAIL_HINT[m.nail+2]}`}</div>`;
+  if(tenjoOf(m)){
+    const tj=tenjoOf(m),hm=hamaOf(m);
+    h+=`<div class="lbl">ハマり（天井 ${tj}G）</div><div class="meter"><div class="mt-l">${hm}G</div><div class="mt-bar ${hm>=tj*0.5?'':'blue'}"><i style="width:${Math.min(100,hm/tj*100)}%"></i></div><div class="mt-v">あと${Math.max(0,tj-hm)}G</div></div>`;
+    h+=`<div class="sub">天井まで行くと必ず当たります。ハマりは次の日に持ちこされ、深い台はハイエナに狙われます。設定を変えると0にもどります。</div>`;
+    if(prep&&hm>0){
+      if(willReset(m)&&!m.rq)h+=`<div class="box">${S.mn.reset==='all'?'毎朝 全台リセットなので':'設定を変えたので'}、開店のときにハマりは0にもどります${S.mn.reset==='all'?'':'（お客さんに設定変更がバレます）'}</div>`;
+      else h+=`<button class="chip wide ${m.rq?'cur':''}" data-act="m-rq" type="button">${m.rq?'✓ 開店のときにリセットする（設定の打ち直し）':'開店のときにリセットする（設定の打ち直し）'}</button>`;
+    }
+  }
   const t=S.phase==='open'?m.today:m.yest,lab=S.phase==='open'?'今日':'昨日';
   if(t)h+=`<div class="box stats"><span>${lab}の稼働 <b>${Math.round(t.mins)}分</b></span><span>大当り <b>${t.hits}回</b></span><span>店の収支 <b class="${t.coin-t.out>=0?'pos':'neg'}">${sgn(t.coin-t.out)}</b></span></div>`;
   else h+=`<div class="sub">まだデータがありません</div>`;
   if(S.phase==='open'){
     const c=custs.find(x=>x.m===m&&(x.st==='play'||x.st==='call'));
-    h+=c?`<div class="box">遊技中：${c.reg?esc(REG_BY[c.reg].name):c.hunter?'設定狙いの客':'一般客'} ・ <span class="${c.won-c.inv>=0?'pos':'neg'}">${sgn(c.won-c.inv)}</span>${c.st==='call'?' ・ <b class="neg">呼び出し中</b>':''}</div>`:m.brk?`<div class="sub">休憩中（たばこ）</div>`:`<div class="sub">いまは空き台です</div>`;
+    h+=c?`<div class="box">遊技中：${c.reg?esc(REG_BY[c.reg].name):c.hyena?'ハイエナ':c.hunter?'設定狙いの客':c.mem?'会員さん':'一般客'} ・ <span class="${c.won-c.inv>=0?'pos':'neg'}">${sgn(c.won-c.inv)}</span>${c.st==='call'?' ・ <b class="neg">呼び出し中</b>':''}</div>`:m.brk?`<div class="sub">休憩中（たばこ）</div>`:`<div class="sub">いまは空き台です</div>`;
   }
   if(prep){
     const isl=islandOf(m);
@@ -386,13 +395,15 @@ function doorSheet(d){
 /* ---------- 建設メニュー ---------- */
 function shopSheet(tab){
   tab=tab||'m';const rk=rankNo();
-  let h=tabs([['m','台'],['d','設備'],['f','床と壁'],['s',`倉庫${S.storage.length?`(${S.storage.length})`:''}`],['x','広げる']],tab,'shop-tab');
+  let h=tabs([['m','台'],['n',`新台${S.mn.cal.some(e=>relOpen(e)&&canReserve(e.id)&&!e.req&&e.day-REL_DEAD-S.day<=3)?'●':''}`],['d','設備'],['f','床と壁'],['s',`倉庫${S.storage.length?`(${S.storage.length})`:''}`],['x','広げる']],tab,'shop-tab');
   h+=`<div class="sub">資金 ${yen(S.money)} ・ ランク${rk}「${RANKS[rk-1].n}」・ 内装 ${stars()}${skPrice()<1?` ・ <b class="pos">${Math.round((1-skPrice())*100)}%引き</b>`:''}</div>`;
   const row=(sw,nm,ds,right,lock)=>`<div class="item ${lock?'locked':''}"><span class="sw" style="background:${sw}"></span><div class="it"><div class="nm">${nm}</div><div class="ds">${ds}</div></div>${right}</div>`;
-  if(tab==='m'){
+  if(tab==='n')h+=relPanel();
+  else if(tab==='m'){
+    h+=`<div class="sub">台は<b>中古の相場</b>で買えます。相場は毎週動きます（↑値上がり・↓値下がり）。発売前の新台は「新台」から予約できます。</div>`;
     for(const k of ['p','s']){
       h+=`<div class="lbl">${KIND_NAME[k]}</div>`;
-      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${specLine(x)}・人気${x.pop}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id}))}</button>`,rk<x.rank||off)}).join('');
+      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen&&!relLocked(x.id)).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id),wait=usedFrom(x.id);return row(machSw(x),esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':'')+(hypeOn(x.id)?' <span class="tag hot">話題の新台</span>':''),`${specLine(x)}・人気${x.pop}${tenjoOf({type:x.id})?`・天井${tenjoOf({type:x.id})}G`:''}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:wait?`<span class="sub">中古待ち<br>${dateStr(wait)}から</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id}))}${pxArrow(x.id)}</button>`,rk<x.rank||off||!!wait)}).join('');
     }
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
@@ -404,7 +415,7 @@ function shopSheet(tab){
   }else if(tab==='s'){
     const gs=storageGroups();
     if(!gs.length)h+=`<div class="empty">倉庫は空です。片付けで「倉庫へ」を選ぶと、ここにしまえます。移転すると前の店の台と設備がここに入ります。</div>`;
-    h+=gs.map(g=>{const it=S.storage[g.idx[0]],gift=g.idx.some(i=>S.storage[i].gift);return row(it.kind==='m'?MB[it.type].c:SWATCH[it.type],`${esc(storageName(it))} ×${g.idx.length}`,`${it.kind==='m'?KIND_NAME[MB[it.type].k]+'の台':it.kind==='w'?'壁に付ける設備':'床に置く設備'}${gift?'・新築プレゼント':''}`,`<div class="col"><button class="btn sm" data-act="store-place" data-k="${it.kind}" data-id="${it.type}" type="button">置く</button><button class="btn sm ghost" data-act="store-sell" data-k="${it.kind}" data-id="${it.type}" type="button">売る ${yen(storageValue(it))}</button></div>`)}).join('');
+    h+=gs.map(g=>{const it=S.storage[g.idx[0]],gift=g.idx.some(i=>S.storage[i].gift);return row(it.kind==='m'?machSw(MB[it.type]):SWATCH[it.type],`${esc(storageName(it))} ×${g.idx.length}${g.idx.some(i=>S.storage[i].fresh)?' <span class="tag hot">新台</span>':''}`,`${it.kind==='m'?KIND_NAME[MB[it.type].k]+'の台':it.kind==='w'?'壁に付ける設備':'床に置く設備'}${gift?'・新築プレゼント':''}`,`<div class="col"><button class="btn sm" data-act="store-place" data-k="${it.kind}" data-id="${it.type}" type="button">置く</button><button class="btn sm ghost" data-act="store-sell" data-k="${it.kind}" data-id="${it.type}" type="button">売る ${yen(storageValue(it))}</button></div>`)}).join('');
   }else{
     const pt=LOCS[G.loc].priceTile*1.2;
     h+=`<div class="box">いまの広さ：<b>${G.W}×${G.H}マス</b>（最大${G.maxW}×${G.maxH}）・家賃 ${yen(rentOf())}／日</div>`;
@@ -414,6 +425,120 @@ function shopSheet(tab){
     h+=`<div class="sub">もっと大きな店は「経営 → 物件」から。今の台や設備は倉庫に入れて持っていけます。</div>`;
   }
   return ['建設',h];
+}
+
+/* ---------- 台の小さな絵（パチンコとスロットがひと目でわかるように） ---------- */
+const MTH=new Map();
+function machThumb(id){let u=MTH.get(id);if(u==null){try{u=machineSprite({type:id,dir:0},true).toDataURL()}catch(e){u=''}MTH.set(id,u)}return u}
+const machSw=x=>{const u=machThumb(x.id);return u?`url(${u}) center/contain no-repeat,linear-gradient(160deg,${x.c}40,${x.c2}66)`:x.c};
+
+/* ---------- 新台カレンダー（建設 →「新台」） ---------- */
+const REQ_N=[0,1,2,3,4,6,8,10,12];
+function relCardHTML(e,i){
+  const md=MB[e.id],k=md.k,left=e.day-S.day,hot=relHot(e.id),pr=relPrice(e.id);
+  const d=dateOf(e.day);
+  let st='';
+  if(e.st==='done')st=`<div class="rc-st ok">発売済み${e.n?`・${e.n}台入荷（${man(e.paid)}）`:e.got===0&&e.req?'・抽選はずれ':''}</div>`;
+  else if(e.st==='drawn')st=e.req?`<div class="rc-st ${e.got?'ok':'ng'}">抽選結果：${e.req}台中 <b>${e.got}台</b> 当選${e.got?`・発売日に倉庫へ届きます（代金 ${man(e.got*pr)}）`:''}</div>`:`<div class="rc-st">予約なし</div>`;
+  else if(!canReserve(e.id))st=`<div class="rc-st ng">ランク${md.rank-1}から予約できます</div>`;
+  else if(relOpen(e)){
+    st=`<div class="chips rc-req">${REQ_N.map(n=>`<button class="chip ${e.req===n?'cur':''}" data-act="rel-req" data-id="${i}" data-v="${n}" type="button">${n?n+'台':'なし'}</button>`).join('')}</div>`;
+    st+=`<div class="sub">締切 ${dateStr(e.day-REL_DEAD)}（あと${e.day-REL_DEAD-S.day}日）${e.req?`・予約 <b>${e.req}台</b>（${man(e.req*pr)}・お金は届いた日に払います）`:''}</div>`;
+  }else st=`<div class="rc-st">締切済み・${dateStr(e.day-REL_DRAW)}に抽選（予約 ${e.req}台）</div>`;
+  return `<div class="relcard ${e.st}" style="--mc:${md.c};--mc2:${md.c2}">
+<div class="rc-date"><b>${d.getMonth()+1}/${d.getDate()}</b><span>(${WD[d.getDay()]})</span><small>${e.st==='done'?'発売済':left>0?`あと${left}日`:'今日'}</small></div>
+<img class="mthumb" src="${machThumb(e.id)}" alt="">
+<div class="rc-body"><div class="rc-name">${esc(md.name)}</div>
+<div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">人気${md.pop}</span>${hot?'<span class="tag hot">人気台・抽選</span>':''}${tenjoOf({type:e.id})?`<span class="tag">天井${tenjoOf({type:e.id})}G</span>`:''}</div>
+<div class="ds">${specLine(md)}・1台 <b>${yen(pr)}</b>${hot&&e.st==='open'?`・当たりやすさ 約${Math.round(relRate(e.id)*100)}%`:''}</div>${st}</div></div>`;
+}
+function relPanel(){
+  const M=S.mn,cal=M.cal.map((e,i)=>({e,i}));
+  let h=`<div class="dist">${ptImg(DIST.face,'n',DIST.col,'sm')}<div><b>${esc(DIST.name)}</b><span class="sub">${esc(DIST.sub)}</span><div class="meter sm"><div class="mt-l">お付き合い</div><div class="mt-bar blue"><i style="width:${M.rel}%"></i></div><div class="mt-v">${Math.round(M.rel)}</div></div></div></div>`;
+  h+=`<div class="sub">新台は<b>発売の${REL_DEAD}日前まで</b>に予約します。人気台は<b>抽選</b>で、ランクとお付き合いが高いほど当たります。発売から${USED_WAIT}日は中古が出回らないので、早く入れたお店にお客さんが集まります（${HYPE_DAYS}日間「話題の新台」）。</div>`;
+  const up=cal.filter(x=>x.e.st!=='done'),past=cal.filter(x=>x.e.st==='done').reverse();
+  h+=`<div class="lbl">これから発売</div>`+(up.length?up.map(x=>relCardHTML(x.e,x.i)).join(''):'<div class="empty">発売予定の新台はありません（人気機種はすべて発売済み）</div>');
+  const hy=Object.keys(M.hype).filter(hypeOn);
+  if(hy.length)h+=`<div class="lbl">話題の新台（人気が上がっています）</div><div class="box col">${hy.map(id=>`<div><span class="sw sm" style="background:${MB[id].c}"></span>${esc(MB[id].name)} <span class="sub">${dateStr(M.hype[id])}まで${usedFrom(id)?`・中古は${dateStr(usedFrom(id))}から`:''}</span></div>`).join('')}</div>`;
+  if(past.length)h+=`<div class="lbl">発売ずみ</div>`+past.slice(0,4).map(x=>relCardHTML(x.e,x.i)).join('');
+  if(M.unrel.length)h+=`<div class="sub">まだ発売されていない人気機種が、あと${M.unrel.length}機種あります。</div>`;
+  return h;
+}
+const pxArrow=id=>{const t=pxTrend(id);return t==='up'?'<b class="px up">↑</b>':t==='down'?'<b class="px down">↓</b>':''};
+
+/* ---------- ホール運営（経営 →「ホール運営」） ---------- */
+function hallPanel(){
+  const M=S.mn,prep=S.phase==='prep';
+  let h='';
+  /* 交換率 */
+  h+=`<div class="lbl">交換率</div>`;
+  for(const k of ['p','s']){
+    const cur=exKey(k),lf=exLeft(k);
+    h+=`<div class="exrow"><span class="exk tag k${k}">${KIND_NAME[k]}</span><div class="chips">${Object.entries(EXCH[k]).map(([v,o])=>`<button class="chip ${cur===v?'cur':''}" data-act="ex-set" data-k="${k}" data-v="${v}" ${cur!==v&&(lf||!prep)?'disabled':''} type="button">${o.n}<small>${o.yen.toLocaleString('ja-JP')}円</small></button>`).join('')}</div></div>`;
+  }
+  const ep=exOf('p'),es=exOf('s'),cut=o=>Math.round((1-o.ex)*1000)/10,lv=x=>x>1.05?'多い':x<0.7?'とても少ない':x<0.95?'少ない':'ふつう';
+  h+=`<div class="box col"><div>1,000円分の玉・メダルを交換すると… パチンコ <b>${ep.yen.toLocaleString('ja-JP')}円</b>・スロット <b>${es.yen.toLocaleString('ja-JP')}円</b></div>
+<div>お店の取り分（交換差益）：払い出しの パチンコ<b>${cut(ep)}%</b>・スロット<b>${cut(es)}%</b></div>
+<div>設定狙いの客：パチンコ<b>${lv(ep.hunt)}</b>・スロット<b>${lv(es.hunt)}</b>　お客さん全体 <b>×${exAttract().toFixed(2)}</b></div></div>`;
+  h+=`<div class="sub">交換率を下げると、お店の取り分が増えるかわりに「勝っても手取りが少ない」と不満が出て、設定狙いの客が減ります（そのぶん、玉を交換せず長く遊ぶ客は増えます）。<b>下げると信用-6・評判-3</b>、上げると10日間 客足アップ。変えたら${EX_CD}日は変えられません${exLeft('p')||exLeft('s')?`（あと パチンコ${exLeft('p')}日・スロット${exLeft('s')}日）`:''}。</div>`;
+  /* お客さんの読み */
+  h+=`<div class="lbl">お客さんの読み（お店のクセ）</div>`;
+  h+=`<div class="box col"><div class="meter sm"><div class="mt-l">据え置き</div><div class="mt-bar blue"><i style="width:${Math.round(M.sue*100)}%"></i></div><div class="mt-v">${Math.round(M.sue*100)}%</div></div><div class="sub">「${sueWord(M.sue)}」と思われています。高い設定・開けた釘をそのまま次の日も使うほど上がり、昨日よく出た台に設定狙いの客が集まります。</div>
+<div class="meter sm"><div class="mt-l">変更→上げ</div><div class="mt-bar blue"><i style="width:${Math.round(M.up*100)}%"></i></div><div class="mt-v">${Math.round(M.up*100)}%</div></div><div class="sub">「${upWord(M.up)}」と思われています。AT機は設定を変えるとハマりが0にもどるので、お客さんにバレます。上げた台が多いと、リセット台に設定狙いの客が座ります。</div></div>`;
+  /* 天井とハイエナ */
+  const ats=machines().filter(m=>tenjoOf(m)).sort((a,b)=>(b.hama||0)/tenjoOf(b)-(a.hama||0)/tenjoOf(a));
+  h+=`<div class="lbl">AT機の天井とハイエナ</div>`;
+  h+=ats.length?`<div class="box col">${ats.slice(0,5).map(m=>{const tj=tenjoOf(m),hm=hamaOf(m);return `<div class="meter sm"><div class="mt-l">${m.no}番 ${esc(shortName(MB[m.type].name))}</div><div class="mt-bar ${hm>=tj*0.5?'':'blue'}"><i style="width:${Math.min(100,hm/tj*100)}%"></i></div><div class="mt-v">${hm}/${tj}G${m.rq?' R':''}</div></div>`}).join('')}</div>`:'<div class="sub">AT機（天井のある台）がまだありません</div>';
+  h+=`<div class="sub">AT機は当たらないゲーム数（ハマり）が天井に届くと、必ず当たります。ハマりは次の日に持ちこされ、深い台は朝から<b>ハイエナ</b>に狙われます（当たったらすぐやめるので、お店の取り分が減ります）。</div>`;
+  h+=`<div class="lbl sm">朝の準備</div><div class="chips">${[['chg','設定を変えた台だけリセット'],['all','毎朝 全台リセット（1台300円）']].map(([v,l])=>`<button class="chip ${M.reset===v?'cur':''}" data-act="mn-reset" data-v="${v}" type="button">${l}</button>`).join('')}</div>`;
+  h+=`<div class="sub">全台リセットにすると、ハイエナが朝に来なくなり、設定を変えたこともバレません。かわりに、据え置きのハマり台を目当てにした朝の客もいなくなります。</div>`;
+  h+=`<div class="lbl sm">台のデータ表示</div><div class="chips">${[['open','ハマりも見せる'],['hide','ハマりは見せない']].map(([v,l])=>`<button class="chip ${M.data===v?'cur':''}" data-act="mn-data" data-v="${v}" type="button">${l}</button>`).join('')}</div>`;
+  h+=`<div class="sub">見せないとハイエナは大きく減りますが、設定狙いの客が台を選びにくくなり、少し不満が出ます。データ公開機があると、ハイエナも設定狙いも増えます。</div>`;
+  /* 抽選入場 */
+  h+=`<div class="lbl">イベントの朝の並び</div><div class="chips">${[[false,'先着順'],[true,'抽選入場（1日1万円）']].map(([v,l])=>`<button class="chip ${!!M.lot===v?'cur':''}" data-act="mn-lot" data-v="${v?1:0}" type="button">${l}</button>`).join('')}</div>`;
+  h+=`<div class="sub">並びが10人以上の日に効きます。抽選なら番号札を配って公平に入れるので満足度が上がり、朝のトラブルも起きません（パチプロが前に来にくくなります）。先着順で30人以上並ぶと、割り込み・場所取りのトラブルが起きることがあります。</div>`;
+  /* 会員カード */
+  h+=`<div class="lbl">会員カード・貯玉</div>`;
+  if(!M.card){
+    const hasC=G.objs.some(o=>o.kind==='d'&&o.type==='counter');
+    h+=`<div class="box">会員カードを作ると、会員さんが少しずつ増えます。会員が多いほどお客さんが来やすくなり、勝った玉を預ける<b>貯玉</b>で、また打ちに来てくれます。</div><button class="btn ${S.money>=CARD_COST&&hasC?'primary':''}" data-act="mn-card" ${prep&&S.money>=CARD_COST&&hasC?'':'disabled'} type="button">会員カードを始める（${man(CARD_COST)}）${hasC?'':'<br><span class="sub">景品カウンターが必要です</span>'}</button>`;
+  }else{
+    h+=`<div class="box stats"><span>会員 <b>${M.mem.toLocaleString('ja-JP')}人</b></span><span>貯玉の預かり <b>${yen(Math.round(M.cho))}</b></span><span>客足 <b class="pos">+${Math.round((memF()-1)*100)}%</b></span><span>来店客の会員率 <b>${Math.round(memRatio()*100)}%</b></span></div><div class="sub">会員は勝った玉の半分を預けていきます。預かった分は、その人が次に来て遊ぶまでお店のお金です（遊ぶときはお金が入りません）。</div>`;
+  }
+  /* 立ち入り検査 */
+  const [hw,hc]=heatWord(M.heat),src={};for(const x of M.hl)src[x.src]=(src[x.src]||0)+1;
+  h+=`<div class="lbl">立ち入り検査</div><div class="box col"><div class="meter sm heat ${hc}"><div class="mt-l">リスク</div><div class="mt-bar"><i style="width:${Math.round(M.heat)}%"></i><span class="mk" style="left:40%"></span><span class="mk" style="left:70%"></span></div><div class="mt-v">${hw}</div></div>
+<div class="sub">${Object.keys(src).length?'この2週間：'+Object.entries(src).map(([k,n])=>`${HEAT_SRC[k]} ${n}回`).join('・'):'この2週間、目立つことはしていません'}</div>
+${adBanned()?`<div class="neg">指導中：${dateStr(M.adBan)}までイベントの告知ができません</div>`:''}${stopToday()?'<div class="neg">今日は営業停止です</div>':''}
+${M.insp.length?`<div class="sub">これまでの検査：${M.insp.slice(-4).map(x=>`${dateStr(x.day)} ${{ok:'問題なし',shido:'指導',stop:'営業停止',fine:'罰金'}[x.res]}`).join('・')}</div>`:''}</div>`;
+  h+=`<div class="sub">「○○の日」とはっきり告知したり、釘を一度に大きく動かしたり（締め⇔開け）、朝の並びでトラブルが起きるとリスクが上がります（毎日少しずつ下がります）。リスクが高いと警察の検査が入り、<b>40以上で指導（告知禁止）、70以上で営業停止</b>になります。</div>`;
+  return h;
+}
+
+/* 昨日から設定・釘を変えたか（準備中に表示） */
+function chgTag(m,short){
+  const k=kindOf(m),was=k==='s'?m.ys:m.yn,cur=k==='s'?m.set:m.nail;
+  if(was==null)return '';
+  if(was===cur)return short?'<span class="cg same">据</span>':'<span class="tag same">据え置き</span>';
+  const f=v=>k==='s'?'設定'+v:NAIL_SHORT[v+2];
+  return short?'<span class="cg chg">変</span>':`<span class="tag chg">変更 ${f(was)}→${f(cur)}</span>`;
+}
+/* 日報の「ホールのようす」 */
+function maniaReportHTML(x){
+  let h='';
+  if(x.stopped)h+=`<div class="box neg"><b>今日は営業停止でした。</b>お客さんは0人。家賃と給料だけがかかりました。</div>`;
+  const rows=[];
+  if(x.tenjo||x.hyena||x.hyMiss)rows.push(`<span class="mi">天井</span>${x.tenjo}回 ・ ハイエナ ${x.hyena}人${x.hyMiss?`（ハマり台がなくて帰った${x.hyMiss}人）`:''}${x.hyena?` ・ ハイエナの持ち帰り <b class="${x.hyNet>0?'neg':'pos'}">${sgn(x.hyNet)}</b>`:''}`);
+  if(x.lot)rows.push(`<span class="mi">抽選入場</span>${x.lot}人に番号札を配って、公平に入ってもらいました`);
+  if(x.lineBad)rows.push(`<span class="mi ng">並び</span>朝の並びでトラブル（評判-1.5・立ち入りリスク↑）`);
+  if(x.resetN)rows.push(`<span class="mi">リセット</span>全台リセット ${x.resetN}台（${yen(x.resetN*300)}）`);
+  if(x.memNew!=null)rows.push(`<span class="mi">会員</span>+${x.memNew}人（計${x.mem.toLocaleString('ja-JP')}人）・貯玉 預かり${yen(x.choIn)}／再プレイ${yen(x.choOut)}`);
+  if(rows.length)h+=`<div class="box col mnrep"><div class="lbl">ホールのようす</div>${rows.map(r=>`<div>${r}</div>`).join('')}</div>`;
+  if(x.insp){
+    const t={ok:['問題なし','good','評判+1・信用+1'],shido:['指導','bad',`${dateStr(S.mn.adBan)}までイベントの告知ができません・評判-2`],stop:['営業停止','bad','明日は営業停止・評判-6・信用-4'],fine:['罰金','bad','罰金50万円・評判-6・信用-4']}[x.insp.res];
+    h+=`<div class="stampbox"><div class="stamp ${t[1]}">${t[0]}</div><div><div class="lbl">立ち入り検査</div><div class="sub">検査のときのリスク ${x.insp.heat}</div><div>${t[2]}</div></div></div>`;
+  }
+  return h;
 }
 
 /* ---------- 設定一覧 ---------- */
@@ -436,6 +561,8 @@ function listSheet(scope){
     const sm=scopeMachines(scope),hasS=sm.some(m=>kindOf(m)==='s'),hasP=sm.some(m=>kindOf(m)==='p');
     if(hasS)h+=`<div class="bulk"><span class="lbl">スロット設定</span><div class="setrow small">${[1,2,3,4,5,6].map(v=>`<button class="sbtn c${v}" data-act="ls-bulk-s" data-v="${v}" type="button">${v}</button>`).join('')}</div></div>`;
     if(hasP)h+=`<div class="bulk"><span class="lbl">パチンコ釘</span><div class="setrow small">${[-2,-1,0,1,2].map(v=>`<button class="sbtn n${v+2} wide" data-act="ls-bulk-p" data-v="${v}" type="button">${NAIL_SHORT[v+2]}</button>`).join('')}</div></div>`;
+    const deep=machines().filter(m=>tenjoOf(m)&&(m.hama||0)>=tenjoOf(m)*0.4&&!willReset(m));
+    if(deep.length)h+=`<div class="chips"><button class="chip" data-act="ls-rq" type="button">ハマり台をリセット（${deep.length}台・ハイエナ対策）</button></div>`;
     h+=`<div class="chips"><button class="chip" data-act="ls-rate" data-v="hi" type="button">高レートにする</button><button class="chip" data-act="ls-rate" data-v="lo" type="button">低レートにする</button><button class="chip" data-act="ls-rand" type="button">低めにばらばら</button></div>`;
   }
   for(const isl of islands){
@@ -443,7 +570,7 @@ function listSheet(scope){
     for(const m of isl.ms){
       const t=S.phase==='open'?m.today:m.yest,lab=S.phase==='open'?'今日':'昨日';
       const rs=t?`<span class="rs ${t.coin-t.out>=0?'pos':'neg'}">${lab} 店${sgn(t.coin-t.out)}</span>`:`<span class="rs sub">データなし</span>`;
-      h+=`<div class="lrow ${tg.has(m)?'tgt':''}"><div class="l1"><span class="no">${m.no}</span><span class="rt ${m.rate}">${rateLabel(m)}</span><span class="nm">${esc(MB[m.type].name)}</span>${rs}</div>${prep?lvBtns(m,'ls-lv',`data-id="${m.id}"`,false,true):`<div class="sub">${kindOf(m)==='s'?`設定 <span class="badge c${m.set}">${m.set}</span>`:`釘 <span class="badge n${m.nail+2}">${NAIL_NAME[m.nail+2]}</span>`} ・ 大当り${t?t.hits:0}回 ・ 稼働${t?Math.round(t.mins):0}分</div>`}</div>`;
+      h+=`<div class="lrow ${tg.has(m)?'tgt':''}"><div class="l1"><span class="no">${m.no}</span><span class="rt ${m.rate}">${rateLabel(m)}</span><span class="nm">${esc(MB[m.type].name)}</span>${tenjoOf(m)?`<span class="hm ${hamaOf(m)>=tenjoOf(m)*0.5?'hot':''}">${hamaOf(m)}G${prep&&willReset(m)&&hamaOf(m)?'→0':''}</span>`:''}${prep?chgTag(m,1):''}${rs}</div>${prep?lvBtns(m,'ls-lv',`data-id="${m.id}"`,false,true):`<div class="sub">${kindOf(m)==='s'?`設定 <span class="badge c${m.set}">${m.set}</span>`:`釘 <span class="badge n${m.nail+2}">${NAIL_NAME[m.nail+2]}</span>`} ・ 大当り${t?t.hits:0}回 ・ 稼働${t?Math.round(t.mins):0}分</div>`}</div>`;
     }
   }
   return [prep?'設定一覧':'台データ（営業中は見るだけ）',h];
@@ -452,6 +579,8 @@ function listSheet(scope){
 /* ---------- イベント ---------- */
 function eventSheet(){
   let h='';
+  if(stopToday())return ['イベント',`<div class="box neg"><b>今日は営業停止です。</b>立ち入り検査の処分で、お店を開けられません。下の「営業停止（休む）」を押すと、次の日に進みます（家賃や給料はかかります）。</div><button class="btn primary" data-act="close" type="button">わかった</button>`];
+  const lotChip=`<button class="chip wide ${S.mn.lot?'cur':''}" data-act="mn-lot" data-v="${S.mn.lot?0:1}" type="button">${S.mn.lot?'✓ ':''}朝の並びを抽選入場にする（並び10人以上の日・1万円）</button>`;
   if(goActive()){
     const g=S.go,ms=machines(),dash=avgOf(ms.map(dashi));
     h+=`<div class="burstcard ${g.type==='anniv'?'gold':''}"><div class="bc-main">${goLabel(g)}</div><div class="bc-sub">${goDayIdx()+1}日目 ／ 全${g.len}日</div></div>`;
@@ -459,7 +588,7 @@ function eventSheet(){
       :`<div class="box"><b>オープン期間は、入りきらないほどお客さんが来ます。</b>全台の「出し具合」とお客さんの満足度で毎日採点され、期間の平均で評価が決まります。<br>評価が悪いと信用がガタ落ちし、しばらく客付きが悪くなります。</div>`;
     h+=`<div class="meter"><div class="mt-l">いまの出し具合</div><div class="mt-bar"><i style="width:${Math.round(dash*100)}%"></i><span class="mk" style="left:60%"></span></div><div class="mt-v">${Math.round(dash*100)}%</div></div><div class="sub">目安：出し具合60%以上＋満足度で「成功」、70%を超えると「大成功」が狙えます。</div>`;
     if(g.scores.length)h+=`<div class="sub">これまでの点数：${g.scores.map(s=>Math.round(s*100)).join('・')}</div>`;
-    h+=`<button class="btn" data-act="go-list" type="button">設定一覧を開く</button><button class="btn primary" data-act="close" type="button">わかった</button>`;
+    h+=lotChip+`<button class="btn" data-act="go-list" type="button">設定一覧を開く</button><button class="btn primary" data-act="close" type="button">わかった</button>`;
     return [g.type==='anniv'?goLabel(g):'オープン期間',h];
   }
   const ev=S.event,ms=machines();
@@ -488,7 +617,9 @@ function eventSheet(){
     h+=`<div class="box col"><div><b>${esc(se.name)}</b>（飾りつけと告知 ${man(SEASON_COST)}）</div><div>季節のイベントでは<b>お店全体の出し具合</b>が見られます。いま <b>${Math.round(avg*100)}%</b></div><div>このままだと… <span class="verdict ${cls}">${j}</span></div><div>客足の見込み <b>×${eventMultToday().toFixed(2)}</b>（お休みの客足にさらに上乗せ）</div><div class="sub">結果で信用が大きく動きます。ライバル店もこの時期はイベントが多くなります。</div></div>
 <div class="actions"><button class="btn sm" data-act="ev-fill-all" data-v="hi" type="button">全台を高めに</button><button class="btn sm" data-act="go-list" type="button">設定一覧を開く</button></div>`;
   }else if(ev.type!=='none'){
-    h+=`<button class="chip wide ${ev.ad?'cur':''}" data-act="ev-ad" type="button">${ev.ad?'✓ ':''}チラシとSNSで告知する（${yen(Math.round(50000*skAd()/1000)*1000)}）</button>`;
+    const [hw]=heatWord(S.mn.heat);
+    h+=adBanned()?`<div class="box neg">警察の指導中のため、${dateStr(S.mn.adBan)}まで告知はできません</div>`:`<button class="chip wide ${ev.ad?'cur':''}" data-act="ev-ad" type="button">${ev.ad?'✓ ':''}チラシとSNSで告知する（${yen(Math.round(50000*skAd()/1000)*1000)}）<small class="warn">⚠ はっきり告知すると立ち入り検査のリスクが上がります（いま：${hw}）</small></button>`;
+    h+=lotChip;
     const tgs=eventTargets();
     if(tgs.length){
       const avg=avgOf(tgs.map(dashi)),[j,cls]=judgeOf(avg,ev.type==='newm'?0.15:0);
@@ -523,8 +654,9 @@ function rivalCard(r,fc){
 }
 function manageSheet(tab){
   tab=tab||'story';
-  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['chain',`チェーン${S.branches&&S.branches.length?`(${S.branches.length+1})`:''}`],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
+  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['chain',`チェーン${S.branches&&S.branches.length?`(${S.branches.length+1})`:''}`],['hall',`ホール運営${S.mn.heat>=40||stopToday()?'⚠':''}`],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
   if(tab==='story')h+=storyPanel();
+  else if(tab==='hall')h+=hallPanel();
   else if(tab==='mgr')h+=mgrPanel();
   else if(tab==='chain')h+=chainPanel();
   else if(tab==='staff'){
@@ -614,7 +746,7 @@ function reportSheet(R){
   if(R.exp||(R.staffUps&&R.staffUps.length))h+=`<div class="sub">店長の経験値 +${R.exp||0}${S.mgr?`（Lv${S.mgr.lv}・次まで${expNeed(S.mgr.lv)-S.mgr.exp}）`:''}${R.staffUps&&R.staffUps.length?`<br>レベルアップ：${R.staffUps.map(esc).join('・')}`:''}</div>`;
   h+=`<div class="kpis"><div><b>${R.visitors}</b><span>来店</span></div><div><b class="${R.full?'neg':''}">${R.full}</b><span>満席で帰った</span></div><div><b>${Math.round(R.share*100)}%</b><span>町のシェア</span></div></div>`;
   h+=`<div class="segs">${SEGS.filter(s=>R.seg[s]).map(s=>`<span>${SEG_NAME[s]} ${R.seg[s]}人</span>`).join('')}</div>`;
-  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>スロットの交換差益（5.6枚交換）</td><td>${yen(R.exch)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
+  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>交換差益（${esc(R.exLabel||exLabel())}）</td><td>${yen(R.exch)}</td></tr>`:''}${R.choCash?`<tr><td>貯玉（預かり−再プレイ）</td><td class="${R.choCash<0?'neg':''}">${R.choCash<0?'-'+yen(-R.choCash):yen(R.choCash)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
   const dr=R.rep1-R.rep0,fl=R.feel>=1?['よく出る店','pos']:R.feel<=-1?['出ない店','neg']:['ふつう',''];
   h+=`<div class="box">出玉率 <b>${Math.round(R.payR*100)}%</b>　お客さんの体感：<b class="${fl[1]}">${fl[0]}</b></div>`;
   h+=`<div class="box">評判 <b>${Math.round(R.rep0)} → ${Math.round(R.rep1)}</b> <span class="${dr>=0?'pos':'neg'}">(${dr>=0?'+':''}${dr.toFixed(1)})</span>　信用 <b>${R.trust1}</b>　資金 <b class="${R.money<0?'neg':''}">${yen(R.money)}</b></div>`;
@@ -627,11 +759,12 @@ function reportSheet(R){
   else if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
   if(R.brokenN)h+=`<div class="sub">今日は${R.brokenN}台が故障しました。ホール係が多いと早く直せます</div>`;
   if(R.completes&&R.completes.length)h+=`<div class="box neg">コンプリート ${R.completes.length}台：${R.completes.map(c=>`${c.no}番（${esc(shortName(MB[c.id].name))}）`).join('・')}<br><span class="sub">差玉の上限（パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚）まで出て、その日は打ち止めになりました</span></div>`;
+  if(R.mn)h+=maniaReportHTML(R.mn);
   if(R.gotoCaught)h+=`<div class="box">ゴト師を${R.gotoCaught}人捕まえました！</div>`;
   if(R.gotoEsc)h+=`<div class="box neg">ゴト師に逃げられ、${yen(R.gotoEsc)}の被害。防犯カメラを付けると見つけやすくなります</div>`;
   if(R.goals&&R.goals.length)h+=R.goals.map(g=>`<div class="rankup">目標達成「${esc(g.name)}」<br><span>ボーナス ${man(g.reward)}</span></div>`).join('');
   if(R.award)h+=`<div class="box ${R.award.wins.length?'pos':''}">${R.award.y}年 町のホールアワード：<b>${R.award.wins.length?esc(R.award.wins.join('・'))+'を受賞！':'受賞ならず'}</b>${R.award.prize?`・賞金${man(R.award.prize)}`:''}</div>`;
-  if(R.morning&&R.morning.length)h+=R.morning.map(m=>`<div class="box ${m.good?'pos':'neg'}">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
+  if(R.morning&&R.morning.length)h+=R.morning.filter(m=>m.kind!=='insp').map(m=>`<div class="box ${m.good?'pos':'neg'}">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
   if(R.story&&R.story.month){const mo=R.story.month;h+=`<div class="box ${mo.pass?'pos':'neg'}">${mo.m}月の査定：<b>${mo.perfect?'完全達成':mo.pass?'合格':'不合格'}</b>${mo.bonus?`・ボーナス${man(mo.bonus)}`:''}</div>`}
   else{const qi=quotaInfo();if(qi&&S.story.seen.prologue&&!S.story.fired)h+=`<div class="box stats"><span>${qi.q.m}月のノルマ（あと${qi.left}日）</span><span>粗利ペース <b class="${qi.okG?'pos':'neg'}">${qi.pace==null?'--':Math.round(qi.pace*100)+'%'}</b></span><span>稼働 <b class="${qi.okU?'pos':'neg'}">${qi.util==null?'--':Math.round(qi.util*100)+'%'}</b>／${Math.round(qi.q.util*100)}%</span><span>評判 <b class="${qi.okR?'pos':'neg'}">${Math.round(S.rep)}</b>／${qi.q.rep}</span></div>`}
   if(R.newHon&&R.newHon.length)h+=`<div class="rankup">称号ゲット！<br><span>${R.newHon.map(id=>'「'+esc(honName(id))+'」').join('')}</span></div>`;
@@ -948,7 +1081,7 @@ function monthPLHTML(p){
 const GUIDE={
   start:['はじめに',`<p>あなたはパチンコ屋の店長です。台の<b>釘と設定</b>、<b>イベント</b>、<b>店づくり</b>でお客さんを集め、ライバル店に勝って大きな店にしていきましょう。</p>
 <h3>1日の流れ</h3><ol><li><b>準備中</b>：釘・設定・配置・イベントを決めます。台をいじれるのは閉店中だけです。</li><li><b>営業中</b>：10:00〜22:45。速さは×1〜×4、「停止」で一時停止できます。</li><li><b>日報</b>：売上・評判・イベントの結果・お客さんの声が出ます。</li></ol>
-<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート）を切り替えられます。</li></ul>
+<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート・ハマり）を切り替えられます。</li></ul>
 <h3>最初の3日間はグランドオープン</h3><p>入りきらないほどお客さんが来ますが、評価がとても厳しい期間です。ここで出さないと信用がガタ落ちします。</p>`],
   story:['ストーリー',`<p>あなたは借金300万円を抱えた元パチンカス。潰れかけのホールのオーナー<b>大黒千代</b>さんに借金を肩代わりしてもらい、<b>雇われ店長</b>になりました。</p>
 <h3>章とクリア</h3><ol><li><b>借金まみれの雇われ店長</b>：ノルマに3回合格・借金を返す・ゴールデン会館に勝つ</li><li><b>町の人気店へ</b>：町のシェア1位の日を30日・ランク3・大手チェーンに勝つ</li><li><b>駅前の決戦</b>：お店を買い取る・駅前に出る・駅前でシェア1位</li><li><b>チェーン社長</b>：お店を3軒に・3軒そろって黒字・業界の帝王に勝つ</li><li><b>最終章 全国ホールアワード</b>：審査で大賞を取ればエンディング</li></ol>
@@ -982,7 +1115,7 @@ const GUIDE={
 <h3>戦い方</h3><ul><li><b>偵察</b>（経営 → ライバル）：店員を送ると還元率・客数・次のイベント日がわかります。自分で打ちに行くと、店の<b>弱点</b>もわかります。</li><li>弱点の客層（例：1円パチンコが少ない）の台をあなたの店で増やすと、その店のお客さんを奪いやすくなります。</li><li>相手のイベント日にあなたの店が<b>激アツ</b>を出すと、相手の経営に大ダメージ。</li><li>シェアを奪われ続けた店は閉店し、居抜き物件として売りに出ることがあります。</li></ul>
 <h3>新しいライバル</h3><ul><li>店が閉まると、しばらくして跡地などに<b>新しい店</b>が出店してきます。工事のうわさ → オープン告知 → グランドオープンの順。オープン期間はお客さんを大きく取られます。</li><li>あなたの店のランクや大きさに合わせて、新しい店も強くなります。ランク3からは<b>隣に出店</b>してくることも。</li><li>ライバル店は、あなたの店員や常連さんを<b>引き抜き</b>に来ます。引き抜きの相談には、昇給・説得・送り出すの3つで答えます。</li></ul>`],
   kishu:['機種と出玉',`<h3>パチンコ</h3><p>機種ごとに<b>初当り確率</b>（1/99.9・1/199・1/319・1/349・1/399・1/599）が決まっています。確率が重いほど当たるまで時間がかかりますが、1回の当りが大きく、RUSHの連チャンで一撃数万発になることもあります。<b>釘</b>は回りやすさ（＝お店の出し具合）を決めます。</p>
-<h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります。</p>
+<h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは最初は<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります（交換率は「経営 → ホール運営」で変えられます）。AT機には<b>天井</b>があります。</p>
 <h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
 <h3>ホールデータ</h3><p>営業中の「データ」、設定一覧、日報から見られます。<b>出玉ランキング</b>・<b>台番号別の稼働率</b>・<b>機種別の稼働率</b>・<b>客層と時間ごとの稼働</b>で、どんなお客さんがどの台を打っているかがわかります。稼働の低い機種は入れ替え候補です。</p>
 <h3>機種データベース</h3><p>メニューの「機種データベース」で、機種の名前・出玉率・初当り確率を変えられます。変えた内容はこの端末に保存されます。</p>`],
@@ -995,12 +1128,21 @@ const GUIDE={
 <h3>称号（100こ以上）</h3><p>「1日に200人来店」「激アツ10回」「ライバル店を3軒閉店」など、いろいろなことで称号が手に入ります。ひみつの称号もあります。手に入れた称号は「つける」と、会話のときの肩書きになります。</p>
 <h3>伝説の日</h3><p>1日の最多来店・最高利益・1台の最高差玉などの記録が残ります。新記録は日報でお知らせします。</p>
 <h3>難易度と2周目</h3><p>新しいゲームを始めるときに難易度（甘デジ・ミドル・MAX）を選べます。MAXはノルマがきびしく、2か月続けて不合格でクビです。エンディングのあとは、そのまま営業を続ける（エンドレス）か、店長のレベル・スキル・ごほうびの設備を引き継いで2周目を始められます。図鑑・称号・伝説の日は、何度遊び直しても消えません。</p>`],
+  hall:['ホール運営',`<p>「経営 → ホール運営」で、お店の細かいルールを決められます。</p>
+<h3>据え置きと設定変更</h3><p>設定狙いのお客さんは、毎日の出方から<b>お店のクセ</b>を覚えます。高い設定をそのまま次の日も使う（<b>据え置き</b>）ことが多い店だと思われると、昨日よく出た台に朝から人が集まります。準備中の設定一覧では、昨日から変えた台に「変」、そのままの台に「据」が付きます。</p>
+<h3>天井とハイエナ</h3><p>AT機には<b>天井</b>があり、当たらないゲーム数（<b>ハマり</b>）が<b>天井</b>（台によって約750〜1,600G）に届くと必ず当たります。天井があるぶん、ふだんの当たりは少しだけ重くなっているので、台の出玉率は変わりません。設定が低い台ほど天井まで行きやすくなります。ハマりは次の日に持ちこされ、深い台は<b>ハイエナ</b>（黒っぽいパーカーで、目のマークを出して歩く客）に狙われます。ハイエナは当たったらすぐやめるので、お店の取り分が減ります。</p>
+<ul><li>設定を変えた台は、開店のときにハマりが0にもどります（設定の打ち直しでもリセットできます）。ただし、お客さんに「設定を変えた」とバレます。</li><li>「毎朝 全台リセット」にすると、ハイエナも設定変更のバレもなくなります（1台300円）。</li><li>「ハマりは見せない」にすると、ハイエナが大きく減ります。</li><li>右上の「表示」を「ハマり」にすると、台の上にハマりのゲーム数が出ます。</li></ul>
+<h3>交換率</h3><p>パチンコは<b>等価・28玉・33玉</b>、スロットは<b>等価・5.6枚・6枚・7枚</b>から選べます。交換率を下げると、払い出した玉の一部がお店の取り分（交換差益）になりますが、「勝っても手取りが少ない」と不満が出て、設定狙いの客が減ります。玉を交換せずに長く遊ぶ客は増えます。下げると信用と評判が下がり、上げると10日間 客足が増えます。</p>
+<h3>新台カレンダー</h3><p>人気機種は<b>発売日</b>が決まっていて、それまでは買えません（建設 →「新台」）。販社の三河さんに発売の${REL_DEAD}日前までに予約し、人気台は<b>抽選</b>になります。発売から${USED_WAIT}日は中古が出回らず、${HYPE_DAYS}日間は「話題の新台」で人気が上がります。ふつうの台は<b>中古の相場</b>で買えて、相場は毎週動きます（発売したての台は高く、規制の台は安い）。</p>
+<h3>抽選入場</h3><p>イベントの朝の並びを抽選にすると、番号札を配って公平に入ってもらえます（1日1万円）。満足度が上がり、並びのトラブルが起きなくなります。</p>
+<h3>立ち入り検査</h3><p>「○○の日」とはっきり告知したり、釘を一度に大きく動かしたり、並びでトラブルが起きると、<b>立ち入りのリスク</b>が上がります。検査が入ると、リスク40以上で<b>指導</b>（2週間 告知禁止）、70以上で<b>営業停止</b>（次の日はお店を開けられない）。リスクは毎日少しずつ下がります。</p>
+<h3>会員カードと貯玉</h3><p>30万円で会員カードを始めると、来店したお客さんが少しずつ会員になります。会員が多いほど客足が増え、会員は勝った玉の半分を<b>貯玉</b>として預けていき、また遊びに来てくれます。</p>`],
   more:['規制・取材・トラブル',`<h3>規制</h3><p>ときどき国の規制が発表され、対象の機種は期限までに撤去されます（期限を過ぎると自動で撤去・下取りなし）。代わりに「新基準」の新しい機種が買えるようになります。</p>
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
 <h3>台の故障</h3><p>古い台ほど故障しやすく、ホール係が直します。閉店までに直らなかった台は夜間に修理費がかかります。</p>
 <h3>ゴト師</h3><p>不正な道具で玉を抜く客です。サングラスが目印。壁に付ける防犯カメラと、近くを見回るホール係が見つけます。</p>
-<h3>やりこみ目標</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます（ストーリーとは別）。毎年3月31日には年間ランキングも発表されます。</p>`],
+<h3>やりこみ目標</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます（ストーリーとは別）。</p>`],
 };
 function guideSheet(tab){
   tab=tab||'start';
@@ -1179,7 +1321,15 @@ $('#sheetBody').addEventListener('click',e=>{
       if(t==='none'||t==='renewal'||t==='media'||t==='season'||t==='anniv')ev.ad=false;
       sfx('tap');save();refreshAll();break}
     case 'ev-target':S.event.target=S.event.type==='tail'?Number(v):v;sfx('tap');save();refreshAll();break;
-    case 'ev-ad':S.event.ad=!S.event.ad;sfx('tap');save();refreshAll();break;
+    case 'ev-ad':if(adBanned())break;S.event.ad=!S.event.ad;sfx('tap');save();refreshAll();break;
+    case 'ex-set':{if(exKey(b.dataset.k)===v)break;if(setExch(b.dataset.k,v)){sfx('good');save();refreshAll()}else sfx('bad');renderSheet();break}
+    case 'mn-reset':S.mn.reset=v;sfx('tap');save();renderSheet();break;
+    case 'mn-data':S.mn.data=v;sfx('tap');save();renderSheet();break;
+    case 'mn-lot':S.mn.lot=v==='1';sfx('tap');save();renderSheet();break;
+    case 'mn-card':if(startCard()){sfx('fanfare');toast('会員カードを始めました！');save();refreshAll()}else{sfx('bad');toast('景品カウンターとお金が必要です')}renderSheet();break;
+    case 'rel-req':{const e=S.mn.cal[Number(id)];if(e&&relReserve(e,Number(v))){sfx('tap');save()}else sfx('bad');renderSheet();break}
+    case 'm-rq':{const m=sheetData.m;m.rq=!m.rq;sfx('tap');save();renderSheet();break}
+    case 'ls-rq':{let n=0;for(const m of machines()){const tj=tenjoOf(m);if(tj&&(m.hama||0)>=tj*0.4&&!willReset(m)){m.rq=true;n++}}toast(n?`${n}台を開店のときにリセットします`:'もうリセットする予定です');sfx('tap');save();renderSheet();break}
     case 'ev-fill-all':machines().forEach(m=>{if(kindOf(m)==='s')m.set=Math.max(m.set,4);else m.nail=Math.max(m.nail,1)});sfx('good');save();refreshAll();break;
     case 'bk-borrow':{const n=borrow(Number(v));if(n){sfx('cash');toast(`${man(n)}借りました`);save();refreshAll()}break}
     case 'bk-repay':{const n=repay(v==='all'?S.loan:Number(v));if(n){sfx('cash');toast(`${man(n)}返しました`);save();refreshAll()}break}
@@ -1351,13 +1501,14 @@ function startDay(){
   if((S.negDays||0)>=7){openSheet('over');return}
   if(!openStore())return;
   tool='view';moveSel=null;closeSheet();requestWake();
+  if(D.stopped){D.holdUntil=performance.now()+2200;sfx('gagan');telop('営業停止',`${dateLong(S.day)}・お店を開けられません`,'bad');applyLayout();refreshAll();return}
   sfx('open');
   if(D.isGo){playBgm('grand');telop(`${goLabel(S.go)}！`,`${D.goIdx+1}日目 ／ 全${S.go.len}日`,'good')}
   else if(D.evType!=='none'){playBgm('event');telop('本日イベント！',D.evLabel,'good')}
   else{playBgm('open');telop('開店！',dateLong(S.day),'good')}
   applyLayout();refreshAll();
 }
-$('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'off',off:'set'}[prefs.overlay];savePrefs();renderStatus()});
+$('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'hama',hama:'off',off:'set'}[prefs.overlay]||'set';savePrefs();renderStatus()});
 $('#bMenu').addEventListener('click',()=>{audio();openSheet('menu',false)});
 $('#quotaChip').addEventListener('click',e=>{audio();sfx('tap');if(e.target.closest('[data-mis]'))openSheet('morning');else openSheet('manage','story')});
 $('#sheetClose').addEventListener('click',()=>{closeSheet();refreshAll()});

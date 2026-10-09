@@ -7,6 +7,7 @@ function speaker(who){
   if(who==='me')return {name:'あなた',sub:(S.story&&S.story.bought?'オーナー店長':'店長')+(PROF&&PROF.eq&&HON_BY[PROF.eq]?`・${honName(PROF.eq)}`:''),face:ME_FACE,col:'#ff2d55'};
   if(who==='owner')return {name:OWNER.name,sub:ownerSub(),face:OWNER.face,col:OWNER.col};
   if(who==='mc')return {name:MC.name,sub:MC.sub,face:MC.face,col:MC.col};
+  if(who==='dist')return {name:DIST.name,sub:DIST.sub,face:DIST.face,col:DIST.col};
   const i=who.indexOf(':'),k=who.slice(0,i),id=who.slice(i+1);
   if(k==='boss'){
     const B=BOSS_BY[id];

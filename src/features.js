@@ -59,6 +59,7 @@ function regulatedIds(){const s=new Set();for(const r of S.regu)if(!r.done)REGS[
 function modelOnSale(id){
   const m=MB[id];
   if((m.gen||1)>S.gen)return false;
+  if(relLocked(id))return false;   /* 発売前の新台 */
   for(const r of S.regu)if(REGS[r.i].ids.includes(id))return false;
   return true;
 }

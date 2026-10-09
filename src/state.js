@@ -44,7 +44,7 @@ function frontOf(d){return d.side==='t'?{x:d.pos,y:0}:d.side==='l'?{x:0,y:d.pos}
 function insideOf(d){return d.side==='t'?{x:d.pos,y:-0.75}:d.side==='l'?{x:-0.75,y:d.pos}:{x:G.W-0.25,y:d.pos}}
 function rankIdx(){let r=0;RANKS.forEach((x,i)=>{if(S.totalVisitors>=x.need)r=i});return r}
 const rankNo=()=>rankIdx()+1;
-const popEff=m=>MB[m.type].pop*(1+0.8*Math.max(0,1-(S.day-m.installDay)/10))*conceptPop(m)*(m.installDay>=S.day-3&&buffOn('newPop')?1.2:1);
+const popEff=m=>MB[m.type].pop*(1+0.8*Math.max(0,1-(S.day-m.installDay)/10))*conceptPop(m)*(m.installDay>=S.day-3&&buffOn('newPop')?1.2:1)*hypeF(m);
 function appealPts(){
   let a=FB[G.floor].appeal+WLB[G.wall].appeal;
   for(const o of G.objs)if(o.kind==='d')a+=DB[o.type].appeal;
@@ -103,6 +103,7 @@ function newGame(name){
   const kin=S.rivals.find(r=>r.boss==='kinjo');if(kin)kin.next=true;   /* ゴールデン会館は隣の店 */
   undoStack=[];layoutChanged();
   storyInit(false);makeMissions();
+  S.mn=null;maniaDefaults();
 }
 
 /* ---------- 保存 ---------- */
@@ -113,7 +114,7 @@ function save(){try{localStorage.setItem(SAVE_KEY,S.phase==='open'?openSnap:ser(
 function fillDefaults(){
   const d={loan:0,regu:[],gen:1,goals:{},moved:0,ended:null,yearLog:[],negDays:0,rivalPlans:[],rivalLog:[],incidents:[],selfScout:0};
   for(const k in d)if(S[k]==null)S[k]=JSON.parse(JSON.stringify(d[k]));
-  migrateRivals();growthDefaults();ensureHome();
+  migrateRivals();growthDefaults();ensureHome();maniaDefaults();
   S.v=3;
 }
 function load(str){

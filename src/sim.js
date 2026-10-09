@@ -40,7 +40,7 @@ function eventMultToday(){
   if(ev.type==='anniv')return GO_MULT.anniv[0];
   if(ev.type==='none')return 1;
   let m=1+(0.4+S.trust/100)*Math.pow(0.7,recentEvents());
-  if(ev.type==='newm')m=1+0.5*Math.pow(0.8,recentEvents())+Math.min(0.4,newCount()*0.04);
+  if(ev.type==='newm')m=1+0.5*Math.pow(0.8,recentEvents())+Math.min(0.4,newCount()*0.04)+(newHyped()?0.2:0);
   if(ev.type==='media')m=1+(ev.target==='tube'?1.1:0.6)*Math.pow(0.75,recentEvents())+S.trust/400;
   if(ev.type==='season')m=1+0.6*Math.pow(0.75,recentEvents())+S.trust/300;
   if(ev.ad)m+=0.35;
@@ -59,7 +59,7 @@ function playerAttract(evMult){
   const lineup=0.8+0.4*Math.min(1,avgPop/80);
   const decorF=0.9+0.2*decorRate();
   const regF=1+0.02*Object.values(S.regs).filter(r=>r.loy>=70&&r.st!=='gone').length;
-  let a=(10+S.rep)*capF(n)*lineup*decorF*regF*evMult*(conceptOn()?1.04:1);
+  let a=(10+S.rep)*capF(n)*lineup*decorF*regF*evMult*(conceptOn()?1.04:1)*exAttract()*memF();
   if(S.mod&&S.day<=S.mod.until)a*=S.mod.mult;
   return a;
 }
@@ -86,6 +86,8 @@ function openStore(){
   if(S.phase!=='prep')return false;
   if(!machines().length){toast('台が1台もありません');sfx('bad');return false}
   const ev=S.event;
+  if(stopToday()){ev.type='none';ev.ad=false}
+  if(adBanned())ev.ad=false;
   if(goActive())ev.type='none';
   else if(ev.type==='renewal'&&!canRenewal())ev.type='none';
   else if(ev.type==='season'&&!seasonInfo(S.day))ev.type='none';
@@ -122,6 +124,7 @@ function openStore(){
   regQueue.sort((a,b)=>a.t-b.t);
   initStaffAgents();
   if(isEv||isGo)S.eventDays.push(S.day);
+  maniaOpen();
   S.phase='open';
   return true;
 }
@@ -162,7 +165,7 @@ function addWhy(c,k,d){c.sat+=d;c.why[k]=(c.why[k]||0)+d}
 function spawnCust(seg,opt={}){
   const [k,rate]=seg.split('-'),coin=RATE[k][rate].coin,sc=coin/400,lo=rate==='lo';
   const elder=opt.elder??(Math.random()<(lo?0.55:0.12)*conceptElder()*(S.regFx&&S.regFx.tome?1.15:1));
-  const hunter=opt.hunter??(Math.random()<hunterFrac*(lo?0.4:1)*conceptHunter());
+  const hunter=opt.hunter??(Math.random()<hunterFrac*(lo?0.4:1)*conceptHunter()*exOf(k).hunt);
   if(opt.rich==null&&!lo&&S.regFx&&S.regFx.kaneda&&Math.random()<0.03)opt.rich=1;
   const smoker=opt.smoker??(Math.random()<(lo?0.2:0.36));
   const d=doorPos();
@@ -171,9 +174,13 @@ function spawnCust(seg,opt={}){
     x:d.x,y:G.H+0.8,path:[{x:d.x,y:d.y}],st:'enter',m:null,speed:elder?0.2:0.3,
     budget:(hunter?rnd(30000,80000):rnd(8000,40000))*sc*(opt.rich?2.5:1),goal:(hunter?rnd(40000,120000):rnd(10000,50000))*sc,
     maxT:hunter?rnd(240,700):lo?rnd(120,360):rnd(60,240),inv:0,won:0,t:0,sat:0,why:{},plan:[],cur:null,wait:0,emote:null,ph:Math.random()*10,
-    nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false,born:clock};
+    nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false,born:clock,hyena:!!opt.hyena};
+  if(!hunter&&!opt.hyena)c.maxT*=exOf(k).stay;   /* 交換率が低いと、玉を交換せずに長く遊ぶ */
+  /* 会員カード：会員なら、預けた玉（貯玉）で遊ぶこともある */
+  if(S.mn.card&&!opt.hyena&&Math.random()<memRatio()){c.mem=true;
+    if(S.mn.cho>1000&&Math.random()<0.35){const u=Math.min(S.mn.cho,Math.round(rnd(3000,12000)*sc));S.mn.cho-=u;c.cho=u}}
   custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;if(elder)D.elders++;if(smoker)D.smokers++;
-  {const k=opt.reg?'reg:'+opt.reg:opt.queue?'queue':opt.rich?'rich':hunter?'hunter':elder?'elder':lo?'lo':smoker?'smoker':'normal';if(!opt.goto)D.seenC[k]=(D.seenC[k]||0)+1}
+  {const k=opt.reg?'reg:'+opt.reg:opt.hyena?'hyena':opt.queue?'queue':opt.rich?'rich':hunter?'hunter':elder?'elder':lo?'lo':smoker?'smoker':'normal';if(!opt.goto)D.seenC[k]=(D.seenC[k]||0)+1}
   return c;
 }
 function chooseMachine(c){
@@ -182,7 +189,7 @@ function chooseMachine(c){
   const ws=cand.map(m=>{
     const s=seatOf(m),z=zoneAt(s.x,s.y);let w;
     if(c.hunter){
-      if(c.k==='s')w=5+(todayTargets.has(m)?40+60*S.trust/100:0)+(m.yest&&m.yest.out>m.yest.coin?(D.kiosk?40:15):0)+popEff(m)*0.1;
+      if(c.k==='s')w=5+(todayTargets.has(m)?40+60*S.trust/100:0)+huntRead(m)+popEff(m)*0.1;
       else w=4+Math.pow(m.nail+3,2)*6+(todayTargets.has(m)?30:0)+popEff(m)*0.1;
       w=w*w;
     }else{
@@ -201,7 +208,8 @@ function chooseMachine(c){
 function seek(c){
   if(clock>=LAST){goExit(c);return}
   if(!machines().some(m=>segOf(m)===c.seg)){addWhy(c,'noSeg',-0.2);c.emote={ch:'？',t:25};goExit(c);return}
-  const m=chooseMachine(c);
+  const m=c.hyena?hyenaPick(c):chooseMachine(c);
+  if(!m&&c.hyena){c.hyMiss=true;D.hyMiss++;c.emote={ch:'…',t:20};goExit(c);return}
   if(!m){c.full=true;c.emote={ch:'？',t:25};D.full++;if(c.reg)S.regs[c.reg].unmet=true;tweet(c,'full',0.15,1);goExit(c);return}
   const s=seatOf(m),path=bfsTo(c,(x,y)=>x===s.x&&y===s.y);
   if(!path){goExit(c);return}
@@ -223,7 +231,10 @@ function onSit(c){
   if(conceptOn()&&CONCEPTS[conceptOn()].test(m))addWhy(c,'concept',0.04);
   m.occ=c.id;c.st='play';
   if(c.goto)return;
+  if(c.hyena){D.hyena++;floatAt(m.x,m.y,`ハマり${hamaOf(m)}G`,'#a1a1aa');tweet(c,'hyena',0.45,2,{g:hamaOf(m)});return}
   if(todayTargets.has(m)&&c.hunter)tweet(c,'target',0.5,2);
+  else if(c.hunter&&m.chgSeen)tweet(c,'reset',0.4,1);
+  else if(c.hunter&&kindOf(m)==='s'&&m.yest&&m.yest.out>m.yest.coin&&mnSue()>=0.55)tweet(c,'sue',0.35,1);
   else if(c.why.smokeIn)tweet(c,'smokeIn',0.5,2);
   else if(c.why.nailGood&&m.nail===2)tweet(c,'nailGood',0.35,1);
   else if(c.why.nailBad)tweet(c,'nailBad',0.35,1);
@@ -238,16 +249,22 @@ function play(c,dt){
   const m=c.m,md=MB[m.type],cin=c.coin*dt;
   if(c.goto){gotoStep(c,dt);return}
   c.inv+=cin;c.t+=dt;S.money+=cin;D.coin+=cin;m.today.coin+=cin;m.today.mins+=dt;m.today.g=(m.today.g||0)+dt*(md.k==='s'?S_GPM:P_SPM*machR(m)/NAIL_R[2]);
-  const hit=hitMean(m)*c.sc,p=c.coin*machR(m)/hit;
-  if(Math.random()<1-Math.exp(-p*dt)){
+  if(c.cho>0){const u=Math.min(cin,c.cho);c.cho-=u;S.money-=u;D.cho-=u;D.choOut+=u}   /* 貯玉で遊んだ分は、お金が入らない */
+  const tj=tenjoOf(m);if(tj)m.hama=(m.hama||0)+S_GPM*dt;
+  const hit=hitMean(m)*c.sc,p=c.coin*machR(m)/hit*(tj?tenjoK(m):1),force=tj&&m.hama>=tj;
+  if(force||Math.random()<1-Math.exp(-p*dt)){
     let pay=Math.max(100,Math.round(hit*payMult(md)/100)*100);
+    if(force)pay=Math.max(pay,Math.round(hit*0.5/100)*100);   /* 天井：かならず当たり、出玉も少しはある */
+    if(tj)m.hama=0;
     /* コンプリート：1台の差玉が上限に届いたら、そこで払い出しを止めて今日は終了 */
     const cap=COMPLETE[md.k]*unitYen(m),diff=m.today.out-m.today.coin,done=diff+pay>=cap;
     if(done)pay=Math.max(0,Math.round(cap-diff));
-    const ex=md.k==='s'?SLOT_EXCH:1;
-    c.won+=pay;S.money-=pay*ex;D.out+=pay;D.exch+=pay*(1-ex);m.today.out+=pay;m.today.hits++;
-    m.flash=1.6;c.emote={ch:'！',t:10};floatAt(m.x,m.y,'大当り','#ff2d55');sfx('hit');tweet(c,'hit',0.12,1);
+    const ex=exHit(md.k);
+    c.won+=pay;S.money-=pay*ex;D.out+=pay;D.exch+=pay*(1-ex);D.exchX+=pay*(exBase(md.k)-ex);m.today.out+=pay;m.today.hits++;
+    m.flash=1.6;c.emote={ch:'！',t:10};sfx('hit');
+    if(force){D.tenjo++;floatAt(m.x,m.y,'天井！','#c084fc');tweet(c,'tenjo',0.7,2)}else{floatAt(m.x,m.y,'大当り','#ff2d55');tweet(c,'hit',0.12,1)}
     if(done){completeMachine(m,c);return}
+    if(c.hyena){quit(c);return}   /* ハイエナは当たったらすぐやめる */
     if(Math.random()<0.1){callStaff(c,'box');return}
   }
   if(Math.random()<dt/450){callStaff(c,'jam');return}
@@ -304,8 +321,17 @@ function quit(c){
   const m=c.m;if(m){m.occ=null;m.res=null;m.call=false;m.brk=false;
     const s=seatOf(m);if(Math.random()<0.22*WEATHER[S.weather.today].dirt&&!trash.has(key(s.x,s.y)))trash.set(key(s.x,s.y),{x:s.x,y:s.y});}
   if(c.goto){m&&(m.occ=null,m.res=null);c.m=null;if(!c.caught){D.gotoEsc+=c.loot;news(`ゴト師に${man(c.loot)}抜かれた…（防犯カメラで防げます）`,'bad')}goExit(c);return}
-  const net=c.won-c.inv;c.net=net;if(net>D.maxWin)D.maxWin=net;
+  const xr=exRel(c.k),net=c.won-c.inv;c.net=net;if(net>D.maxWin)D.maxWin=net;
+  if(c.hyena)D.hyNet+=net;
   c.sat+=0.08;
+  if(net>0){
+    if(xr<0.99)addWhy(c,'exBad',-0.08*(1-xr)/0.107);else if(xr>1.01)addWhy(c,'exGood',0.06);
+    let keep=net;
+    /* 会員は、勝った玉の半分を預けていく（お店はまだ交換しなくていい） */
+    if(c.mem){const d=net*0.5,eh=exHit(c.k);keep-=d;S.mn.cho+=d;S.money+=d*eh;D.cho+=d*eh;D.choIn+=d}
+    /* 交換率を下げた分：持ち帰る玉にだけ、お店の取り分が出る */
+    const dl=exBase(c.k)-exRate(c.k);if(dl>0){const g=keep*dl;S.money+=g;D.exch+=g;D.exchX+=g}
+  }
   if(net>=30000*c.sc)tweet(c,'bigwin',0.45,2,{v:man(net)});else if(net<-15000*c.sc)tweet(c,'lose',0.25,1,{v:man(-net)});
   if(net>0)addWhy(c,'win',0.4+Math.min(0.2,net/(150000*c.sc)));else addWhy(c,'lose',-Math.min(0.35,-net/(80000*c.sc)));
   if(net>=50000*c.sc&&m)D.bigWins.push({no:m.no,k:kindOf(m),lv:kindOf(m)==='s'?m.set:m.nail,net,seg:c.seg});
@@ -375,7 +401,10 @@ function goExit(c){
 function finish(c){
   const i=custs.indexOf(c);if(i>=0)custs.splice(i,1);
   if(c.m){c.m.occ=null;c.m.res=null;c.m.call=false;c.m.brk=false}
-  if(c.full||c.goto)return;
+  if(c.cho>0){S.mn.cho+=c.cho;c.cho=0}   /* 使わなかった貯玉は預かりにもどす */
+  if(c.full||c.goto||c.insp||c.hyMiss)return;
+  if(c.mem)addWhy(c,'card',0.03);
+  if(c.hunter&&S.mn.data==='hide')addWhy(c,'dataHide',-0.03);
   const dirt=trash.size/Math.max(10,machines().length);
   if(dirt>0.2)addWhy(c,'dirty',-Math.min(0.15,dirt*0.2));
   const dr=decorRate();
@@ -417,6 +446,7 @@ function stepCust(c,dt){
     case 'wait':c.wait-=dt;if(c.wait<=0){applyAmenity(c);nextPlan(c)}break;
     case 'exit':if(moveAlong(c,dt)){c.path=[{x:c.x,y:G.H+0.9}];c.st='out'}break;
     case 'out':if(moveAlong(c,dt))finish(c);break;
+    case 'insp':inspStep(c,dt);break;
   }
 }
 
@@ -487,13 +517,14 @@ function update(dt){
   const hr=Math.floor((clock-30)/60);
   if(hr!==D.lastHr&&clock>=OPEN+30&&clock<LAST){D.lastHr=hr;const pl=custs.filter(c=>c.m&&(c.st==='play'||c.st==='call')&&!c.goto);D.hourly.push({h:hr,p:pl.filter(c=>c.k==='p').length,s:pl.filter(c=>c.k==='s').length})}
   if(clock<LAST-20){
-    if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<0.75,queue:1});tweet(c,'queue',0.06,1)}}
+    if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<(D.lot?0.5:0.75),queue:1});maniaQueueCust(c);tweet(c,D.lot?'lot':D.lineBad?'lineBad':'queue',D.lot||D.lineBad?0.12:0.06,1)}}
     while(regQueue.length&&regQueue[0].t<=clock){
       const {def}=regQueue.shift();
       spawnCust(def.seg,{reg:def.id,hunter:!!def.hunter,smoker:!!def.smoker,elder:!!def.elder,look:def.look,rich:def.rich});
       D.regsVisited.push(def.id);
     }
     if(D.gotoAt&&clock>=D.gotoAt){D.gotoAt=null;spawnGoto()}
+    maniaTick(dt);
     const h=clock/60,shape=h<11?1.4:h<13?0.8:h<17?0.9:h<20?1.35:0.7;
     spawnAcc+=lambdaBase*shape*dt;
     while(spawnAcc>=1){spawnAcc-=1;const c=spawnCust(pickSeg(todayInfo));if(S.weather.today==='rain')tweet(c,'rain',0.05,0);else tweet(c,'enter',0.02,0)}
@@ -501,7 +532,7 @@ function update(dt){
   for(const c of custs.slice())stepCust(c,dt);
   for(const a of staffA)stepStaff(a,dt);
   if(D.calls.length>40)D.calls=D.calls.filter(c=>c.st==='call');
-  if(clock>=CLOSE&&custs.length===0)closeDay();
+  if(clock>=CLOSE&&custs.length===0){if(!(D.stopped&&D.holdUntil&&performance.now()<D.holdUntil))closeDay()}
   else if(clock>=CLOSE+40){custs.slice().forEach(finish);closeDay()}
 }
 
@@ -511,10 +542,11 @@ function closeDay(){
   const ms=machines(),rent=rentOf(),wages=wagesTotal(),power=2500*ms.length;
   const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE*skRate()),goLab=goLabel(S.go);
   ms.forEach(m=>{m.broken=false;m.fixing=false});
-  const gross=D.coin-D.out+D.exch,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
+  const gross=D.coin-D.out+D.exch+D.cho,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
   S.money-=rent+wages+power+repairs+interest;
   const rep0=S.rep,trust0=S.trust,avgSat=D.satN?D.satSum/D.satN:0;
-  const payR=D.coin?D.out/D.coin:0.93,feel=clamp((payR-0.955)*30*(D.kiosk?1.5:1),-3.5,3.5);
+  /* お客さんの体感：出玉率に、交換率で増えた・減った手取りを足す */
+  const payR=D.coin?D.out/D.coin:0.93,feel=clamp(((D.coin?(D.out-(D.exchX||0))/D.coin:0.93)-0.955)*30*(D.kiosk?1.5:1),-3.5,3.5);
   S.rep=clamp(S.rep+clamp(avgSat*10,-5,5)*(D.isGo?1.5:1)+feel+(30-S.rep)*0.02,0,100);
   let evr=null,gor=null,goodEvent=false;
   if(D.isGo){
@@ -575,6 +607,7 @@ function closeDay(){
   S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000,full:D.full});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   chainEndDay(R);
+  maniaClose(R,avgSat);
   statDay(R);dexDay(R);
   S.negDays=S.money<0?(S.negDays||0)+1:0;
   judgeMissions(R);monAcc(R);yrAcc(R);staffEndDay(R);
@@ -589,6 +622,7 @@ function closeDay(){
   rivalsDayStart(R);
   storyDayStart(R);
   staffDayStart(R);
+  maniaDayStart(R);
   if(R0.talks)(R.talks=R.talks||[]).push(...R0.talks);
   dayExp(R);
   honDay(R);

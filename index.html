@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>[hidden]{display:none!important}</style>
-<script>window.APP_MODE=true;window.APP_VERSION='202610090658';</script>
+<script>window.APP_MODE=true;window.APP_VERSION='202610090741';</script>
 <title>パチンカスの成り上がり店長録</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -470,6 +470,43 @@ button{font:inherit;color:inherit}
 .P .tc{top:calc(108px + var(--st));max-width:70%}
 .P .tr{top:calc(6px + var(--st))}
 .P .tl{max-width:56%}
+/* ⑦ ホール運営・新台カレンダー */
+.relcard{display:flex;gap:9px;background:#fff;border:2.5px solid var(--ink);border-radius:13px;padding:7px 9px;box-shadow:2px 3px 0 var(--ink);position:relative;overflow:hidden}
+.relcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(var(--mc),var(--mc2))}
+.relcard.done{box-shadow:none;background:var(--paper-2)}
+.rc-date{flex:none;width:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--ink);color:#fff;border-radius:10px;padding:4px 2px;margin-left:4px;line-height:1.1}
+.rc-date b{font-family:var(--f-display);font-size:16px;color:var(--sun)}.rc-date span{font-size:10px}.rc-date small{font-size:9.5px;font-weight:800;margin-top:2px;color:#fda4af}
+.relcard.done .rc-date{background:#6b6880}.relcard.done .rc-date b{color:#fff}
+.rc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rc-name{font-weight:800;font-size:13px;display:flex;align-items:center;gap:6px;line-height:1.3}
+.rc-name .sw,.sw.sm{display:inline-block;width:12px;height:12px;border-radius:4px;border:2px solid var(--ink);flex:none;vertical-align:-1px;margin-right:4px}
+.rc-st{font-weight:800;font-size:12px}.rc-st.ok{color:var(--green)}.rc-st.ng{color:#be123c}
+.rc-req{gap:4px}.rc-req .chip{min-height:28px;padding:1px 9px;font-size:12px}
+.mthumb{width:36px;height:50px;flex:none;align-self:center;image-rendering:pixelated;filter:drop-shadow(1px 2px 0 rgba(22,18,31,.35))}
+.item .sw{image-rendering:pixelated}
+.tag.hot{background:linear-gradient(90deg,#ff2d55,#f97316);color:#fff}
+.tag.same{background:#dbeafe}.tag.chg{background:#fde68a}
+.dist{display:flex;gap:9px;align-items:center;background:linear-gradient(90deg,#e0f2fe,#fff);border:2.5px solid var(--ink);border-radius:13px;padding:6px 9px}
+.dist>div{flex:1;display:flex;flex-direction:column;gap:2px}
+.meter.sm{font-size:11.5px;gap:6px}.meter.sm .mt-bar{height:11px;border-width:2px}
+.mt-bar.blue i{background:linear-gradient(90deg,#7dd3fc,var(--blue))}
+.meter.heat.ok .mt-bar i{background:linear-gradient(90deg,#86efac,var(--green))}
+.meter.heat.mid .mt-bar i{background:linear-gradient(90deg,var(--c4),var(--c5))}
+.meter.heat.bad .mt-bar i{background:linear-gradient(90deg,var(--c5),var(--red))}
+.exrow{display:flex;gap:8px;align-items:center}.exrow .exk{flex:none;min-width:58px;text-align:center}
+.exrow .chips{gap:5px}.exrow .chip{display:flex;flex-direction:column;align-items:center;line-height:1.1;padding:3px 10px;min-height:38px}
+.exrow .chip small{font-size:9.5px;opacity:.75}
+.lbl.sm{font-size:11.5px;margin-top:2px}
+.lrow .hm{flex:none;font-size:10px;font-weight:800;background:#1f2937;color:#fff;border-radius:6px;padding:0 5px;margin-left:4px}
+.lrow .hm.hot{background:#ff2d55}
+.cg{flex:none;font-size:10px;font-weight:800;border:2px solid var(--ink);border-radius:6px;padding:0 3px;margin-left:4px;line-height:1.25}
+.cg.same{background:#dbeafe}.cg.chg{background:#fde68a}
+.px{font-size:12px;margin-left:2px}.px.up{color:#be123c}.px.down{color:#047857}
+.mnrep .mi{display:inline-block;min-width:52px;text-align:center;font-size:10.5px;background:var(--ink);color:var(--sun);border-radius:6px;padding:0 5px;margin-right:6px}
+.mnrep .mi.ng{background:#be123c;color:#fff}
+.chip small.warn{display:block;font-size:10px;color:#be123c;font-weight:800;margin-top:1px}
+.chip.cur small.warn{color:#fda4af}
+.btn.stopb{background:#475569;color:#fff;line-height:1.05}.btn.stopb small{font-size:10px}
 </style>
 </head>
 <body>
@@ -762,6 +799,12 @@ const WHY={
  broken:{t:'打っていた台が壊れた'},
  concept:{good:1,t:'お店のコンセプトが好き'},
  greet:{good:1,t:'朝のお出迎えがうれしい'},
+ exBad:{t:'交換率が悪くて、勝っても手取りが少ない'},
+ exGood:{good:1,t:'等価交換でうれしい'},
+ card:{good:1,t:'会員カードのポイントがうれしい'},
+ dataHide:{t:'台のデータが見られなくて台を選びにくい'},
+ lotFair:{good:1,t:'抽選入場で公平だった'},
+ lineBad:{t:'朝の並びでトラブルがあった'},
 };
 /* つぶやき */
 const HANDLES=['パチ好き太郎','スロ専ミキ','朝イチ勢','回転数マニア','イベ狙いK','7揃え職人','負けたら終わり','年金パチ子','仕事帰りの田中','ドル箱ハンター','ジャグ好き','ハイエナ次郎','甘デジ専','打ち子A','爆裂おじさん','台パン禁止','パチンコ日記','設定6を探す人'];
@@ -789,6 +832,12 @@ const TW={
  data:['データ見て座った','昨日出てた台だ'],
  newm:['新台打てた！','新台おもしろい'],
  enter:['今日は勝つぞ','ちょっと寄ってく','軍資金1万円'],
+ tenjo:['天井きた！助かった…','天井まで連れていかれた','やっと天井…AT確定'],
+ hyena:['{g}G ハマり台いただき','天井まであと少し…','ハマり台みっけ'],
+ reset:['リセットされてる。設定変えたな？','この台、設定変更っぽい','朝イチ リセット台だ'],
+ sue:['昨日の当たり台、据え置きか？','据え置き狙いでこの台','昨日出てた台、まだ高いはず'],
+ lot:['抽選番号 よし、早い番号！','抽選入場で並ばなくていい','番号札もらった'],
+ lineBad:['割り込みすんなよ…','並びの場所取りひどい','朝から揉めてる…'],
 };
 const REG_LINES={
  win:['今日は勝たせてもらったよ','いい台だった！'],
@@ -1000,7 +1049,7 @@ function frontOf(d){return d.side==='t'?{x:d.pos,y:0}:d.side==='l'?{x:0,y:d.pos}
 function insideOf(d){return d.side==='t'?{x:d.pos,y:-0.75}:d.side==='l'?{x:-0.75,y:d.pos}:{x:G.W-0.25,y:d.pos}}
 function rankIdx(){let r=0;RANKS.forEach((x,i)=>{if(S.totalVisitors>=x.need)r=i});return r}
 const rankNo=()=>rankIdx()+1;
-const popEff=m=>MB[m.type].pop*(1+0.8*Math.max(0,1-(S.day-m.installDay)/10))*conceptPop(m)*(m.installDay>=S.day-3&&buffOn('newPop')?1.2:1);
+const popEff=m=>MB[m.type].pop*(1+0.8*Math.max(0,1-(S.day-m.installDay)/10))*conceptPop(m)*(m.installDay>=S.day-3&&buffOn('newPop')?1.2:1)*hypeF(m);
 function appealPts(){
   let a=FB[G.floor].appeal+WLB[G.wall].appeal;
   for(const o of G.objs)if(o.kind==='d')a+=DB[o.type].appeal;
@@ -1059,6 +1108,7 @@ function newGame(name){
   const kin=S.rivals.find(r=>r.boss==='kinjo');if(kin)kin.next=true;   /* ゴールデン会館は隣の店 */
   undoStack=[];layoutChanged();
   storyInit(false);makeMissions();
+  S.mn=null;maniaDefaults();
 }
 
 /* ---------- 保存 ---------- */
@@ -1069,7 +1119,7 @@ function save(){try{localStorage.setItem(SAVE_KEY,S.phase==='open'?openSnap:ser(
 function fillDefaults(){
   const d={loan:0,regu:[],gen:1,goals:{},moved:0,ended:null,yearLog:[],negDays:0,rivalPlans:[],rivalLog:[],incidents:[],selfScout:0};
   for(const k in d)if(S[k]==null)S[k]=JSON.parse(JSON.stringify(d[k]));
-  migrateRivals();growthDefaults();ensureHome();
+  migrateRivals();growthDefaults();ensureHome();maniaDefaults();
   S.v=3;
 }
 function load(str){
@@ -1682,7 +1732,7 @@ function eventMultToday(){
   if(ev.type==='anniv')return GO_MULT.anniv[0];
   if(ev.type==='none')return 1;
   let m=1+(0.4+S.trust/100)*Math.pow(0.7,recentEvents());
-  if(ev.type==='newm')m=1+0.5*Math.pow(0.8,recentEvents())+Math.min(0.4,newCount()*0.04);
+  if(ev.type==='newm')m=1+0.5*Math.pow(0.8,recentEvents())+Math.min(0.4,newCount()*0.04)+(newHyped()?0.2:0);
   if(ev.type==='media')m=1+(ev.target==='tube'?1.1:0.6)*Math.pow(0.75,recentEvents())+S.trust/400;
   if(ev.type==='season')m=1+0.6*Math.pow(0.75,recentEvents())+S.trust/300;
   if(ev.ad)m+=0.35;
@@ -1701,7 +1751,7 @@ function playerAttract(evMult){
   const lineup=0.8+0.4*Math.min(1,avgPop/80);
   const decorF=0.9+0.2*decorRate();
   const regF=1+0.02*Object.values(S.regs).filter(r=>r.loy>=70&&r.st!=='gone').length;
-  let a=(10+S.rep)*capF(n)*lineup*decorF*regF*evMult*(conceptOn()?1.04:1);
+  let a=(10+S.rep)*capF(n)*lineup*decorF*regF*evMult*(conceptOn()?1.04:1)*exAttract()*memF();
   if(S.mod&&S.day<=S.mod.until)a*=S.mod.mult;
   return a;
 }
@@ -1728,6 +1778,8 @@ function openStore(){
   if(S.phase!=='prep')return false;
   if(!machines().length){toast('台が1台もありません');sfx('bad');return false}
   const ev=S.event;
+  if(stopToday()){ev.type='none';ev.ad=false}
+  if(adBanned())ev.ad=false;
   if(goActive())ev.type='none';
   else if(ev.type==='renewal'&&!canRenewal())ev.type='none';
   else if(ev.type==='season'&&!seasonInfo(S.day))ev.type='none';
@@ -1764,6 +1816,7 @@ function openStore(){
   regQueue.sort((a,b)=>a.t-b.t);
   initStaffAgents();
   if(isEv||isGo)S.eventDays.push(S.day);
+  maniaOpen();
   S.phase='open';
   return true;
 }
@@ -1804,7 +1857,7 @@ function addWhy(c,k,d){c.sat+=d;c.why[k]=(c.why[k]||0)+d}
 function spawnCust(seg,opt={}){
   const [k,rate]=seg.split('-'),coin=RATE[k][rate].coin,sc=coin/400,lo=rate==='lo';
   const elder=opt.elder??(Math.random()<(lo?0.55:0.12)*conceptElder()*(S.regFx&&S.regFx.tome?1.15:1));
-  const hunter=opt.hunter??(Math.random()<hunterFrac*(lo?0.4:1)*conceptHunter());
+  const hunter=opt.hunter??(Math.random()<hunterFrac*(lo?0.4:1)*conceptHunter()*exOf(k).hunt);
   if(opt.rich==null&&!lo&&S.regFx&&S.regFx.kaneda&&Math.random()<0.03)opt.rich=1;
   const smoker=opt.smoker??(Math.random()<(lo?0.2:0.36));
   const d=doorPos();
@@ -1813,9 +1866,13 @@ function spawnCust(seg,opt={}){
     x:d.x,y:G.H+0.8,path:[{x:d.x,y:d.y}],st:'enter',m:null,speed:elder?0.2:0.3,
     budget:(hunter?rnd(30000,80000):rnd(8000,40000))*sc*(opt.rich?2.5:1),goal:(hunter?rnd(40000,120000):rnd(10000,50000))*sc,
     maxT:hunter?rnd(240,700):lo?rnd(120,360):rnd(60,240),inv:0,won:0,t:0,sat:0,why:{},plan:[],cur:null,wait:0,emote:null,ph:Math.random()*10,
-    nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false,born:clock};
+    nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false,born:clock,hyena:!!opt.hyena};
+  if(!hunter&&!opt.hyena)c.maxT*=exOf(k).stay;   /* 交換率が低いと、玉を交換せずに長く遊ぶ */
+  /* 会員カード：会員なら、預けた玉（貯玉）で遊ぶこともある */
+  if(S.mn.card&&!opt.hyena&&Math.random()<memRatio()){c.mem=true;
+    if(S.mn.cho>1000&&Math.random()<0.35){const u=Math.min(S.mn.cho,Math.round(rnd(3000,12000)*sc));S.mn.cho-=u;c.cho=u}}
   custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;if(elder)D.elders++;if(smoker)D.smokers++;
-  {const k=opt.reg?'reg:'+opt.reg:opt.queue?'queue':opt.rich?'rich':hunter?'hunter':elder?'elder':lo?'lo':smoker?'smoker':'normal';if(!opt.goto)D.seenC[k]=(D.seenC[k]||0)+1}
+  {const k=opt.reg?'reg:'+opt.reg:opt.hyena?'hyena':opt.queue?'queue':opt.rich?'rich':hunter?'hunter':elder?'elder':lo?'lo':smoker?'smoker':'normal';if(!opt.goto)D.seenC[k]=(D.seenC[k]||0)+1}
   return c;
 }
 function chooseMachine(c){
@@ -1824,7 +1881,7 @@ function chooseMachine(c){
   const ws=cand.map(m=>{
     const s=seatOf(m),z=zoneAt(s.x,s.y);let w;
     if(c.hunter){
-      if(c.k==='s')w=5+(todayTargets.has(m)?40+60*S.trust/100:0)+(m.yest&&m.yest.out>m.yest.coin?(D.kiosk?40:15):0)+popEff(m)*0.1;
+      if(c.k==='s')w=5+(todayTargets.has(m)?40+60*S.trust/100:0)+huntRead(m)+popEff(m)*0.1;
       else w=4+Math.pow(m.nail+3,2)*6+(todayTargets.has(m)?30:0)+popEff(m)*0.1;
       w=w*w;
     }else{
@@ -1843,7 +1900,8 @@ function chooseMachine(c){
 function seek(c){
   if(clock>=LAST){goExit(c);return}
   if(!machines().some(m=>segOf(m)===c.seg)){addWhy(c,'noSeg',-0.2);c.emote={ch:'？',t:25};goExit(c);return}
-  const m=chooseMachine(c);
+  const m=c.hyena?hyenaPick(c):chooseMachine(c);
+  if(!m&&c.hyena){c.hyMiss=true;D.hyMiss++;c.emote={ch:'…',t:20};goExit(c);return}
   if(!m){c.full=true;c.emote={ch:'？',t:25};D.full++;if(c.reg)S.regs[c.reg].unmet=true;tweet(c,'full',0.15,1);goExit(c);return}
   const s=seatOf(m),path=bfsTo(c,(x,y)=>x===s.x&&y===s.y);
   if(!path){goExit(c);return}
@@ -1865,7 +1923,10 @@ function onSit(c){
   if(conceptOn()&&CONCEPTS[conceptOn()].test(m))addWhy(c,'concept',0.04);
   m.occ=c.id;c.st='play';
   if(c.goto)return;
+  if(c.hyena){D.hyena++;floatAt(m.x,m.y,`ハマり${hamaOf(m)}G`,'#a1a1aa');tweet(c,'hyena',0.45,2,{g:hamaOf(m)});return}
   if(todayTargets.has(m)&&c.hunter)tweet(c,'target',0.5,2);
+  else if(c.hunter&&m.chgSeen)tweet(c,'reset',0.4,1);
+  else if(c.hunter&&kindOf(m)==='s'&&m.yest&&m.yest.out>m.yest.coin&&mnSue()>=0.55)tweet(c,'sue',0.35,1);
   else if(c.why.smokeIn)tweet(c,'smokeIn',0.5,2);
   else if(c.why.nailGood&&m.nail===2)tweet(c,'nailGood',0.35,1);
   else if(c.why.nailBad)tweet(c,'nailBad',0.35,1);
@@ -1880,16 +1941,22 @@ function play(c,dt){
   const m=c.m,md=MB[m.type],cin=c.coin*dt;
   if(c.goto){gotoStep(c,dt);return}
   c.inv+=cin;c.t+=dt;S.money+=cin;D.coin+=cin;m.today.coin+=cin;m.today.mins+=dt;m.today.g=(m.today.g||0)+dt*(md.k==='s'?S_GPM:P_SPM*machR(m)/NAIL_R[2]);
-  const hit=hitMean(m)*c.sc,p=c.coin*machR(m)/hit;
-  if(Math.random()<1-Math.exp(-p*dt)){
+  if(c.cho>0){const u=Math.min(cin,c.cho);c.cho-=u;S.money-=u;D.cho-=u;D.choOut+=u}   /* 貯玉で遊んだ分は、お金が入らない */
+  const tj=tenjoOf(m);if(tj)m.hama=(m.hama||0)+S_GPM*dt;
+  const hit=hitMean(m)*c.sc,p=c.coin*machR(m)/hit*(tj?tenjoK(m):1),force=tj&&m.hama>=tj;
+  if(force||Math.random()<1-Math.exp(-p*dt)){
     let pay=Math.max(100,Math.round(hit*payMult(md)/100)*100);
+    if(force)pay=Math.max(pay,Math.round(hit*0.5/100)*100);   /* 天井：かならず当たり、出玉も少しはある */
+    if(tj)m.hama=0;
     /* コンプリート：1台の差玉が上限に届いたら、そこで払い出しを止めて今日は終了 */
     const cap=COMPLETE[md.k]*unitYen(m),diff=m.today.out-m.today.coin,done=diff+pay>=cap;
     if(done)pay=Math.max(0,Math.round(cap-diff));
-    const ex=md.k==='s'?SLOT_EXCH:1;
-    c.won+=pay;S.money-=pay*ex;D.out+=pay;D.exch+=pay*(1-ex);m.today.out+=pay;m.today.hits++;
-    m.flash=1.6;c.emote={ch:'！',t:10};floatAt(m.x,m.y,'大当り','#ff2d55');sfx('hit');tweet(c,'hit',0.12,1);
+    const ex=exHit(md.k);
+    c.won+=pay;S.money-=pay*ex;D.out+=pay;D.exch+=pay*(1-ex);D.exchX+=pay*(exBase(md.k)-ex);m.today.out+=pay;m.today.hits++;
+    m.flash=1.6;c.emote={ch:'！',t:10};sfx('hit');
+    if(force){D.tenjo++;floatAt(m.x,m.y,'天井！','#c084fc');tweet(c,'tenjo',0.7,2)}else{floatAt(m.x,m.y,'大当り','#ff2d55');tweet(c,'hit',0.12,1)}
     if(done){completeMachine(m,c);return}
+    if(c.hyena){quit(c);return}   /* ハイエナは当たったらすぐやめる */
     if(Math.random()<0.1){callStaff(c,'box');return}
   }
   if(Math.random()<dt/450){callStaff(c,'jam');return}
@@ -1946,8 +2013,17 @@ function quit(c){
   const m=c.m;if(m){m.occ=null;m.res=null;m.call=false;m.brk=false;
     const s=seatOf(m);if(Math.random()<0.22*WEATHER[S.weather.today].dirt&&!trash.has(key(s.x,s.y)))trash.set(key(s.x,s.y),{x:s.x,y:s.y});}
   if(c.goto){m&&(m.occ=null,m.res=null);c.m=null;if(!c.caught){D.gotoEsc+=c.loot;news(`ゴト師に${man(c.loot)}抜かれた…（防犯カメラで防げます）`,'bad')}goExit(c);return}
-  const net=c.won-c.inv;c.net=net;if(net>D.maxWin)D.maxWin=net;
+  const xr=exRel(c.k),net=c.won-c.inv;c.net=net;if(net>D.maxWin)D.maxWin=net;
+  if(c.hyena)D.hyNet+=net;
   c.sat+=0.08;
+  if(net>0){
+    if(xr<0.99)addWhy(c,'exBad',-0.08*(1-xr)/0.107);else if(xr>1.01)addWhy(c,'exGood',0.06);
+    let keep=net;
+    /* 会員は、勝った玉の半分を預けていく（お店はまだ交換しなくていい） */
+    if(c.mem){const d=net*0.5,eh=exHit(c.k);keep-=d;S.mn.cho+=d;S.money+=d*eh;D.cho+=d*eh;D.choIn+=d}
+    /* 交換率を下げた分：持ち帰る玉にだけ、お店の取り分が出る */
+    const dl=exBase(c.k)-exRate(c.k);if(dl>0){const g=keep*dl;S.money+=g;D.exch+=g;D.exchX+=g}
+  }
   if(net>=30000*c.sc)tweet(c,'bigwin',0.45,2,{v:man(net)});else if(net<-15000*c.sc)tweet(c,'lose',0.25,1,{v:man(-net)});
   if(net>0)addWhy(c,'win',0.4+Math.min(0.2,net/(150000*c.sc)));else addWhy(c,'lose',-Math.min(0.35,-net/(80000*c.sc)));
   if(net>=50000*c.sc&&m)D.bigWins.push({no:m.no,k:kindOf(m),lv:kindOf(m)==='s'?m.set:m.nail,net,seg:c.seg});
@@ -2017,7 +2093,10 @@ function goExit(c){
 function finish(c){
   const i=custs.indexOf(c);if(i>=0)custs.splice(i,1);
   if(c.m){c.m.occ=null;c.m.res=null;c.m.call=false;c.m.brk=false}
-  if(c.full||c.goto)return;
+  if(c.cho>0){S.mn.cho+=c.cho;c.cho=0}   /* 使わなかった貯玉は預かりにもどす */
+  if(c.full||c.goto||c.insp||c.hyMiss)return;
+  if(c.mem)addWhy(c,'card',0.03);
+  if(c.hunter&&S.mn.data==='hide')addWhy(c,'dataHide',-0.03);
   const dirt=trash.size/Math.max(10,machines().length);
   if(dirt>0.2)addWhy(c,'dirty',-Math.min(0.15,dirt*0.2));
   const dr=decorRate();
@@ -2059,6 +2138,7 @@ function stepCust(c,dt){
     case 'wait':c.wait-=dt;if(c.wait<=0){applyAmenity(c);nextPlan(c)}break;
     case 'exit':if(moveAlong(c,dt)){c.path=[{x:c.x,y:G.H+0.9}];c.st='out'}break;
     case 'out':if(moveAlong(c,dt))finish(c);break;
+    case 'insp':inspStep(c,dt);break;
   }
 }
 
@@ -2129,13 +2209,14 @@ function update(dt){
   const hr=Math.floor((clock-30)/60);
   if(hr!==D.lastHr&&clock>=OPEN+30&&clock<LAST){D.lastHr=hr;const pl=custs.filter(c=>c.m&&(c.st==='play'||c.st==='call')&&!c.goto);D.hourly.push({h:hr,p:pl.filter(c=>c.k==='p').length,s:pl.filter(c=>c.k==='s').length})}
   if(clock<LAST-20){
-    if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<0.75,queue:1});tweet(c,'queue',0.06,1)}}
+    if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<(D.lot?0.5:0.75),queue:1});maniaQueueCust(c);tweet(c,D.lot?'lot':D.lineBad?'lineBad':'queue',D.lot||D.lineBad?0.12:0.06,1)}}
     while(regQueue.length&&regQueue[0].t<=clock){
       const {def}=regQueue.shift();
       spawnCust(def.seg,{reg:def.id,hunter:!!def.hunter,smoker:!!def.smoker,elder:!!def.elder,look:def.look,rich:def.rich});
       D.regsVisited.push(def.id);
     }
     if(D.gotoAt&&clock>=D.gotoAt){D.gotoAt=null;spawnGoto()}
+    maniaTick(dt);
     const h=clock/60,shape=h<11?1.4:h<13?0.8:h<17?0.9:h<20?1.35:0.7;
     spawnAcc+=lambdaBase*shape*dt;
     while(spawnAcc>=1){spawnAcc-=1;const c=spawnCust(pickSeg(todayInfo));if(S.weather.today==='rain')tweet(c,'rain',0.05,0);else tweet(c,'enter',0.02,0)}
@@ -2143,7 +2224,7 @@ function update(dt){
   for(const c of custs.slice())stepCust(c,dt);
   for(const a of staffA)stepStaff(a,dt);
   if(D.calls.length>40)D.calls=D.calls.filter(c=>c.st==='call');
-  if(clock>=CLOSE&&custs.length===0)closeDay();
+  if(clock>=CLOSE&&custs.length===0){if(!(D.stopped&&D.holdUntil&&performance.now()<D.holdUntil))closeDay()}
   else if(clock>=CLOSE+40){custs.slice().forEach(finish);closeDay()}
 }
 
@@ -2153,10 +2234,11 @@ function closeDay(){
   const ms=machines(),rent=rentOf(),wages=wagesTotal(),power=2500*ms.length;
   const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE*skRate()),goLab=goLabel(S.go);
   ms.forEach(m=>{m.broken=false;m.fixing=false});
-  const gross=D.coin-D.out+D.exch,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
+  const gross=D.coin-D.out+D.exch+D.cho,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
   S.money-=rent+wages+power+repairs+interest;
   const rep0=S.rep,trust0=S.trust,avgSat=D.satN?D.satSum/D.satN:0;
-  const payR=D.coin?D.out/D.coin:0.93,feel=clamp((payR-0.955)*30*(D.kiosk?1.5:1),-3.5,3.5);
+  /* お客さんの体感：出玉率に、交換率で増えた・減った手取りを足す */
+  const payR=D.coin?D.out/D.coin:0.93,feel=clamp(((D.coin?(D.out-(D.exchX||0))/D.coin:0.93)-0.955)*30*(D.kiosk?1.5:1),-3.5,3.5);
   S.rep=clamp(S.rep+clamp(avgSat*10,-5,5)*(D.isGo?1.5:1)+feel+(30-S.rep)*0.02,0,100);
   let evr=null,gor=null,goodEvent=false;
   if(D.isGo){
@@ -2217,6 +2299,7 @@ function closeDay(){
   S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000,full:D.full});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   chainEndDay(R);
+  maniaClose(R,avgSat);
   statDay(R);dexDay(R);
   S.negDays=S.money<0?(S.negDays||0)+1:0;
   judgeMissions(R);monAcc(R);yrAcc(R);staffEndDay(R);
@@ -2231,6 +2314,7 @@ function closeDay(){
   rivalsDayStart(R);
   storyDayStart(R);
   staffDayStart(R);
+  maniaDayStart(R);
   if(R0.talks)(R.talks=R.talks||[]).push(...R0.talks);
   dayExp(R);
   honDay(R);
@@ -2305,6 +2389,7 @@ function regulatedIds(){const s=new Set();for(const r of S.regu)if(!r.done)REGS[
 function modelOnSale(id){
   const m=MB[id];
   if((m.gen||1)>S.gen)return false;
+  if(relLocked(id))return false;   /* 発売前の新台 */
   for(const r of S.regu)if(REGS[r.i].ids.includes(id))return false;
   return true;
 }
@@ -3505,10 +3590,10 @@ function branchDay(b,info){
   const wx=WEATHER[rollWeather(S.day)].mult;
   let vis=Math.round(LOCS[st.loc].town*info.mult*wx*share*rnd(0.85,1.15));
   vis=Math.min(vis,n*(goOn?7:6));
-  /* 出玉率：スロットは機械割、パチンコは釘（交換差益はスロットだけ） */
+  /* 出玉率：スロットは機械割、パチンコは釘（交換差益は、お店の交換率で決まる） */
   /* 実際の営業では途中でやめるお客さんやコンプリートがあるので、出玉率は機械割より少し低くなる（いま見ているお店の実績に合わせる） */
   const pr=avgOf(ms.map(m=>machR(m)))*(S.prFactor||0.92)*rnd(0.96,1.04),slotEq=ms.filter(m=>MB[m.type].k==='s').reduce((a,m)=>a+(m.rate==='lo'?0.25:1),0);
-  const coin=vis*(S.cpvHi||30000)*(eq/n)*rnd(0.9,1.1),out=coin*pr,exch=out*(eq?slotEq/eq:0)*(1-SLOT_EXCH);
+  const coin=vis*(S.cpvHi||30000)*(eq/n)*rnd(0.9,1.1),out=coin*pr,sh=eq?slotEq/eq:0,exch=out*(sh*(1-exHit('s'))+(1-sh)*(1-exHit('p')))+out*0.25*(sh*Math.max(0,exBase('s')-exRate('s'))+(1-sh)*Math.max(0,exBase('p')-exRate('p')));
   const gross=coin-out+exch,drink=st.objs.some(o=>o.kind==='d'&&o.type==='vending')?vis*40:0;
   const rent=st.W*st.H*LOCS[st.loc].rentTile,wages=Math.round(b.staff.reduce((a,s)=>a+s.wage,0)*skWage()),power=2500*n;
   const net=Math.round(gross+drink-rent-wages-power);
@@ -3591,6 +3676,8 @@ const DEX_C=[
   {k:'rich',name:'お金持ちのお客さん',desc:'軍資金がたっぷり。豪華な内装が好き',look:{shirt:'#facc15',hair:'#1b1b1b',skin:'#eabf98',glasses:1}},
   {k:'queue',name:'朝イチの行列',desc:'イベントやオープンの日に、開店前から並ぶお客さん',look:{shirt:'#ec4899',hair:'#c8a165',skin:'#f6d1b0'}},
   {k:'bigwin',name:'大勝ちしたお客さん',desc:'10万円以上勝って帰ったお客さん。お店の宣伝をしてくれる',look:{shirt:'#f97316',hair:'#1b1b1b',skin:'#f6d1b0'}},
+  {k:'hyena',name:'ハイエナ',desc:'スロットのハマり台だけを狙う。天井まで打って、当たったらすぐやめる。黒っぽいパーカーが目印',look:{shirt:'#3f3f46',hair:'#1b1b1b',skin:'#eabf98',out:'hoodie',pants:'#111827',mask:1}},
+  {k:'insp',name:'立ち入り検査の人',desc:'警察の検査。あおる告知や大きな釘の変更が続くと、やって来る',look:{shirt:'#1e293b',hair:'#3b2a1a',skin:'#f3d3b5',out:'suit',hs:'short',glasses:1,pants:'#1f2937'}},
   {k:'goto',name:'ゴト師',desc:'不正な道具で玉を抜く。サングラスが目印。捕まえると図鑑に載る',look:{shirt:'#1f2937',hair:'#0b0b0b',skin:'#e9c7a5',shades:1}},
   ...REG_DEFS.map(d=>({k:'reg:'+d.id,name:d.name,desc:`常連さん。好き：${d.likes}／苦手：${d.hates}`,look:d.look,elder:d.elder,reg:1})),
 ];
@@ -3715,6 +3802,19 @@ const HON=[
  ['mis1','朝礼の成果','朝礼の目標を3つとも達成','朝礼',c=>c.R.missions&&c.R.missions.n===3],
  ['mis7','皆勤賞','朝礼の目標を7日連続で全部達成','朝礼',c=>(S.missStreak||0)>=7],
  ['mis30','鉄の結束','朝礼の目標を30日連続で全部達成','朝礼',c=>(S.missStreak||0)>=30],
+ /* ホール運営 */
+ ['tenjo1','天井到達','スロットの台が天井まで行った','ホール運営',c=>((S.stat&&S.stat.tenjo)||0)>=1],
+ ['tenjo50','ハイエナの楽園','天井到達が合計50回','ホール運営',c=>((S.stat&&S.stat.tenjo)||0)>=50],
+ ['sue','据え置きの店','お客さんに「よく据え置く店」と思われた','ホール運営',c=>S.mn&&S.mn.sue>=0.65],
+ ['tokka','等価交換の店','パチンコもスロットも等価交換にした','ホール運営',c=>exKey('p')==='25'&&exKey('s')==='50'],
+ ['teika','低価交換の店','パチンコ33玉・スロット7枚交換にした','ホール運営',c=>exKey('p')==='33'&&exKey('s')==='70',1],
+ ['lotall','全台当選','新台の抽選で4台以上予約して、全部当たった','ホール運営',c=>!!(S.stat&&S.stat.lotAll)],
+ ['newrel','新台初日','新台を発売日に置いた','ホール運営',c=>machines().some(m=>S.mn&&S.mn.relDay[m.type]!=null&&m.installDay===S.mn.relDay[m.type])],
+ ['lotq','抽選入場','抽選入場で20人以上が並んだ','ホール運営',c=>!!(c.R.mn&&c.R.mn.lot>=20)],
+ ['mem1k','会員1000人','会員カードの会員が1000人','ホール運営',c=>S.mn&&S.mn.mem>=1000],
+ ['cho1m','貯玉100万','お客さんの貯玉が100万円分たまった','ホール運営',c=>S.mn&&S.mn.cho>=1000000],
+ ['inspok','まっとうな商売','立ち入り検査で「問題なし」','ホール運営',c=>((S.stat&&S.stat.inspOk)||0)>=1],
+ ['stopped','営業停止','立ち入り検査で営業停止になった','ホール運営',c=>!!(S.mn&&S.mn.insp.some(x=>x.res==='stop')),1],
  /* 周回・おもしろ */
  ['ng','2周目','2周目を始めた','周回',c=>(S.cycle||1)>=2],
  ['maxclear','MAXクリア','難易度MAXでエンディング','周回',c=>S.diff==='max'&&S.story&&S.story.awardWon],
@@ -3816,6 +3916,372 @@ function applyNewGameOpts(o){
     S.money+=Math.min(5000000,1000000*(S.cycle-1));
   }
   if(S.story)S.story.quota=makeQuota(null);
+}
+
+/* ===== mania.js : ホール運営のしくみ =====
+   ① 据え置きと設定変更 … お客さんは「この店は高設定を据え置くか」「設定を変えた台は上げているか」を覚えて台を選ぶ
+   ② スロットの天井とハイエナ … AT機はハマり（当たらないゲーム数）が天井に届くと必ず当たる。ハマり台を狙う客が来る
+   ③ 交換率 … 等価にするか、少し下げてお店の取り分（交換差益）をつくるか
+   ④ 新台カレンダー … 販社に予約して、人気台は抽選。発売後しばらくは中古が出回らない。中古の相場は毎週動く
+   ⑤ 抽選入場 … イベントの朝の並びを抽選にする
+   ⑥ 立ち入り検査 … あおる告知や大きな釘の変更が続くと、警察の検査が入る
+   ⑦ 会員カードと貯玉 … 会員が増えると客足が安定し、勝った玉を預けてまた来てくれる */
+
+/* ---------- 交換率 ----------
+   ex：お店が払う割合（1,000円分の玉を交換したときの金額÷1,000）
+   hunt：設定狙いの客の来やすさ  att：お客さん全体の来やすさ  stay：ふつうの客が長く遊ぶ割合 */
+const EXCH={
+  p:{'25':{n:'等価',yen:1000,ex:1,hunt:1,att:1,stay:1},
+     '28':{n:'28玉',yen:893,ex:25/28,hunt:0.75,att:0.95,stay:1.12},
+     '33':{n:'33玉',yen:758,ex:25/33,hunt:0.5,att:0.88,stay:1.25}},
+  s:{'50':{n:'等価',yen:1000,ex:1,hunt:1.15,att:1.03,stay:0.95},
+     '56':{n:'5.6枚',yen:893,ex:5/5.6,hunt:1,att:1,stay:1},
+     '60':{n:'6枚',yen:833,ex:5/6,hunt:0.8,att:0.95,stay:1.08},
+     '70':{n:'7枚',yen:714,ex:5/7,hunt:0.5,att:0.88,stay:1.2}}};
+const EX_DEF={p:'25',s:'56'};
+const EX_CD=14;   /* 交換率を変えたあと、次に変えられるまでの日数 */
+const exKey=k=>(S.mn&&S.mn.ex&&EXCH[k][S.mn.ex[k]])?S.mn.ex[k]:EX_DEF[k];
+const exOf=k=>EXCH[k][exKey(k)];
+const exRate=k=>exOf(k).ex;
+const exBase=k=>EXCH[k][EX_DEF[k]].ex;
+/* 最初の交換率とくらべた、お客さんの手取りの割合 */
+const exRel=k=>exRate(k)/exBase(k);
+/* 当りのたびに払うときの割合。交換率を下げた分の取り分は、お客さんが持ち帰る玉（勝ち分）にだけかかるので、
+   当りのときは最初の交換率で払い、帰るときに勝ち分×差の分だけお店に残す（quit を見る） */
+const exHit=k=>Math.max(exRate(k),exBase(k));
+const exLabel=()=>`パチンコ${exOf('p').n}・スロット${exOf('s').n}`;
+/* 交換率でお客さん全体の来やすさが変わる（台の数の割合で混ぜる） */
+function exAttract(){const ms=machines();if(!ms.length)return 1;const p=ms.filter(m=>kindOf(m)==='p').length/ms.length;return (p*exOf('p').att+(1-p)*exOf('s').att)*(S.mn&&S.mn.exUp>=S.day?1.08:1)}
+const exLeft=k=>Math.max(0,EX_CD-(S.day-((S.mn.exDay&&S.mn.exDay[k])??-99)));
+function setExch(k,v){
+  const M=S.mn,o=exOf(k),n=EXCH[k][v];
+  if(!n||exKey(k)===v||exLeft(k)>0||S.phase!=='prep')return false;
+  M.ex[k]=v;M.exDay[k]=S.day;
+  const nm=k==='p'?'パチンコ':'スロット';
+  if(n.ex<o.ex){S.trust=clamp(S.trust-6,0,100);S.rep=clamp(S.rep-3,0,100);news(`${nm}の交換率を「${n.n}」に下げた。お客さんから不満の声…（信用-6・評判-3）`,'bad')}
+  else{M.exUp=S.day+10;news(`${nm}の交換率を「${n.n}」に上げた！「交換が良くなった」と評判に（10日間 客足アップ）`,'good')}
+  return true;
+}
+
+/* ---------- スロットの天井 ---------- */
+/* AT機の天井（ゲーム数）：設定1の平均ハマりの約2.4倍（実機と同じくらい。1/380の台で約1150G）。
+   Aタイプ（vol1）とパチンコにはない */
+const tenjoOf=m=>{const md=MB[m.type];return md&&md.k==='s'&&md.vol>=2?Math.round(md.hit[0]*1.25*2.4/50)*50:0};
+/* 天井があるぶん、ふだんの当たりを少しだけ重くして、出玉率（機械割）は変わらないようにする。
+   q0＝もとの1ゲームの当たりやすさ、a＝天井までに平均で何回当たるか → k＝1−e^(−k·a) を解く */
+const TJ_K=new Map();
+function tenjoK(m){
+  const md=MB[m.type],key=m.type+':'+m.set;let k=TJ_K.get(key);
+  if(k==null){const a=tenjoOf(m)*0.8/slotProb(md,m.set);k=0.9;for(let i=0;i<30;i++)k=1-Math.exp(-k*a);TJ_K.set(key,k)}
+  return k;
+}
+const hamaOf=m=>Math.round(m.hama||0);
+/* 次の開店でハマりが0にもどるか（設定を変えた・打ち直し・全台リセット） */
+const willReset=m=>!!(tenjoOf(m)&&(m.rq||(m.ys!=null&&m.set!==m.ys)||(S.mn&&S.mn.reset==='all')));
+/* ハイエナの来やすさ：データ公開機があると多く、ハマりを見せないと少ない */
+const hyenaF=()=>(D&&D.kiosk?1.4:1)*(S.mn.data==='hide'?0.35:1)*(S.day<3?0.3:1);
+
+/* ---------- お客さんの読み（店のクセ） ---------- */
+const mnSue=()=>S.mn?S.mn.sue:0.5;     /* 高設定（設定4以上・やや開け以上）がそのまま残る割合 */
+const mnUp=()=>S.mn?S.mn.up:0.3;       /* 設定を変えた台が「上げ」だった割合 */
+/* 設定狙いの客がスロットを選ぶときの、昨日のデータと設定変更の重み */
+function huntRead(m){
+  let w=0;
+  if(m.yest&&m.yest.out>m.yest.coin)w+=(D.kiosk?40:15)*(0.4+1.2*mnSue())*(S.mn.data==='hide'?0.6:1);
+  if(m.chgSeen)w+=34*mnUp();
+  return w;
+}
+const sueWord=v=>v>=0.65?'よく据え置く店':v>=0.4?'ときどき据え置く店':'毎日設定を変える店';
+const upWord=v=>v>=0.55?'変えた台は上げている':v>=0.3?'変えた台は半々':'変えた台は下げている';
+
+/* ---------- 新台カレンダー・中古台の相場 ---------- */
+const REL_GAP=7,REL_DEAD=3,REL_DRAW=2,USED_WAIT=10,HYPE_DAYS=21;
+const relLocked=id=>!!(S&&S.mn&&S.mn.unrel&&S.mn.unrel.includes(id));
+const usedFrom=id=>{const d=S.mn&&S.mn.relDay&&S.mn.relDay[id];return d!=null&&S.day<d+USED_WAIT?d+USED_WAIT:0};
+const hypeOn=id=>!!(S.mn&&S.mn.hype&&S.mn.hype[id]>=S.day);
+const hypeF=m=>hypeOn(m.type)?1.25:1;
+const relPrice=id=>Math.round(MB[id].price*skPrice()/1000)*1000;
+const relHot=id=>MB[id].pop>=85;
+const canReserve=id=>rankNo()>=MB[id].rank-1;
+/* 中古の相場（定価に対する倍率）：毎週少し動く。発売したての話題の台は高く、規制の台は安い */
+function pxF(id){
+  const M=S&&S.mn;if(!M)return 1;
+  let f=(M.px&&M.px[id])||1;
+  const d=M.relDay&&M.relDay[id];if(d!=null){const a=S.day-d;if(a<45)f*=1+0.45*(1-a/45)}
+  if(regulatedIds().has(id))f*=0.35;
+  return f;
+}
+function pxTrend(id){const M=S.mn,a=(M.px&&M.px[id])||1,b=(M.pxPrev&&M.pxPrev[id])||a;return a>b*1.025?'up':a<b/1.025?'down':''}
+/* 抽選の当たりやすさ（人気台だけ。ランクと販社との付き合いで上がる） */
+const relRate=id=>relHot(id)?clamp(0.3+0.07*rankNo()+S.mn.rel/250,0.25,0.95):1;
+function relSchedule(){
+  const M=S.mn;
+  let pend=M.cal.filter(e=>e.st!=='done');
+  while(pend.length<3){
+    const used=new Set(M.cal.map(e=>e.id));
+    const pool=M.unrel.filter(id=>MB[id]&&!used.has(id)&&(MB[id].gen||1)<=S.gen);
+    if(!pool.length)break;
+    const last=M.cal.length?M.cal[M.cal.length-1].day:S.day;
+    const day=Math.max(last+REL_GAP,S.day+6);
+    const w=pool.map(id=>MB[id].pop*(MB[id].rank<=rankNo()+1?1:0.15));
+    let r=Math.random()*w.reduce((a,b)=>a+b,0),id=pool[pool.length-1];
+    for(let i=0;i<pool.length;i++){r-=w[i];if(r<=0){id=pool[i];break}}
+    const e={id,day,req:0,got:null,st:'open'};M.cal.push(e);pend.push(e);
+  }
+  const done=M.cal.filter(e=>e.st==='done');
+  if(done.length>6){const keep=new Set(done.slice(-6));M.cal=M.cal.filter(e=>e.st!=='done'||keep.has(e))}
+}
+const relOpen=e=>e.st==='open'&&S.day<=e.day-REL_DEAD;
+function relReserve(e,n){if(!relOpen(e)||!canReserve(e.id))return false;e.req=clamp(n|0,0,12);return true}
+function relDraw(e){
+  const md=MB[e.id],M=S.mn;
+  e.st='drawn';
+  if(!e.req){e.got=0;return null}
+  const rate=relRate(e.id);let got=0;
+  for(let i=0;i<e.req;i++)if(Math.random()<rate)got++;
+  if(relHot(e.id)&&!got&&M.rel>=50)got=1;   /* 付き合いが長いと、最低1台は回してくれる */
+  e.got=got;e.rate=rate;M.rel=clamp(M.rel+1,0,100);
+  if(relHot(e.id)&&got>=4&&got===e.req)(S.stat||(S.stat={})).lotAll=1;
+  news(`新台「${md.name}」の抽選：${e.req}台中${got}台が当選（${dateStr(e.day)}に入荷）`,got?'good':'bad');
+  return {kind:'lot',good:got>0,title:'新台の抽選結果',sub:`「${shortName(md.name)}」${e.req}台中 ${got}台が当選${got&&got===e.req?'（全部当たり！）':''}`};
+}
+function relDeliver(e,R){
+  const md=MB[e.id],M=S.mn;
+  e.st='done';M.unrel=M.unrel.filter(x=>x!==e.id);M.relDay[e.id]=S.day;M.hype[e.id]=S.day+HYPE_DAYS;
+  news(`新台「${md.name}」が発売！ ${HYPE_DAYS}日間は「話題の新台」で人気が上がります（中古は${dateStr(S.day+USED_WAIT)}から）`,'big');
+  let n=e.got||0;const price=relPrice(e.id);
+  if(n>0){
+    const can=Math.min(n,Math.floor(Math.max(0,S.money)/price));
+    if(can<n){M.rel=clamp(M.rel-8*(n-can),0,100);news(`お金が足りず、新台を${n-can}台キャンセルした…（販社との付き合いが下がった）`,'bad')}
+    n=can;
+    for(let i=0;i<n;i++)S.storage.push({kind:'m',type:e.id,rate:'hi',fresh:1});
+    e.n=n;e.paid=n*price;S.money-=e.paid;M.rel=clamp(M.rel+2*n,0,100);
+    if(n)R.morning.push({kind:'newm',good:true,title:`新台が${n}台届きました！`,sub:`「${shortName(md.name)}」は倉庫にあります。置いて「新台入替」をすると効果的（${man(e.paid)}）`});
+  }
+  /* 大手チェーンも同じ日に新台入替をしてくることがある */
+  for(const r of openRivals())if(r.type==='chain'&&!r.ev&&Math.random()<0.6){r.evKind='newm';r.newmDay=S.day+rndi(10,15)}
+}
+/* 新台入替イベントで、話題の新台を入れた日 */
+const newHyped=()=>machines().some(m=>m.installDay>=S.day-1&&hypeOn(m.type));
+
+/* ---------- 会員カード・貯玉 ---------- */
+const CARD_COST=300000;
+const memRatio=()=>S.mn.card?Math.min(0.6,S.mn.mem/1200):0;
+/* 会員と貯玉で、お客さんが来やすくなる割合 */
+const memF=()=>S.mn&&S.mn.card?1+0.12*(1-Math.exp(-S.mn.mem/600))+Math.min(0.05,S.mn.cho/2000000):1;
+function startCard(){
+  const M=S.mn;
+  if(M.card||S.phase!=='prep'||S.money<CARD_COST)return false;
+  if(!G.objs.some(o=>o.kind==='d'&&o.type==='counter'))return false;
+  S.money-=CARD_COST;M.card=true;M.cardDay=S.day;
+  news('会員カードを始めた！ 会員が増えるほどお客さんが来やすくなり、勝った玉を預ける「貯玉」もできます','good');
+  return true;
+}
+
+/* ---------- 立ち入り検査 ---------- */
+const HEAT_SRC={ad:'イベントをはっきり告知した',nail:'釘を大きく動かした',line:'朝の並びでトラブル'};
+function heatAdd(v,src){
+  const M=S.mn;M.heat=clamp(M.heat+v,0,100);
+  M.hl.push({d:S.day,src,v});M.hl=M.hl.filter(x=>x.d>S.day-14);
+}
+const heatWord=h=>h>=70?['高い','bad']:h>=40?['やや高い','mid']:h>=20?['低い','ok']:['ほぼなし','ok'];
+const adBanned=()=>!!(S.mn&&S.mn.adBan>=S.day);
+const stopToday=()=>!!(S.mn&&S.mn.stop===S.day);
+
+/* ---------- データの初期化（古いセーブにも足す） ---------- */
+function maniaDefaults(){
+  if(!S.st)return;   /* 新しいゲームの途中（お店ができてから呼びなおす） */
+  const M=S.mn||(S.mn={});
+  const d={ex:{},exDay:{},exUp:0,reset:'chg',data:'open',sue:0.5,up:0.3,heat:0,hl:[],adBan:0,stop:0,insp:[],card:false,mem:0,cho:0,lot:false,rel:30,px:{},pxPrev:{},pxDay:S.day,cal:[],hype:{},relDay:{},seen:{}};
+  for(const k in d)if(M[k]==null)M[k]=JSON.parse(JSON.stringify(d[k]));
+  if(!M.unrel){
+    /* 発売前の機種：人気機種のうち、まだ店にない台（ランク1の台は前から出回っている） */
+    const own=new Set();
+    for(const st of [S.st,...(S.branches||[]).map(b=>b.st)])for(const o of st.objs)if(o.kind==='m')own.add(o.type);
+    for(const it of S.storage||[])if(it.kind==='m')own.add(it.type);
+    M.unrel=MACHINE_DB.filter(md=>md.rank>=2&&!own.has(md.id)).map(md=>md.id);
+  }
+  for(const md of MODELS)if(M.px[md.id]==null)M.px[md.id]=Math.round(rnd(0.9,1.1)*100)/100;
+  relSchedule();
+}
+
+/* ---------- 開店のとき ----------
+   ・昨日から設定を変えた台を調べて、お客さんの「読み」を更新
+   ・天井のハマりは、設定を変えた台（と全台リセットの日はすべての台）だけ0にもどる
+   ・ハイエナの朝の並び、抽選入場、立ち入り検査の抽選 */
+function maniaOpen(){
+  const M=S.mn,ev=S.event;
+  Object.assign(D,{exchX:0,tenjo:0,hyena:0,hyMiss:0,hyNet:0,hyQ:[],hyT:20,cho:0,choIn:0,choOut:0,lot:false,lineBad:false,tk:0,insp:false,inspAt:0,stopped:stopToday(),resetN:0,resetCost:0,heat0:M.heat,memNew:0});
+  let n=0,keep=0,cn=0,up=0,big=0;
+  for(const m of machines()){
+    const k=kindOf(m),tj=tenjoOf(m);
+    if(k==='s'){
+      const was=m.ys;m.chg=was!=null&&m.set!==was;
+      if(was!=null&&was>=4){n++;if(!m.chg)keep++}
+      if(m.chg||m.rq){cn++;if(m.set>=4)up++}
+      m.ys=m.set;
+    }else{
+      const was=m.yn;m.chg=was!=null&&m.nail!==was;
+      if(was!=null&&was>=1){n++;if(!m.chg)keep++}
+      if(was!=null&&Math.abs(m.nail-was)>=2)big++;
+      m.yn=m.nail;
+    }
+    m.rst=false;m.chgSeen=false;
+    if(tj){
+      const all=M.reset==='all';
+      if(m.chg||m.rq||all){if((m.hama||0)>0)m.rst=true;m.hama=0;if(all)D.resetN++}
+      m.chgSeen=(m.chg||m.rq)&&!all;   /* 天井がリセットされると、お客さんに「設定を変えた」とバレる */
+    }
+    m.rq=false;
+  }
+  if(n)M.sue=Math.round((M.sue*0.85+0.15*keep/n)*1000)/1000;
+  if(cn)M.up=Math.round((M.up*0.85+0.15*up/cn)*1000)/1000;
+  if(D.resetN){D.resetCost=D.resetN*300;S.money-=D.resetCost;D.ad+=D.resetCost}
+  if(big)heatAdd(Math.min(12,big*2),'nail');
+  if(ev.ad&&ev.type!=='none')heatAdd(14,'ad');
+  if(D.stopped){
+    lambdaBase=0;queueLeft=0;regQueue=[];D.gotoAt=null;
+    for(const def of REG_DEFS)S.regs[def.id].planned=false;
+    const rest=1-D.shares.me;for(const k in D.shares)if(k!=='me')D.shares[k]/=rest||1;D.shares.me=0;
+    clock=CLOSE;
+    return;
+  }
+  /* ハイエナの朝の並び（前の日のハマりが残っている台） */
+  const f=hyenaF();
+  for(const m of machines()){const tj=tenjoOf(m);if(tj&&(m.hama||0)>=tj*0.5&&Math.random()<0.75*f)D.hyQ.push({t:OPEN+rnd(0,12),m})}
+  D.hyQ.sort((a,b)=>a.t-b.t);
+  /* 抽選入場と並びのトラブル */
+  if(queueLeft>=10){
+    if(M.lot){D.lot=true;S.money-=10000;D.ad+=10000}
+    else if(queueLeft>=30&&Math.random()<0.3){D.lineBad=true;heatAdd(6,'line')}
+  }
+  /* 立ち入り検査（リスクが高いほど入りやすい） */
+  if(S.day>=8&&Math.random()<Math.max(0,M.heat-20)/100*0.2)D.inspAt=rnd(OPEN+90,LAST-150);
+}
+/* 朝の行列のお客さん（抽選入場なら番号札・トラブルなら不満） */
+function maniaQueueCust(c){
+  if(D.lot){c.ticket=++D.tk;addWhy(c,'lotFair',0.05)}
+  else if(D.lineBad)addWhy(c,'lineBad',-0.06);
+}
+
+/* ---------- 営業中（毎ステップ） ---------- */
+function maniaTick(dt){
+  if(D.stopped)return;
+  while(D.hyQ.length&&D.hyQ[0].t<=clock){const q=D.hyQ.shift();spawnHyena(q.m)}
+  D.hyT-=dt;
+  if(D.hyT<=0){
+    D.hyT=15;
+    if(clock<LAST-90){const f=hyenaF();
+      for(const m of machines()){const tj=tenjoOf(m);if(!tj||m.res||m.broken||m.today.done)continue;
+        if((m.hama||0)>=tj*0.55&&Math.random()<0.28*f)spawnHyena(m)}}
+  }
+  if(D.inspAt&&clock>=D.inspAt){D.inspAt=0;spawnInspectors()}
+}
+const HYENA_LOOK=()=>({shirt:pick(['#3f3f46','#27272a','#44403c']),hair:pick(HAIRS),skin:pick(SKINS),out:'hoodie',pants:'#111827',mask:Math.random()<0.5?1:0,glasses:0});
+function spawnHyena(m){
+  if(clock>=LAST-60||!machines().includes(m))return;
+  const c=spawnCust(segOf(m),{hyena:1,hunter:false,elder:false,look:HYENA_LOOK()});
+  c.target=m;c.budget=60000*c.sc;c.maxT=320;
+}
+/* ハイエナが座る台：狙った台が空いていればそこ、だめならいちばんハマっている台 */
+function hyenaPick(c){
+  const ok=m=>machines().includes(m)&&!m.res&&!m.broken&&!m.today.done&&segOf(m)===c.seg;
+  if(c.target&&ok(c.target)&&(c.target.hama||0)>=tenjoOf(c.target)*0.45)return c.target;
+  let best=null,bv=0.45;
+  for(const m of machines()){const tj=tenjoOf(m);if(!tj||!ok(m))continue;const v=(m.hama||0)/tj;if(v>=bv){bv=v;best=m}}
+  return best;
+}
+/* 立ち入り検査の2人組 */
+function spawnInspectors(){
+  const d=doorPos(),cs=G.objs.filter(o=>o.kind==='d'&&o.type==='counter'),ms=machines();
+  for(let i=0;i<2;i++){
+    const wps=[];
+    if(cs.length&&i===0)wps.push({x:cs[0].x,y:cs[0].y});
+    for(let j=0;j<3&&ms.length;j++){const m=pick(ms);wps.push({x:m.x,y:m.y})}
+    const c={id:++cid,insp:true,seg:'',k:'p',sc:1,look:{shirt:'#1e293b',hair:i?'#1b1b1b':'#3b2a1a',skin:pick(SKINS),out:'suit',hs:'short',glasses:1,pants:'#1f2937'},
+      x:d.x+(i?0.35:-0.35),y:G.H+0.8,path:[{x:d.x,y:d.y}],st:'insp',wps,wait:i*2,speed:0.26,ph:Math.random()*10,emote:null,why:{},sat:0,plan:[],inv:0,won:0,hidden:false,born:clock};
+    custs.push(c);
+    if(i===0)c.bubble={text:'立ち入り検査です',until:performance.now()+4500};
+  }
+  D.insp=true;D.seenC.insp=1;
+  news('警察の立ち入り検査が入った！','bad');toast('立ち入り検査が入りました');sfx('bad');
+}
+function inspStep(c,dt){
+  if(c.wait>0){c.wait-=dt;return}
+  if(c.path.length){if(moveAlong(c,dt)){c.wait=rnd(4,9);c.emote={ch:'…',t:4}}return}
+  const t=c.wps.shift();
+  if(!t){goExit(c);return}
+  const p=bfsTo(c,adjGoal(t.x,t.y));
+  if(p&&p.length)c.path=p;
+}
+
+/* ---------- 閉店のとき ---------- */
+function maniaClose(R,avgSat){
+  const M=S.mn,out={tenjo:D.tenjo,hyena:D.hyena,hyMiss:D.hyMiss,hyNet:Math.round(D.hyNet),lot:D.lot?D.tk:0,lineBad:D.lineBad,resetN:D.resetN,stopped:D.stopped};
+  /* 会員 */
+  if(M.card&&!D.stopped){
+    const nw=Math.round(D.visitors*0.12*clamp(0.6+avgSat,0.2,1.4)),churn=Math.floor(M.mem*0.004);
+    M.mem=Math.max(0,M.mem+nw-churn);out.memNew=nw;out.mem=M.mem;out.choIn=Math.round(D.choIn);out.choOut=Math.round(D.choOut);out.cho=Math.round(M.cho);
+  }
+  if(D.lineBad){S.rep=clamp(S.rep-1.5,0,100);news('朝の並びで割り込み・場所取りのトラブル。近所から苦情が来た…（抽選入場にすると防げます）','bad')}
+  /* 立ち入り検査の結果 */
+  if(D.insp){
+    const h=M.heat;let res;
+    const goNext=S.go&&S.day+1<S.go.start+S.go.len;
+    if(h>=70&&!goNext){res='stop';M.stop=S.day+1;S.rep=clamp(S.rep-6,0,100);S.trust=clamp(S.trust-4,0,100);news(`立ち入り検査で行政処分…明日（${dateStr(S.day+1)}）は営業停止です`,'bad')}
+    else if(h>=70){res='fine';S.money-=500000;S.rep=clamp(S.rep-6,0,100);S.trust=clamp(S.trust-4,0,100);news('立ち入り検査で行政処分…罰金50万円','bad')}
+    else if(h>=40){res='shido';M.adBan=S.day+14;S.rep=clamp(S.rep-2,0,100);news(`立ち入り検査で指導を受けた。${dateStr(S.day+14)}までイベントの告知ができません`,'bad')}
+    else{res='ok';S.rep=clamp(S.rep+1,0,100);S.trust=clamp(S.trust+1,0,100);news('立ち入り検査は「問題なし」。きちんとした店だと評判に','good')}
+    M.heat=Math.max(0,h-40);M.insp.push({day:S.day,res});if(M.insp.length>12)M.insp.shift();
+    out.insp={res,heat:Math.round(h)};
+  }
+  M.heat=Math.max(0,Math.round((M.heat-2.5)*10)/10);
+  const t=S.stat||(S.stat={});t.tenjo=(t.tenjo||0)+D.tenjo;t.hyena=(t.hyena||0)+D.hyena;if(out.insp&&out.insp.res==='ok')t.inspOk=(t.inspOk||0)+1;
+  R.mn=out;R.rep1=S.rep;R.trust1=S.trust;R.money=S.money;R.exLabel=exLabel();R.choCash=Math.round(D.cho);
+}
+
+/* ---------- 次の日の朝 ---------- */
+function maniaDayStart(R){
+  const M=S.mn;R.morning=R.morning||[];
+  /* 中古の相場（7日ごと） */
+  if(S.day-M.pxDay>=7){
+    for(const md of MODELS){const a=M.px[md.id]||1;M.pxPrev[md.id]=a;M.px[md.id]=Math.round(clamp(a*rnd(0.95,1.05)+(1-a)*0.2,0.85,1.18)*100)/100}
+    M.pxDay=S.day;
+  }
+  /* 新台カレンダー：抽選（発売の2日前）と入荷（発売日） */
+  for(const e of M.cal){
+    if(e.st==='open'&&S.day>=e.day-REL_DRAW){const r=relDraw(e);if(r)R.morning.push(r)}
+    if(e.st==='drawn'&&S.day>=e.day)relDeliver(e,R);
+  }
+  relSchedule();
+  for(const id in M.hype)if(M.hype[id]<S.day)delete M.hype[id];
+  const ins=R.mn&&R.mn.insp;
+  if(ins)R.morning.unshift({kind:'insp',good:ins.res==='ok',title:'立ち入り検査の結果',sub:{ok:'問題なし（評判+1・信用+1）',shido:`指導（${dateStr(M.adBan)}までイベントの告知ができません）`,stop:'行政処分：今日は営業停止です',fine:'行政処分：罰金50万円'}[ins.res],talk:inspTalk(ins.res)});
+  else if(stopToday())R.morning.push({kind:'stop',good:false,title:'今日は営業停止',sub:'立ち入り検査の処分で、今日はお店を開けられません'});
+  /* はじめて：販社の担当があいさつに来る */
+  if(!M.seen.dist&&S.day>=3&&M.cal.length){
+    M.seen.dist=1;const e=M.cal.find(x=>x.st==='open');
+    if(e)R.morning.push({kind:'dist',good:true,title:'新台カレンダー',sub:'販社の担当さんがあいさつに来た',talk:distIntroTalk(e)});
+  }
+}
+
+/* ---------- 販社の担当 ---------- */
+const DIST={name:'三河 誠',sub:'ミカワ商事・営業（販社）',col:'#38bdf8',face:{skin:'#f3d3b5',hair:'#3b2a1a',hs:'crew',out:'suit',col:'#1e3a8a',tie:'#0ea5e9',acc:['roundglasses']}};
+function distIntroTalk(e){
+  const md=MB[e.id];
+  return [
+    {who:'dist',ex:'happy',text:`はじめまして！ 台の販社「ミカワ商事」の三河です。これから新台のご案内をさせていただきます！`},
+    {who:'dist',ex:'n',text:`次の新台は「${md.name}」。${dateLong(e.day)}発売です。発売の${REL_DEAD}日前までにご予約ください。`},
+    {who:'dist',ex:'n',text:`人気の台は全国のお店から注文が殺到するので「抽選」になります。お店のランクが高いほど、うちとのお付き合いが長いほど当たりやすいですよ。`},
+    {who:'dist',ex:'smug',text:`発売してしばらくは中古が出回りません。いち早く入れたお店にお客さんが集まるってわけです。`},
+    {who:'me',ex:'n',text:`（建設 →「新台」で、カレンダーと予約ができるみたいだ）`},
+  ];
+}
+function inspTalk(res){
+  if(res==='stop')return [{who:'owner',ex:'angry',text:'営業停止ですって！？ 告知であおったり、釘をいじりすぎたりするからよ。'},{who:'owner',ex:'n',text:'1日お店を閉めるだけで、家賃もお給料も出ていくのよ。しばらくはおとなしくしなさい。'}];
+  if(res==='fine')return [{who:'owner',ex:'angry',text:'罰金50万円…。オープン期間中だったから営業停止はまぬがれたけど、次はないわよ。'}];
+  if(res==='shido')return [{who:'owner',ex:'n',text:'警察から指導が入ったそうね。しばらくイベントの告知はできないわ。'},{who:'owner',ex:'n',text:'「経営 → ホール運営」で、立ち入りのリスクが見られるわ。気をつけてちょうだい。'}];
+  return [{who:'owner',ex:'happy',text:'立ち入り検査、問題なしだったそうね。まっとうな商売がいちばんよ。'}];
 }
 
 /* ===== sprites.js : ドット絵の部品（台・人・設備・床・壁）=====
@@ -4651,6 +5117,12 @@ function drawCust(c,now){
   const by=drawPerson(px,py,c.L,face,pose,walk?ph:0);
   if(c.st==='smoking'||(seated&&c.smoker&&c.zone&&Math.floor(now/700+c.ph)%3===0)){const k=Math.floor(now/150)%4;R(px+4,by-6-k,1,1,'rgba(240,240,240,.9)');R(px+5,by-8-k,1,1,'rgba(240,240,240,.6)');R(px+3,by-5,1.5,0.5,'#f8fafc')}
   if(c.reg){R(px-2,by-16,5,5,K);R(px-1,by-15,3,3,'#facc15')}
+  /* 検査の人：書類ばさみ */
+  if(c.insp){R(px+3,by-7,4,5,K);R(px+3.5,by-6.5,3,4,'#f8fafc');R(px+4,by-5.5,2,0.5,'#94a3b8');R(px+4,by-4.5,2,0.5,'#94a3b8')}
+  /* ハイエナ：歩いているあいだは、ハマり台を探す目のマーク */
+  if(c.hyena&&!seated&&!c.emote&&!(c.bubble&&now<c.bubble.until)){const yy=by-18;R(px-4,yy,9,6,K);R(px-3,yy+1,7,4,'#e4e4e7');R(px-1,yy+1.5,3,3,K);R(px-0.5,yy+2,1,1,'#fff')}
+  /* 抽選入場の番号札（入ってすぐのあいだ） */
+  if(c.ticket&&(c.st==='enter'||c.st==='toSeat')&&!c.emote){const t=String(c.ticket),w=t.length*4+5,yy=by-19;R(px-w/2-1,yy-1,w+2,9,K);R(px-w/2,yy,w,7,'#fff7cc');R(px-w/2,yy,w,1.5,'#ff2d55');txt(t,px,yy+4,5,'#16121f')}
   if(c.bubble&&now<c.bubble.until&&!c.emote&&cam.s/dpr>=1.4){
     const t=c.bubble.text.length>11?c.bubble.text.slice(0,10)+'…':c.bubble.text,w=t.length*5+6,yy=(c.reg?by-24:by-19);
     R(px-w/2-1,yy-1,w+2,9,K);R(px-w/2,yy,w,7,'#fff');R(px-1,yy+7,2,2,K);txt(t,px,yy+3.7,5,'#16121f');
@@ -4702,6 +5174,9 @@ function drawOverlay(now,tool){
         else{R(px+8,py-12,9,7,K);R(px+8.75,py-11.25,7.5,5.5,NAIL_COL[m.nail+2]);txt(NAIL_SHORT[m.nail+2],px+12.5,py-8.4,4,'#fff')}
       }else if(mode==='no'){R(px+3,py-12,10,7,K);R(px+3.75,py-11.25,8.5,5.5,'#fff');txt(String(m.no),px+8,py-8.4,5,K)}
       else if(mode==='rate'){const lo=m.rate==='lo';R(px+3,py-12,10,7,K);R(px+3.75,py-11.25,8.5,5.5,lo?'#22c55e':'#ff2d55');txt(rateLabel(m),px+8,py-8.4,4,'#fff')}
+      else if(mode==='hama'){const tj=tenjoOf(m);if(tj){const hm=hamaOf(m),f=hm/tj,col=f>=0.75?'#ff2d55':f>=0.5?'#f97316':f>=0.25?'#eab308':'#64748b',t=String(hm);
+        R(px,py-13,16,8,K);R(px+0.75,py-12.25,14.5,6.5,'#1f2937');R(px+0.75,py-7.25,14.5*Math.min(1,f),1.5,col);txt(t,px+8,py-9.6,4,f>=0.5?col:'#fff');
+        if(S.phase==='prep'&&hm&&willReset(m)){R(px+12,py-17,6,6,K);R(px+12.75,py-16.25,4.5,4.5,'#38bdf8');txt('R',px+15,py-13.9,4,'#fff')}}}
     }
     const rg=regulatedIds();
     if(rg.size&&S.phase==='prep'&&Math.floor(now/500)%2)for(const m of machines())if(rg.has(m.type)){const px=OX+m.x*TS,py=OY+m.y*TS;R(px+1,py+4,14,7,K);R(px+2,py+5,12,5,'#ff2d55');txt('撤去',px+8,py+7.6,4,'#fff')}
@@ -4724,7 +5199,9 @@ function drawQueuePreview(now){
   const n=Math.min(goActive()?14:8,Math.round(G.W*0.7)),d=doorPos(),gy=OY+G.H*TS+BOT-2;
   for(let i=0;i<n;i++){
     const px=OX+d.x*TS+8-(i+1)*9-6;if(px<4)break;
-    drawPerson(px,gy,fullLook({shirt:SHIRTS[i%SHIRTS.length],hair:HAIRS[i%HAIRS.length],skin:SKINS[i%4],cap:i%3===0?'#1c1c24':null},i*7+3,i%5===4),'up','stand',0);
+    const by=drawPerson(px,gy,fullLook({shirt:SHIRTS[i%SHIRTS.length],hair:HAIRS[i%HAIRS.length],skin:SKINS[i%4],cap:i%3===0?'#1c1c24':null},i*7+3,i%5===4),'up','stand',0);
+    /* 抽選入場の日は、番号札を持って並ぶ */
+    if(S.mn&&S.mn.lot&&Math.floor(now/900+i)%3!==0){const t=String((i*7+3)%n+1),w=t.length*4+5,yy=by-19;R(px-w/2-1,yy-1,w+2,9,K);R(px-w/2,yy,w,7,'#fff7cc');R(px-w/2,yy,w,1.5,'#ff2d55');txt(t,px,yy+4,5,'#16121f')}
   }
 }
 
@@ -4962,7 +5439,7 @@ function pills(){
   return p.join('');
 }
 function renderStatus(){
-  const ov={set:'設定',no:'番号',rate:'レート',off:'なし'}[prefs.overlay];
+  const ov={set:'設定',no:'番号',rate:'レート',hama:'ハマり',off:'なし'}[prefs.overlay];
   let msg='',h='';
   if(S.phase==='prep'){h=hint();msg=`<span class="tm prep">準備中</span>${pills()}`}
   else if(S.phase==='open'){
@@ -4995,7 +5472,7 @@ function renderDock(){
 <button class="btn" data-dock="list" type="button">設定</button>
 <button class="btn ${S.event.type!=='none'||goActive()?'hot':''}" data-dock="event" type="button">イベント</button>
 <button class="btn" data-dock="manage" type="button">経営</button>
-<button class="btn primary" data-dock="open" type="button">開店!</button>`;
+${stopToday()?'<button class="btn primary stopb" data-dock="open" type="button">営業停止<br><small>休む</small></button>':'<button class="btn primary" data-dock="open" type="button">開店!</button>'}`;
   fitToast();
 }
 /* ---------- 画面の向き ---------- */
@@ -5057,7 +5534,7 @@ function refreshAll(){refreshHud();renderStatus();renderDock();if(sheetKind&&she
 const itemName=it=>it.kind==='m'?MB[it.type].name:it.kind==='d'?DB[it.type].name:WB[it.type].name;
 const itemPrice=it=>it.kind==='m'?MB[it.type].price:it.kind==='d'?DB[it.type].price:WB[it.type].price;
 /* 買うときの値段（交換上手・佐藤さんの割引） */
-const priceOf=it=>Math.round(itemPrice(it)*skPrice()/1000)*1000;
+const priceOf=it=>Math.round(itemPrice(it)*(it.kind==='m'?pxF(it.type):1)*skPrice()/1000)*1000;
 function startBuild(kind,type,store){buildItem={kind,type,store:!!store};buildDir=0;tool='build';moveSel=null;closeSheet();renderDock();toast(kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ')}
 function tryPlace(hit){
   const it=buildItem,price=it.store?0:priceOf(it);
@@ -5090,7 +5567,7 @@ function tryPlace(hit){
   if(it.store&&!S.storage.some(s=>s.kind===it.kind&&s.type===it.type)){tool='view';buildItem=null;toast('倉庫の分を置き終わりました')}
   refreshAll();
 }
-const sellPrice=o=>{const it=o.side?{kind:'w',type:o.type}:o;return Math.round(Math.min(itemPrice(it)*0.5*skSell(),priceOf(it)*0.9)/1000)*1000};
+const sellPrice=o=>{const it=o.side?{kind:'w',type:o.type}:o;return Math.round(Math.min(itemPrice(it)*0.5*(it.kind==='m'?pxF(it.type):1)*skSell(),priceOf(it)*0.9)/1000)*1000};
 function removeThing(o,mode){
   pushUndo();
   if(o.side){G.doors=G.doors.filter(d=>d!==o);if(mode==='store')toStorage({kind:'w',type:o.type});else S.money+=sellPrice(o)}
@@ -5237,22 +5714,31 @@ const starTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
 function machineSheet(d){
   const m=d.m;if(!G.objs.includes(m)){closeSheet();return null}
   const md=MB[m.type],k=md.k,prep=S.phase==='prep',age=S.day-m.installDay,s=seatOf(m),z=zoneAt(s.x,s.y);
-  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
+  let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}${hypeOn(m.type)?'<span class="tag hot">話題の新台</span>':''}${prep?chgTag(m):''}</div></div></div>`;
   if(d.swap){
     const trade=Math.round(md.price*0.3*skSell()/1000)*1000;
     h+=`<div class="lbl">入れ替える機種（いまの台は${yen(trade)}で下取り）</div>`;
-    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id})-trade)}</button>`}</div>`}).join('');
+    h+=MODELS.filter(x=>(x.gen||1)<=S.gen&&!relLocked(x.id)).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id)||!!usedFrom(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${machSw(x)}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':usedFrom(x.id)?`<span class="sub">中古待ち</span>`:lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id})-trade)}</button>`}</div>`}).join('');
     h+=`<button class="btn" data-act="m-swap-back" type="button">もどる</button>`;
     return [`${m.no}番台を入れ替え`,h];
   }
   h+=`<div class="lbl">レート</div><div class="chips">${['hi','lo'].map(r=>`<button class="chip ${m.rate===r?'cur':''}" data-act="m-rate" data-v="${r}" ${prep?'':'disabled'} type="button">${RATE[k][r].label}${k==='p'?'パチンコ':'スロット'}</button>`).join('')}</div>`;
   h+=`<div class="lbl">${k==='s'?'設定':'釘'}${prep?'':'（営業中は変えられません）'}</div>${lvBtns(m,'m-lv','',!prep)}<div class="sub">${k==='s'?`<b>設定${m.set}：出玉率${md.rates[m.set-1].toFixed(1)}%</b>（初当り約1/${Math.round(slotProb(md,m.set))}）${(md.none||[]).includes(m.set)?'※実機にない設定':''}<br>${SLOT_HINT[m.set]}`:`<b>初当り1/${md.prob}（${specOf(md)}）</b>・平均約${Math.round(400*NAIL_R[2]*md.prob/P_SPM/4).toLocaleString('ja-JP')}発/初当り<br>${NAIL_HINT[m.nail+2]}`}</div>`;
+  if(tenjoOf(m)){
+    const tj=tenjoOf(m),hm=hamaOf(m);
+    h+=`<div class="lbl">ハマり（天井 ${tj}G）</div><div class="meter"><div class="mt-l">${hm}G</div><div class="mt-bar ${hm>=tj*0.5?'':'blue'}"><i style="width:${Math.min(100,hm/tj*100)}%"></i></div><div class="mt-v">あと${Math.max(0,tj-hm)}G</div></div>`;
+    h+=`<div class="sub">天井まで行くと必ず当たります。ハマりは次の日に持ちこされ、深い台はハイエナに狙われます。設定を変えると0にもどります。</div>`;
+    if(prep&&hm>0){
+      if(willReset(m)&&!m.rq)h+=`<div class="box">${S.mn.reset==='all'?'毎朝 全台リセットなので':'設定を変えたので'}、開店のときにハマりは0にもどります${S.mn.reset==='all'?'':'（お客さんに設定変更がバレます）'}</div>`;
+      else h+=`<button class="chip wide ${m.rq?'cur':''}" data-act="m-rq" type="button">${m.rq?'✓ 開店のときにリセットする（設定の打ち直し）':'開店のときにリセットする（設定の打ち直し）'}</button>`;
+    }
+  }
   const t=S.phase==='open'?m.today:m.yest,lab=S.phase==='open'?'今日':'昨日';
   if(t)h+=`<div class="box stats"><span>${lab}の稼働 <b>${Math.round(t.mins)}分</b></span><span>大当り <b>${t.hits}回</b></span><span>店の収支 <b class="${t.coin-t.out>=0?'pos':'neg'}">${sgn(t.coin-t.out)}</b></span></div>`;
   else h+=`<div class="sub">まだデータがありません</div>`;
   if(S.phase==='open'){
     const c=custs.find(x=>x.m===m&&(x.st==='play'||x.st==='call'));
-    h+=c?`<div class="box">遊技中：${c.reg?esc(REG_BY[c.reg].name):c.hunter?'設定狙いの客':'一般客'} ・ <span class="${c.won-c.inv>=0?'pos':'neg'}">${sgn(c.won-c.inv)}</span>${c.st==='call'?' ・ <b class="neg">呼び出し中</b>':''}</div>`:m.brk?`<div class="sub">休憩中（たばこ）</div>`:`<div class="sub">いまは空き台です</div>`;
+    h+=c?`<div class="box">遊技中：${c.reg?esc(REG_BY[c.reg].name):c.hyena?'ハイエナ':c.hunter?'設定狙いの客':c.mem?'会員さん':'一般客'} ・ <span class="${c.won-c.inv>=0?'pos':'neg'}">${sgn(c.won-c.inv)}</span>${c.st==='call'?' ・ <b class="neg">呼び出し中</b>':''}</div>`:m.brk?`<div class="sub">休憩中（たばこ）</div>`:`<div class="sub">いまは空き台です</div>`;
   }
   if(prep){
     const isl=islandOf(m);
@@ -5283,13 +5769,15 @@ function doorSheet(d){
 /* ---------- 建設メニュー ---------- */
 function shopSheet(tab){
   tab=tab||'m';const rk=rankNo();
-  let h=tabs([['m','台'],['d','設備'],['f','床と壁'],['s',`倉庫${S.storage.length?`(${S.storage.length})`:''}`],['x','広げる']],tab,'shop-tab');
+  let h=tabs([['m','台'],['n',`新台${S.mn.cal.some(e=>relOpen(e)&&canReserve(e.id)&&!e.req&&e.day-REL_DEAD-S.day<=3)?'●':''}`],['d','設備'],['f','床と壁'],['s',`倉庫${S.storage.length?`(${S.storage.length})`:''}`],['x','広げる']],tab,'shop-tab');
   h+=`<div class="sub">資金 ${yen(S.money)} ・ ランク${rk}「${RANKS[rk-1].n}」・ 内装 ${stars()}${skPrice()<1?` ・ <b class="pos">${Math.round((1-skPrice())*100)}%引き</b>`:''}</div>`;
   const row=(sw,nm,ds,right,lock)=>`<div class="item ${lock?'locked':''}"><span class="sw" style="background:${sw}"></span><div class="it"><div class="nm">${nm}</div><div class="ds">${ds}</div></div>${right}</div>`;
-  if(tab==='m'){
+  if(tab==='n')h+=relPanel();
+  else if(tab==='m'){
+    h+=`<div class="sub">台は<b>中古の相場</b>で買えます。相場は毎週動きます（↑値上がり・↓値下がり）。発売前の新台は「新台」から予約できます。</div>`;
     for(const k of ['p','s']){
       h+=`<div class="lbl">${KIND_NAME[k]}</div>`;
-      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${specLine(x)}・人気${x.pop}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id}))}</button>`,rk<x.rank||off)}).join('');
+      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen&&!relLocked(x.id)).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id),wait=usedFrom(x.id);return row(machSw(x),esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':'')+(hypeOn(x.id)?' <span class="tag hot">話題の新台</span>':''),`${specLine(x)}・人気${x.pop}${tenjoOf({type:x.id})?`・天井${tenjoOf({type:x.id})}G`:''}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:wait?`<span class="sub">中古待ち<br>${dateStr(wait)}から</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id}))}${pxArrow(x.id)}</button>`,rk<x.rank||off||!!wait)}).join('');
     }
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
@@ -5301,7 +5789,7 @@ function shopSheet(tab){
   }else if(tab==='s'){
     const gs=storageGroups();
     if(!gs.length)h+=`<div class="empty">倉庫は空です。片付けで「倉庫へ」を選ぶと、ここにしまえます。移転すると前の店の台と設備がここに入ります。</div>`;
-    h+=gs.map(g=>{const it=S.storage[g.idx[0]],gift=g.idx.some(i=>S.storage[i].gift);return row(it.kind==='m'?MB[it.type].c:SWATCH[it.type],`${esc(storageName(it))} ×${g.idx.length}`,`${it.kind==='m'?KIND_NAME[MB[it.type].k]+'の台':it.kind==='w'?'壁に付ける設備':'床に置く設備'}${gift?'・新築プレゼント':''}`,`<div class="col"><button class="btn sm" data-act="store-place" data-k="${it.kind}" data-id="${it.type}" type="button">置く</button><button class="btn sm ghost" data-act="store-sell" data-k="${it.kind}" data-id="${it.type}" type="button">売る ${yen(storageValue(it))}</button></div>`)}).join('');
+    h+=gs.map(g=>{const it=S.storage[g.idx[0]],gift=g.idx.some(i=>S.storage[i].gift);return row(it.kind==='m'?machSw(MB[it.type]):SWATCH[it.type],`${esc(storageName(it))} ×${g.idx.length}${g.idx.some(i=>S.storage[i].fresh)?' <span class="tag hot">新台</span>':''}`,`${it.kind==='m'?KIND_NAME[MB[it.type].k]+'の台':it.kind==='w'?'壁に付ける設備':'床に置く設備'}${gift?'・新築プレゼント':''}`,`<div class="col"><button class="btn sm" data-act="store-place" data-k="${it.kind}" data-id="${it.type}" type="button">置く</button><button class="btn sm ghost" data-act="store-sell" data-k="${it.kind}" data-id="${it.type}" type="button">売る ${yen(storageValue(it))}</button></div>`)}).join('');
   }else{
     const pt=LOCS[G.loc].priceTile*1.2;
     h+=`<div class="box">いまの広さ：<b>${G.W}×${G.H}マス</b>（最大${G.maxW}×${G.maxH}）・家賃 ${yen(rentOf())}／日</div>`;
@@ -5311,6 +5799,120 @@ function shopSheet(tab){
     h+=`<div class="sub">もっと大きな店は「経営 → 物件」から。今の台や設備は倉庫に入れて持っていけます。</div>`;
   }
   return ['建設',h];
+}
+
+/* ---------- 台の小さな絵（パチンコとスロットがひと目でわかるように） ---------- */
+const MTH=new Map();
+function machThumb(id){let u=MTH.get(id);if(u==null){try{u=machineSprite({type:id,dir:0},true).toDataURL()}catch(e){u=''}MTH.set(id,u)}return u}
+const machSw=x=>{const u=machThumb(x.id);return u?`url(${u}) center/contain no-repeat,linear-gradient(160deg,${x.c}40,${x.c2}66)`:x.c};
+
+/* ---------- 新台カレンダー（建設 →「新台」） ---------- */
+const REQ_N=[0,1,2,3,4,6,8,10,12];
+function relCardHTML(e,i){
+  const md=MB[e.id],k=md.k,left=e.day-S.day,hot=relHot(e.id),pr=relPrice(e.id);
+  const d=dateOf(e.day);
+  let st='';
+  if(e.st==='done')st=`<div class="rc-st ok">発売済み${e.n?`・${e.n}台入荷（${man(e.paid)}）`:e.got===0&&e.req?'・抽選はずれ':''}</div>`;
+  else if(e.st==='drawn')st=e.req?`<div class="rc-st ${e.got?'ok':'ng'}">抽選結果：${e.req}台中 <b>${e.got}台</b> 当選${e.got?`・発売日に倉庫へ届きます（代金 ${man(e.got*pr)}）`:''}</div>`:`<div class="rc-st">予約なし</div>`;
+  else if(!canReserve(e.id))st=`<div class="rc-st ng">ランク${md.rank-1}から予約できます</div>`;
+  else if(relOpen(e)){
+    st=`<div class="chips rc-req">${REQ_N.map(n=>`<button class="chip ${e.req===n?'cur':''}" data-act="rel-req" data-id="${i}" data-v="${n}" type="button">${n?n+'台':'なし'}</button>`).join('')}</div>`;
+    st+=`<div class="sub">締切 ${dateStr(e.day-REL_DEAD)}（あと${e.day-REL_DEAD-S.day}日）${e.req?`・予約 <b>${e.req}台</b>（${man(e.req*pr)}・お金は届いた日に払います）`:''}</div>`;
+  }else st=`<div class="rc-st">締切済み・${dateStr(e.day-REL_DRAW)}に抽選（予約 ${e.req}台）</div>`;
+  return `<div class="relcard ${e.st}" style="--mc:${md.c};--mc2:${md.c2}">
+<div class="rc-date"><b>${d.getMonth()+1}/${d.getDate()}</b><span>(${WD[d.getDay()]})</span><small>${e.st==='done'?'発売済':left>0?`あと${left}日`:'今日'}</small></div>
+<img class="mthumb" src="${machThumb(e.id)}" alt="">
+<div class="rc-body"><div class="rc-name">${esc(md.name)}</div>
+<div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">人気${md.pop}</span>${hot?'<span class="tag hot">人気台・抽選</span>':''}${tenjoOf({type:e.id})?`<span class="tag">天井${tenjoOf({type:e.id})}G</span>`:''}</div>
+<div class="ds">${specLine(md)}・1台 <b>${yen(pr)}</b>${hot&&e.st==='open'?`・当たりやすさ 約${Math.round(relRate(e.id)*100)}%`:''}</div>${st}</div></div>`;
+}
+function relPanel(){
+  const M=S.mn,cal=M.cal.map((e,i)=>({e,i}));
+  let h=`<div class="dist">${ptImg(DIST.face,'n',DIST.col,'sm')}<div><b>${esc(DIST.name)}</b><span class="sub">${esc(DIST.sub)}</span><div class="meter sm"><div class="mt-l">お付き合い</div><div class="mt-bar blue"><i style="width:${M.rel}%"></i></div><div class="mt-v">${Math.round(M.rel)}</div></div></div></div>`;
+  h+=`<div class="sub">新台は<b>発売の${REL_DEAD}日前まで</b>に予約します。人気台は<b>抽選</b>で、ランクとお付き合いが高いほど当たります。発売から${USED_WAIT}日は中古が出回らないので、早く入れたお店にお客さんが集まります（${HYPE_DAYS}日間「話題の新台」）。</div>`;
+  const up=cal.filter(x=>x.e.st!=='done'),past=cal.filter(x=>x.e.st==='done').reverse();
+  h+=`<div class="lbl">これから発売</div>`+(up.length?up.map(x=>relCardHTML(x.e,x.i)).join(''):'<div class="empty">発売予定の新台はありません（人気機種はすべて発売済み）</div>');
+  const hy=Object.keys(M.hype).filter(hypeOn);
+  if(hy.length)h+=`<div class="lbl">話題の新台（人気が上がっています）</div><div class="box col">${hy.map(id=>`<div><span class="sw sm" style="background:${MB[id].c}"></span>${esc(MB[id].name)} <span class="sub">${dateStr(M.hype[id])}まで${usedFrom(id)?`・中古は${dateStr(usedFrom(id))}から`:''}</span></div>`).join('')}</div>`;
+  if(past.length)h+=`<div class="lbl">発売ずみ</div>`+past.slice(0,4).map(x=>relCardHTML(x.e,x.i)).join('');
+  if(M.unrel.length)h+=`<div class="sub">まだ発売されていない人気機種が、あと${M.unrel.length}機種あります。</div>`;
+  return h;
+}
+const pxArrow=id=>{const t=pxTrend(id);return t==='up'?'<b class="px up">↑</b>':t==='down'?'<b class="px down">↓</b>':''};
+
+/* ---------- ホール運営（経営 →「ホール運営」） ---------- */
+function hallPanel(){
+  const M=S.mn,prep=S.phase==='prep';
+  let h='';
+  /* 交換率 */
+  h+=`<div class="lbl">交換率</div>`;
+  for(const k of ['p','s']){
+    const cur=exKey(k),lf=exLeft(k);
+    h+=`<div class="exrow"><span class="exk tag k${k}">${KIND_NAME[k]}</span><div class="chips">${Object.entries(EXCH[k]).map(([v,o])=>`<button class="chip ${cur===v?'cur':''}" data-act="ex-set" data-k="${k}" data-v="${v}" ${cur!==v&&(lf||!prep)?'disabled':''} type="button">${o.n}<small>${o.yen.toLocaleString('ja-JP')}円</small></button>`).join('')}</div></div>`;
+  }
+  const ep=exOf('p'),es=exOf('s'),cut=o=>Math.round((1-o.ex)*1000)/10,lv=x=>x>1.05?'多い':x<0.7?'とても少ない':x<0.95?'少ない':'ふつう';
+  h+=`<div class="box col"><div>1,000円分の玉・メダルを交換すると… パチンコ <b>${ep.yen.toLocaleString('ja-JP')}円</b>・スロット <b>${es.yen.toLocaleString('ja-JP')}円</b></div>
+<div>お店の取り分（交換差益）：払い出しの パチンコ<b>${cut(ep)}%</b>・スロット<b>${cut(es)}%</b></div>
+<div>設定狙いの客：パチンコ<b>${lv(ep.hunt)}</b>・スロット<b>${lv(es.hunt)}</b>　お客さん全体 <b>×${exAttract().toFixed(2)}</b></div></div>`;
+  h+=`<div class="sub">交換率を下げると、お店の取り分が増えるかわりに「勝っても手取りが少ない」と不満が出て、設定狙いの客が減ります（そのぶん、玉を交換せず長く遊ぶ客は増えます）。<b>下げると信用-6・評判-3</b>、上げると10日間 客足アップ。変えたら${EX_CD}日は変えられません${exLeft('p')||exLeft('s')?`（あと パチンコ${exLeft('p')}日・スロット${exLeft('s')}日）`:''}。</div>`;
+  /* お客さんの読み */
+  h+=`<div class="lbl">お客さんの読み（お店のクセ）</div>`;
+  h+=`<div class="box col"><div class="meter sm"><div class="mt-l">据え置き</div><div class="mt-bar blue"><i style="width:${Math.round(M.sue*100)}%"></i></div><div class="mt-v">${Math.round(M.sue*100)}%</div></div><div class="sub">「${sueWord(M.sue)}」と思われています。高い設定・開けた釘をそのまま次の日も使うほど上がり、昨日よく出た台に設定狙いの客が集まります。</div>
+<div class="meter sm"><div class="mt-l">変更→上げ</div><div class="mt-bar blue"><i style="width:${Math.round(M.up*100)}%"></i></div><div class="mt-v">${Math.round(M.up*100)}%</div></div><div class="sub">「${upWord(M.up)}」と思われています。AT機は設定を変えるとハマりが0にもどるので、お客さんにバレます。上げた台が多いと、リセット台に設定狙いの客が座ります。</div></div>`;
+  /* 天井とハイエナ */
+  const ats=machines().filter(m=>tenjoOf(m)).sort((a,b)=>(b.hama||0)/tenjoOf(b)-(a.hama||0)/tenjoOf(a));
+  h+=`<div class="lbl">AT機の天井とハイエナ</div>`;
+  h+=ats.length?`<div class="box col">${ats.slice(0,5).map(m=>{const tj=tenjoOf(m),hm=hamaOf(m);return `<div class="meter sm"><div class="mt-l">${m.no}番 ${esc(shortName(MB[m.type].name))}</div><div class="mt-bar ${hm>=tj*0.5?'':'blue'}"><i style="width:${Math.min(100,hm/tj*100)}%"></i></div><div class="mt-v">${hm}/${tj}G${m.rq?' R':''}</div></div>`}).join('')}</div>`:'<div class="sub">AT機（天井のある台）がまだありません</div>';
+  h+=`<div class="sub">AT機は当たらないゲーム数（ハマり）が天井に届くと、必ず当たります。ハマりは次の日に持ちこされ、深い台は朝から<b>ハイエナ</b>に狙われます（当たったらすぐやめるので、お店の取り分が減ります）。</div>`;
+  h+=`<div class="lbl sm">朝の準備</div><div class="chips">${[['chg','設定を変えた台だけリセット'],['all','毎朝 全台リセット（1台300円）']].map(([v,l])=>`<button class="chip ${M.reset===v?'cur':''}" data-act="mn-reset" data-v="${v}" type="button">${l}</button>`).join('')}</div>`;
+  h+=`<div class="sub">全台リセットにすると、ハイエナが朝に来なくなり、設定を変えたこともバレません。かわりに、据え置きのハマり台を目当てにした朝の客もいなくなります。</div>`;
+  h+=`<div class="lbl sm">台のデータ表示</div><div class="chips">${[['open','ハマりも見せる'],['hide','ハマりは見せない']].map(([v,l])=>`<button class="chip ${M.data===v?'cur':''}" data-act="mn-data" data-v="${v}" type="button">${l}</button>`).join('')}</div>`;
+  h+=`<div class="sub">見せないとハイエナは大きく減りますが、設定狙いの客が台を選びにくくなり、少し不満が出ます。データ公開機があると、ハイエナも設定狙いも増えます。</div>`;
+  /* 抽選入場 */
+  h+=`<div class="lbl">イベントの朝の並び</div><div class="chips">${[[false,'先着順'],[true,'抽選入場（1日1万円）']].map(([v,l])=>`<button class="chip ${!!M.lot===v?'cur':''}" data-act="mn-lot" data-v="${v?1:0}" type="button">${l}</button>`).join('')}</div>`;
+  h+=`<div class="sub">並びが10人以上の日に効きます。抽選なら番号札を配って公平に入れるので満足度が上がり、朝のトラブルも起きません（パチプロが前に来にくくなります）。先着順で30人以上並ぶと、割り込み・場所取りのトラブルが起きることがあります。</div>`;
+  /* 会員カード */
+  h+=`<div class="lbl">会員カード・貯玉</div>`;
+  if(!M.card){
+    const hasC=G.objs.some(o=>o.kind==='d'&&o.type==='counter');
+    h+=`<div class="box">会員カードを作ると、会員さんが少しずつ増えます。会員が多いほどお客さんが来やすくなり、勝った玉を預ける<b>貯玉</b>で、また打ちに来てくれます。</div><button class="btn ${S.money>=CARD_COST&&hasC?'primary':''}" data-act="mn-card" ${prep&&S.money>=CARD_COST&&hasC?'':'disabled'} type="button">会員カードを始める（${man(CARD_COST)}）${hasC?'':'<br><span class="sub">景品カウンターが必要です</span>'}</button>`;
+  }else{
+    h+=`<div class="box stats"><span>会員 <b>${M.mem.toLocaleString('ja-JP')}人</b></span><span>貯玉の預かり <b>${yen(Math.round(M.cho))}</b></span><span>客足 <b class="pos">+${Math.round((memF()-1)*100)}%</b></span><span>来店客の会員率 <b>${Math.round(memRatio()*100)}%</b></span></div><div class="sub">会員は勝った玉の半分を預けていきます。預かった分は、その人が次に来て遊ぶまでお店のお金です（遊ぶときはお金が入りません）。</div>`;
+  }
+  /* 立ち入り検査 */
+  const [hw,hc]=heatWord(M.heat),src={};for(const x of M.hl)src[x.src]=(src[x.src]||0)+1;
+  h+=`<div class="lbl">立ち入り検査</div><div class="box col"><div class="meter sm heat ${hc}"><div class="mt-l">リスク</div><div class="mt-bar"><i style="width:${Math.round(M.heat)}%"></i><span class="mk" style="left:40%"></span><span class="mk" style="left:70%"></span></div><div class="mt-v">${hw}</div></div>
+<div class="sub">${Object.keys(src).length?'この2週間：'+Object.entries(src).map(([k,n])=>`${HEAT_SRC[k]} ${n}回`).join('・'):'この2週間、目立つことはしていません'}</div>
+${adBanned()?`<div class="neg">指導中：${dateStr(M.adBan)}までイベントの告知ができません</div>`:''}${stopToday()?'<div class="neg">今日は営業停止です</div>':''}
+${M.insp.length?`<div class="sub">これまでの検査：${M.insp.slice(-4).map(x=>`${dateStr(x.day)} ${{ok:'問題なし',shido:'指導',stop:'営業停止',fine:'罰金'}[x.res]}`).join('・')}</div>`:''}</div>`;
+  h+=`<div class="sub">「○○の日」とはっきり告知したり、釘を一度に大きく動かしたり（締め⇔開け）、朝の並びでトラブルが起きるとリスクが上がります（毎日少しずつ下がります）。リスクが高いと警察の検査が入り、<b>40以上で指導（告知禁止）、70以上で営業停止</b>になります。</div>`;
+  return h;
+}
+
+/* 昨日から設定・釘を変えたか（準備中に表示） */
+function chgTag(m,short){
+  const k=kindOf(m),was=k==='s'?m.ys:m.yn,cur=k==='s'?m.set:m.nail;
+  if(was==null)return '';
+  if(was===cur)return short?'<span class="cg same">据</span>':'<span class="tag same">据え置き</span>';
+  const f=v=>k==='s'?'設定'+v:NAIL_SHORT[v+2];
+  return short?'<span class="cg chg">変</span>':`<span class="tag chg">変更 ${f(was)}→${f(cur)}</span>`;
+}
+/* 日報の「ホールのようす」 */
+function maniaReportHTML(x){
+  let h='';
+  if(x.stopped)h+=`<div class="box neg"><b>今日は営業停止でした。</b>お客さんは0人。家賃と給料だけがかかりました。</div>`;
+  const rows=[];
+  if(x.tenjo||x.hyena||x.hyMiss)rows.push(`<span class="mi">天井</span>${x.tenjo}回 ・ ハイエナ ${x.hyena}人${x.hyMiss?`（ハマり台がなくて帰った${x.hyMiss}人）`:''}${x.hyena?` ・ ハイエナの持ち帰り <b class="${x.hyNet>0?'neg':'pos'}">${sgn(x.hyNet)}</b>`:''}`);
+  if(x.lot)rows.push(`<span class="mi">抽選入場</span>${x.lot}人に番号札を配って、公平に入ってもらいました`);
+  if(x.lineBad)rows.push(`<span class="mi ng">並び</span>朝の並びでトラブル（評判-1.5・立ち入りリスク↑）`);
+  if(x.resetN)rows.push(`<span class="mi">リセット</span>全台リセット ${x.resetN}台（${yen(x.resetN*300)}）`);
+  if(x.memNew!=null)rows.push(`<span class="mi">会員</span>+${x.memNew}人（計${x.mem.toLocaleString('ja-JP')}人）・貯玉 預かり${yen(x.choIn)}／再プレイ${yen(x.choOut)}`);
+  if(rows.length)h+=`<div class="box col mnrep"><div class="lbl">ホールのようす</div>${rows.map(r=>`<div>${r}</div>`).join('')}</div>`;
+  if(x.insp){
+    const t={ok:['問題なし','good','評判+1・信用+1'],shido:['指導','bad',`${dateStr(S.mn.adBan)}までイベントの告知ができません・評判-2`],stop:['営業停止','bad','明日は営業停止・評判-6・信用-4'],fine:['罰金','bad','罰金50万円・評判-6・信用-4']}[x.insp.res];
+    h+=`<div class="stampbox"><div class="stamp ${t[1]}">${t[0]}</div><div><div class="lbl">立ち入り検査</div><div class="sub">検査のときのリスク ${x.insp.heat}</div><div>${t[2]}</div></div></div>`;
+  }
+  return h;
 }
 
 /* ---------- 設定一覧 ---------- */
@@ -5333,6 +5935,8 @@ function listSheet(scope){
     const sm=scopeMachines(scope),hasS=sm.some(m=>kindOf(m)==='s'),hasP=sm.some(m=>kindOf(m)==='p');
     if(hasS)h+=`<div class="bulk"><span class="lbl">スロット設定</span><div class="setrow small">${[1,2,3,4,5,6].map(v=>`<button class="sbtn c${v}" data-act="ls-bulk-s" data-v="${v}" type="button">${v}</button>`).join('')}</div></div>`;
     if(hasP)h+=`<div class="bulk"><span class="lbl">パチンコ釘</span><div class="setrow small">${[-2,-1,0,1,2].map(v=>`<button class="sbtn n${v+2} wide" data-act="ls-bulk-p" data-v="${v}" type="button">${NAIL_SHORT[v+2]}</button>`).join('')}</div></div>`;
+    const deep=machines().filter(m=>tenjoOf(m)&&(m.hama||0)>=tenjoOf(m)*0.4&&!willReset(m));
+    if(deep.length)h+=`<div class="chips"><button class="chip" data-act="ls-rq" type="button">ハマり台をリセット（${deep.length}台・ハイエナ対策）</button></div>`;
     h+=`<div class="chips"><button class="chip" data-act="ls-rate" data-v="hi" type="button">高レートにする</button><button class="chip" data-act="ls-rate" data-v="lo" type="button">低レートにする</button><button class="chip" data-act="ls-rand" type="button">低めにばらばら</button></div>`;
   }
   for(const isl of islands){
@@ -5340,7 +5944,7 @@ function listSheet(scope){
     for(const m of isl.ms){
       const t=S.phase==='open'?m.today:m.yest,lab=S.phase==='open'?'今日':'昨日';
       const rs=t?`<span class="rs ${t.coin-t.out>=0?'pos':'neg'}">${lab} 店${sgn(t.coin-t.out)}</span>`:`<span class="rs sub">データなし</span>`;
-      h+=`<div class="lrow ${tg.has(m)?'tgt':''}"><div class="l1"><span class="no">${m.no}</span><span class="rt ${m.rate}">${rateLabel(m)}</span><span class="nm">${esc(MB[m.type].name)}</span>${rs}</div>${prep?lvBtns(m,'ls-lv',`data-id="${m.id}"`,false,true):`<div class="sub">${kindOf(m)==='s'?`設定 <span class="badge c${m.set}">${m.set}</span>`:`釘 <span class="badge n${m.nail+2}">${NAIL_NAME[m.nail+2]}</span>`} ・ 大当り${t?t.hits:0}回 ・ 稼働${t?Math.round(t.mins):0}分</div>`}</div>`;
+      h+=`<div class="lrow ${tg.has(m)?'tgt':''}"><div class="l1"><span class="no">${m.no}</span><span class="rt ${m.rate}">${rateLabel(m)}</span><span class="nm">${esc(MB[m.type].name)}</span>${tenjoOf(m)?`<span class="hm ${hamaOf(m)>=tenjoOf(m)*0.5?'hot':''}">${hamaOf(m)}G${prep&&willReset(m)&&hamaOf(m)?'→0':''}</span>`:''}${prep?chgTag(m,1):''}${rs}</div>${prep?lvBtns(m,'ls-lv',`data-id="${m.id}"`,false,true):`<div class="sub">${kindOf(m)==='s'?`設定 <span class="badge c${m.set}">${m.set}</span>`:`釘 <span class="badge n${m.nail+2}">${NAIL_NAME[m.nail+2]}</span>`} ・ 大当り${t?t.hits:0}回 ・ 稼働${t?Math.round(t.mins):0}分</div>`}</div>`;
     }
   }
   return [prep?'設定一覧':'台データ（営業中は見るだけ）',h];
@@ -5349,6 +5953,8 @@ function listSheet(scope){
 /* ---------- イベント ---------- */
 function eventSheet(){
   let h='';
+  if(stopToday())return ['イベント',`<div class="box neg"><b>今日は営業停止です。</b>立ち入り検査の処分で、お店を開けられません。下の「営業停止（休む）」を押すと、次の日に進みます（家賃や給料はかかります）。</div><button class="btn primary" data-act="close" type="button">わかった</button>`];
+  const lotChip=`<button class="chip wide ${S.mn.lot?'cur':''}" data-act="mn-lot" data-v="${S.mn.lot?0:1}" type="button">${S.mn.lot?'✓ ':''}朝の並びを抽選入場にする（並び10人以上の日・1万円）</button>`;
   if(goActive()){
     const g=S.go,ms=machines(),dash=avgOf(ms.map(dashi));
     h+=`<div class="burstcard ${g.type==='anniv'?'gold':''}"><div class="bc-main">${goLabel(g)}</div><div class="bc-sub">${goDayIdx()+1}日目 ／ 全${g.len}日</div></div>`;
@@ -5356,7 +5962,7 @@ function eventSheet(){
       :`<div class="box"><b>オープン期間は、入りきらないほどお客さんが来ます。</b>全台の「出し具合」とお客さんの満足度で毎日採点され、期間の平均で評価が決まります。<br>評価が悪いと信用がガタ落ちし、しばらく客付きが悪くなります。</div>`;
     h+=`<div class="meter"><div class="mt-l">いまの出し具合</div><div class="mt-bar"><i style="width:${Math.round(dash*100)}%"></i><span class="mk" style="left:60%"></span></div><div class="mt-v">${Math.round(dash*100)}%</div></div><div class="sub">目安：出し具合60%以上＋満足度で「成功」、70%を超えると「大成功」が狙えます。</div>`;
     if(g.scores.length)h+=`<div class="sub">これまでの点数：${g.scores.map(s=>Math.round(s*100)).join('・')}</div>`;
-    h+=`<button class="btn" data-act="go-list" type="button">設定一覧を開く</button><button class="btn primary" data-act="close" type="button">わかった</button>`;
+    h+=lotChip+`<button class="btn" data-act="go-list" type="button">設定一覧を開く</button><button class="btn primary" data-act="close" type="button">わかった</button>`;
     return [g.type==='anniv'?goLabel(g):'オープン期間',h];
   }
   const ev=S.event,ms=machines();
@@ -5385,7 +5991,9 @@ function eventSheet(){
     h+=`<div class="box col"><div><b>${esc(se.name)}</b>（飾りつけと告知 ${man(SEASON_COST)}）</div><div>季節のイベントでは<b>お店全体の出し具合</b>が見られます。いま <b>${Math.round(avg*100)}%</b></div><div>このままだと… <span class="verdict ${cls}">${j}</span></div><div>客足の見込み <b>×${eventMultToday().toFixed(2)}</b>（お休みの客足にさらに上乗せ）</div><div class="sub">結果で信用が大きく動きます。ライバル店もこの時期はイベントが多くなります。</div></div>
 <div class="actions"><button class="btn sm" data-act="ev-fill-all" data-v="hi" type="button">全台を高めに</button><button class="btn sm" data-act="go-list" type="button">設定一覧を開く</button></div>`;
   }else if(ev.type!=='none'){
-    h+=`<button class="chip wide ${ev.ad?'cur':''}" data-act="ev-ad" type="button">${ev.ad?'✓ ':''}チラシとSNSで告知する（${yen(Math.round(50000*skAd()/1000)*1000)}）</button>`;
+    const [hw]=heatWord(S.mn.heat);
+    h+=adBanned()?`<div class="box neg">警察の指導中のため、${dateStr(S.mn.adBan)}まで告知はできません</div>`:`<button class="chip wide ${ev.ad?'cur':''}" data-act="ev-ad" type="button">${ev.ad?'✓ ':''}チラシとSNSで告知する（${yen(Math.round(50000*skAd()/1000)*1000)}）<small class="warn">⚠ はっきり告知すると立ち入り検査のリスクが上がります（いま：${hw}）</small></button>`;
+    h+=lotChip;
     const tgs=eventTargets();
     if(tgs.length){
       const avg=avgOf(tgs.map(dashi)),[j,cls]=judgeOf(avg,ev.type==='newm'?0.15:0);
@@ -5420,8 +6028,9 @@ function rivalCard(r,fc){
 }
 function manageSheet(tab){
   tab=tab||'story';
-  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['chain',`チェーン${S.branches&&S.branches.length?`(${S.branches.length+1})`:''}`],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
+  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['chain',`チェーン${S.branches&&S.branches.length?`(${S.branches.length+1})`:''}`],['hall',`ホール運営${S.mn.heat>=40||stopToday()?'⚠':''}`],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
   if(tab==='story')h+=storyPanel();
+  else if(tab==='hall')h+=hallPanel();
   else if(tab==='mgr')h+=mgrPanel();
   else if(tab==='chain')h+=chainPanel();
   else if(tab==='staff'){
@@ -5511,7 +6120,7 @@ function reportSheet(R){
   if(R.exp||(R.staffUps&&R.staffUps.length))h+=`<div class="sub">店長の経験値 +${R.exp||0}${S.mgr?`（Lv${S.mgr.lv}・次まで${expNeed(S.mgr.lv)-S.mgr.exp}）`:''}${R.staffUps&&R.staffUps.length?`<br>レベルアップ：${R.staffUps.map(esc).join('・')}`:''}</div>`;
   h+=`<div class="kpis"><div><b>${R.visitors}</b><span>来店</span></div><div><b class="${R.full?'neg':''}">${R.full}</b><span>満席で帰った</span></div><div><b>${Math.round(R.share*100)}%</b><span>町のシェア</span></div></div>`;
   h+=`<div class="segs">${SEGS.filter(s=>R.seg[s]).map(s=>`<span>${SEG_NAME[s]} ${R.seg[s]}人</span>`).join('')}</div>`;
-  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>スロットの交換差益（5.6枚交換）</td><td>${yen(R.exch)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
+  h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>交換差益（${esc(R.exLabel||exLabel())}）</td><td>${yen(R.exch)}</td></tr>`:''}${R.choCash?`<tr><td>貯玉（預かり−再プレイ）</td><td class="${R.choCash<0?'neg':''}">${R.choCash<0?'-'+yen(-R.choCash):yen(R.choCash)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
   const dr=R.rep1-R.rep0,fl=R.feel>=1?['よく出る店','pos']:R.feel<=-1?['出ない店','neg']:['ふつう',''];
   h+=`<div class="box">出玉率 <b>${Math.round(R.payR*100)}%</b>　お客さんの体感：<b class="${fl[1]}">${fl[0]}</b></div>`;
   h+=`<div class="box">評判 <b>${Math.round(R.rep0)} → ${Math.round(R.rep1)}</b> <span class="${dr>=0?'pos':'neg'}">(${dr>=0?'+':''}${dr.toFixed(1)})</span>　信用 <b>${R.trust1}</b>　資金 <b class="${R.money<0?'neg':''}">${yen(R.money)}</b></div>`;
@@ -5524,11 +6133,12 @@ function reportSheet(R){
   else if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
   if(R.brokenN)h+=`<div class="sub">今日は${R.brokenN}台が故障しました。ホール係が多いと早く直せます</div>`;
   if(R.completes&&R.completes.length)h+=`<div class="box neg">コンプリート ${R.completes.length}台：${R.completes.map(c=>`${c.no}番（${esc(shortName(MB[c.id].name))}）`).join('・')}<br><span class="sub">差玉の上限（パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚）まで出て、その日は打ち止めになりました</span></div>`;
+  if(R.mn)h+=maniaReportHTML(R.mn);
   if(R.gotoCaught)h+=`<div class="box">ゴト師を${R.gotoCaught}人捕まえました！</div>`;
   if(R.gotoEsc)h+=`<div class="box neg">ゴト師に逃げられ、${yen(R.gotoEsc)}の被害。防犯カメラを付けると見つけやすくなります</div>`;
   if(R.goals&&R.goals.length)h+=R.goals.map(g=>`<div class="rankup">目標達成「${esc(g.name)}」<br><span>ボーナス ${man(g.reward)}</span></div>`).join('');
   if(R.award)h+=`<div class="box ${R.award.wins.length?'pos':''}">${R.award.y}年 町のホールアワード：<b>${R.award.wins.length?esc(R.award.wins.join('・'))+'を受賞！':'受賞ならず'}</b>${R.award.prize?`・賞金${man(R.award.prize)}`:''}</div>`;
-  if(R.morning&&R.morning.length)h+=R.morning.map(m=>`<div class="box ${m.good?'pos':'neg'}">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
+  if(R.morning&&R.morning.length)h+=R.morning.filter(m=>m.kind!=='insp').map(m=>`<div class="box ${m.good?'pos':'neg'}">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
   if(R.story&&R.story.month){const mo=R.story.month;h+=`<div class="box ${mo.pass?'pos':'neg'}">${mo.m}月の査定：<b>${mo.perfect?'完全達成':mo.pass?'合格':'不合格'}</b>${mo.bonus?`・ボーナス${man(mo.bonus)}`:''}</div>`}
   else{const qi=quotaInfo();if(qi&&S.story.seen.prologue&&!S.story.fired)h+=`<div class="box stats"><span>${qi.q.m}月のノルマ（あと${qi.left}日）</span><span>粗利ペース <b class="${qi.okG?'pos':'neg'}">${qi.pace==null?'--':Math.round(qi.pace*100)+'%'}</b></span><span>稼働 <b class="${qi.okU?'pos':'neg'}">${qi.util==null?'--':Math.round(qi.util*100)+'%'}</b>／${Math.round(qi.q.util*100)}%</span><span>評判 <b class="${qi.okR?'pos':'neg'}">${Math.round(S.rep)}</b>／${qi.q.rep}</span></div>`}
   if(R.newHon&&R.newHon.length)h+=`<div class="rankup">称号ゲット！<br><span>${R.newHon.map(id=>'「'+esc(honName(id))+'」').join('')}</span></div>`;
@@ -5845,7 +6455,7 @@ function monthPLHTML(p){
 const GUIDE={
   start:['はじめに',`<p>あなたはパチンコ屋の店長です。台の<b>釘と設定</b>、<b>イベント</b>、<b>店づくり</b>でお客さんを集め、ライバル店に勝って大きな店にしていきましょう。</p>
 <h3>1日の流れ</h3><ol><li><b>準備中</b>：釘・設定・配置・イベントを決めます。台をいじれるのは閉店中だけです。</li><li><b>営業中</b>：10:00〜22:45。速さは×1〜×4、「停止」で一時停止できます。</li><li><b>日報</b>：売上・評判・イベントの結果・お客さんの声が出ます。</li></ol>
-<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート）を切り替えられます。</li></ul>
+<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート・ハマり）を切り替えられます。</li></ul>
 <h3>最初の3日間はグランドオープン</h3><p>入りきらないほどお客さんが来ますが、評価がとても厳しい期間です。ここで出さないと信用がガタ落ちします。</p>`],
   story:['ストーリー',`<p>あなたは借金300万円を抱えた元パチンカス。潰れかけのホールのオーナー<b>大黒千代</b>さんに借金を肩代わりしてもらい、<b>雇われ店長</b>になりました。</p>
 <h3>章とクリア</h3><ol><li><b>借金まみれの雇われ店長</b>：ノルマに3回合格・借金を返す・ゴールデン会館に勝つ</li><li><b>町の人気店へ</b>：町のシェア1位の日を30日・ランク3・大手チェーンに勝つ</li><li><b>駅前の決戦</b>：お店を買い取る・駅前に出る・駅前でシェア1位</li><li><b>チェーン社長</b>：お店を3軒に・3軒そろって黒字・業界の帝王に勝つ</li><li><b>最終章 全国ホールアワード</b>：審査で大賞を取ればエンディング</li></ol>
@@ -5879,7 +6489,7 @@ const GUIDE={
 <h3>戦い方</h3><ul><li><b>偵察</b>（経営 → ライバル）：店員を送ると還元率・客数・次のイベント日がわかります。自分で打ちに行くと、店の<b>弱点</b>もわかります。</li><li>弱点の客層（例：1円パチンコが少ない）の台をあなたの店で増やすと、その店のお客さんを奪いやすくなります。</li><li>相手のイベント日にあなたの店が<b>激アツ</b>を出すと、相手の経営に大ダメージ。</li><li>シェアを奪われ続けた店は閉店し、居抜き物件として売りに出ることがあります。</li></ul>
 <h3>新しいライバル</h3><ul><li>店が閉まると、しばらくして跡地などに<b>新しい店</b>が出店してきます。工事のうわさ → オープン告知 → グランドオープンの順。オープン期間はお客さんを大きく取られます。</li><li>あなたの店のランクや大きさに合わせて、新しい店も強くなります。ランク3からは<b>隣に出店</b>してくることも。</li><li>ライバル店は、あなたの店員や常連さんを<b>引き抜き</b>に来ます。引き抜きの相談には、昇給・説得・送り出すの3つで答えます。</li></ul>`],
   kishu:['機種と出玉',`<h3>パチンコ</h3><p>機種ごとに<b>初当り確率</b>（1/99.9・1/199・1/319・1/349・1/399・1/599）が決まっています。確率が重いほど当たるまで時間がかかりますが、1回の当りが大きく、RUSHの連チャンで一撃数万発になることもあります。<b>釘</b>は回りやすさ（＝お店の出し具合）を決めます。</p>
-<h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります。</p>
+<h3>スロット</h3><p>機種ごとに設定1〜6の<b>出玉率（機械割）</b>が決まっています（最大114.9%）。ジャグラーのようなAタイプは波がおだやか、AT機は一撃が荒い台です。スロットは最初は<b>5.6枚交換</b>なので、出玉率が100%でもお店に1割ほど交換差益が残ります（交換率は「経営 → ホール運営」で変えられます）。AT機には<b>天井</b>があります。</p>
 <h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
 <h3>ホールデータ</h3><p>営業中の「データ」、設定一覧、日報から見られます。<b>出玉ランキング</b>・<b>台番号別の稼働率</b>・<b>機種別の稼働率</b>・<b>客層と時間ごとの稼働</b>で、どんなお客さんがどの台を打っているかがわかります。稼働の低い機種は入れ替え候補です。</p>
 <h3>機種データベース</h3><p>メニューの「機種データベース」で、機種の名前・出玉率・初当り確率を変えられます。変えた内容はこの端末に保存されます。</p>`],
@@ -5892,12 +6502,21 @@ const GUIDE={
 <h3>称号（100こ以上）</h3><p>「1日に200人来店」「激アツ10回」「ライバル店を3軒閉店」など、いろいろなことで称号が手に入ります。ひみつの称号もあります。手に入れた称号は「つける」と、会話のときの肩書きになります。</p>
 <h3>伝説の日</h3><p>1日の最多来店・最高利益・1台の最高差玉などの記録が残ります。新記録は日報でお知らせします。</p>
 <h3>難易度と2周目</h3><p>新しいゲームを始めるときに難易度（甘デジ・ミドル・MAX）を選べます。MAXはノルマがきびしく、2か月続けて不合格でクビです。エンディングのあとは、そのまま営業を続ける（エンドレス）か、店長のレベル・スキル・ごほうびの設備を引き継いで2周目を始められます。図鑑・称号・伝説の日は、何度遊び直しても消えません。</p>`],
+  hall:['ホール運営',`<p>「経営 → ホール運営」で、お店の細かいルールを決められます。</p>
+<h3>据え置きと設定変更</h3><p>設定狙いのお客さんは、毎日の出方から<b>お店のクセ</b>を覚えます。高い設定をそのまま次の日も使う（<b>据え置き</b>）ことが多い店だと思われると、昨日よく出た台に朝から人が集まります。準備中の設定一覧では、昨日から変えた台に「変」、そのままの台に「据」が付きます。</p>
+<h3>天井とハイエナ</h3><p>AT機には<b>天井</b>があり、当たらないゲーム数（<b>ハマり</b>）が<b>天井</b>（台によって約750〜1,600G）に届くと必ず当たります。天井があるぶん、ふだんの当たりは少しだけ重くなっているので、台の出玉率は変わりません。設定が低い台ほど天井まで行きやすくなります。ハマりは次の日に持ちこされ、深い台は<b>ハイエナ</b>（黒っぽいパーカーで、目のマークを出して歩く客）に狙われます。ハイエナは当たったらすぐやめるので、お店の取り分が減ります。</p>
+<ul><li>設定を変えた台は、開店のときにハマりが0にもどります（設定の打ち直しでもリセットできます）。ただし、お客さんに「設定を変えた」とバレます。</li><li>「毎朝 全台リセット」にすると、ハイエナも設定変更のバレもなくなります（1台300円）。</li><li>「ハマりは見せない」にすると、ハイエナが大きく減ります。</li><li>右上の「表示」を「ハマり」にすると、台の上にハマりのゲーム数が出ます。</li></ul>
+<h3>交換率</h3><p>パチンコは<b>等価・28玉・33玉</b>、スロットは<b>等価・5.6枚・6枚・7枚</b>から選べます。交換率を下げると、払い出した玉の一部がお店の取り分（交換差益）になりますが、「勝っても手取りが少ない」と不満が出て、設定狙いの客が減ります。玉を交換せずに長く遊ぶ客は増えます。下げると信用と評判が下がり、上げると10日間 客足が増えます。</p>
+<h3>新台カレンダー</h3><p>人気機種は<b>発売日</b>が決まっていて、それまでは買えません（建設 →「新台」）。販社の三河さんに発売の${REL_DEAD}日前までに予約し、人気台は<b>抽選</b>になります。発売から${USED_WAIT}日は中古が出回らず、${HYPE_DAYS}日間は「話題の新台」で人気が上がります。ふつうの台は<b>中古の相場</b>で買えて、相場は毎週動きます（発売したての台は高く、規制の台は安い）。</p>
+<h3>抽選入場</h3><p>イベントの朝の並びを抽選にすると、番号札を配って公平に入ってもらえます（1日1万円）。満足度が上がり、並びのトラブルが起きなくなります。</p>
+<h3>立ち入り検査</h3><p>「○○の日」とはっきり告知したり、釘を一度に大きく動かしたり、並びでトラブルが起きると、<b>立ち入りのリスク</b>が上がります。検査が入ると、リスク40以上で<b>指導</b>（2週間 告知禁止）、70以上で<b>営業停止</b>（次の日はお店を開けられない）。リスクは毎日少しずつ下がります。</p>
+<h3>会員カードと貯玉</h3><p>30万円で会員カードを始めると、来店したお客さんが少しずつ会員になります。会員が多いほど客足が増え、会員は勝った玉の半分を<b>貯玉</b>として預けていき、また遊びに来てくれます。</p>`],
   more:['規制・取材・トラブル',`<h3>規制</h3><p>ときどき国の規制が発表され、対象の機種は期限までに撤去されます（期限を過ぎると自動で撤去・下取りなし）。代わりに「新基準」の新しい機種が買えるようになります。</p>
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
 <h3>台の故障</h3><p>古い台ほど故障しやすく、ホール係が直します。閉店までに直らなかった台は夜間に修理費がかかります。</p>
 <h3>ゴト師</h3><p>不正な道具で玉を抜く客です。サングラスが目印。壁に付ける防犯カメラと、近くを見回るホール係が見つけます。</p>
-<h3>やりこみ目標</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます（ストーリーとは別）。毎年3月31日には年間ランキングも発表されます。</p>`],
+<h3>やりこみ目標</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます（ストーリーとは別）。</p>`],
 };
 function guideSheet(tab){
   tab=tab||'start';
@@ -6076,7 +6695,15 @@ $('#sheetBody').addEventListener('click',e=>{
       if(t==='none'||t==='renewal'||t==='media'||t==='season'||t==='anniv')ev.ad=false;
       sfx('tap');save();refreshAll();break}
     case 'ev-target':S.event.target=S.event.type==='tail'?Number(v):v;sfx('tap');save();refreshAll();break;
-    case 'ev-ad':S.event.ad=!S.event.ad;sfx('tap');save();refreshAll();break;
+    case 'ev-ad':if(adBanned())break;S.event.ad=!S.event.ad;sfx('tap');save();refreshAll();break;
+    case 'ex-set':{if(exKey(b.dataset.k)===v)break;if(setExch(b.dataset.k,v)){sfx('good');save();refreshAll()}else sfx('bad');renderSheet();break}
+    case 'mn-reset':S.mn.reset=v;sfx('tap');save();renderSheet();break;
+    case 'mn-data':S.mn.data=v;sfx('tap');save();renderSheet();break;
+    case 'mn-lot':S.mn.lot=v==='1';sfx('tap');save();renderSheet();break;
+    case 'mn-card':if(startCard()){sfx('fanfare');toast('会員カードを始めました！');save();refreshAll()}else{sfx('bad');toast('景品カウンターとお金が必要です')}renderSheet();break;
+    case 'rel-req':{const e=S.mn.cal[Number(id)];if(e&&relReserve(e,Number(v))){sfx('tap');save()}else sfx('bad');renderSheet();break}
+    case 'm-rq':{const m=sheetData.m;m.rq=!m.rq;sfx('tap');save();renderSheet();break}
+    case 'ls-rq':{let n=0;for(const m of machines()){const tj=tenjoOf(m);if(tj&&(m.hama||0)>=tj*0.4&&!willReset(m)){m.rq=true;n++}}toast(n?`${n}台を開店のときにリセットします`:'もうリセットする予定です');sfx('tap');save();renderSheet();break}
     case 'ev-fill-all':machines().forEach(m=>{if(kindOf(m)==='s')m.set=Math.max(m.set,4);else m.nail=Math.max(m.nail,1)});sfx('good');save();refreshAll();break;
     case 'bk-borrow':{const n=borrow(Number(v));if(n){sfx('cash');toast(`${man(n)}借りました`);save();refreshAll()}break}
     case 'bk-repay':{const n=repay(v==='all'?S.loan:Number(v));if(n){sfx('cash');toast(`${man(n)}返しました`);save();refreshAll()}break}
@@ -6248,13 +6875,14 @@ function startDay(){
   if((S.negDays||0)>=7){openSheet('over');return}
   if(!openStore())return;
   tool='view';moveSel=null;closeSheet();requestWake();
+  if(D.stopped){D.holdUntil=performance.now()+2200;sfx('gagan');telop('営業停止',`${dateLong(S.day)}・お店を開けられません`,'bad');applyLayout();refreshAll();return}
   sfx('open');
   if(D.isGo){playBgm('grand');telop(`${goLabel(S.go)}！`,`${D.goIdx+1}日目 ／ 全${S.go.len}日`,'good')}
   else if(D.evType!=='none'){playBgm('event');telop('本日イベント！',D.evLabel,'good')}
   else{playBgm('open');telop('開店！',dateLong(S.day),'good')}
   applyLayout();refreshAll();
 }
-$('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'off',off:'set'}[prefs.overlay];savePrefs();renderStatus()});
+$('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'hama',hama:'off',off:'set'}[prefs.overlay]||'set';savePrefs();renderStatus()});
 $('#bMenu').addEventListener('click',()=>{audio();openSheet('menu',false)});
 $('#quotaChip').addEventListener('click',e=>{audio();sfx('tap');if(e.target.closest('[data-mis]'))openSheet('morning');else openSheet('manage','story')});
 $('#sheetClose').addEventListener('click',()=>{closeSheet();refreshAll()});
@@ -6340,6 +6968,7 @@ function speaker(who){
   if(who==='me')return {name:'あなた',sub:(S.story&&S.story.bought?'オーナー店長':'店長')+(PROF&&PROF.eq&&HON_BY[PROF.eq]?`・${honName(PROF.eq)}`:''),face:ME_FACE,col:'#ff2d55'};
   if(who==='owner')return {name:OWNER.name,sub:ownerSub(),face:OWNER.face,col:OWNER.col};
   if(who==='mc')return {name:MC.name,sub:MC.sub,face:MC.face,col:MC.col};
+  if(who==='dist')return {name:DIST.name,sub:DIST.sub,face:DIST.face,col:DIST.col};
   const i=who.indexOf(':'),k=who.slice(0,i),id=who.slice(i+1);
   if(k==='boss'){
     const B=BOSS_BY[id];

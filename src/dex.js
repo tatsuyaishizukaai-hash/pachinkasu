@@ -32,6 +32,8 @@ const DEX_C=[
   {k:'rich',name:'お金持ちのお客さん',desc:'軍資金がたっぷり。豪華な内装が好き',look:{shirt:'#facc15',hair:'#1b1b1b',skin:'#eabf98',glasses:1}},
   {k:'queue',name:'朝イチの行列',desc:'イベントやオープンの日に、開店前から並ぶお客さん',look:{shirt:'#ec4899',hair:'#c8a165',skin:'#f6d1b0'}},
   {k:'bigwin',name:'大勝ちしたお客さん',desc:'10万円以上勝って帰ったお客さん。お店の宣伝をしてくれる',look:{shirt:'#f97316',hair:'#1b1b1b',skin:'#f6d1b0'}},
+  {k:'hyena',name:'ハイエナ',desc:'スロットのハマり台だけを狙う。天井まで打って、当たったらすぐやめる。黒っぽいパーカーが目印',look:{shirt:'#3f3f46',hair:'#1b1b1b',skin:'#eabf98',out:'hoodie',pants:'#111827',mask:1}},
+  {k:'insp',name:'立ち入り検査の人',desc:'警察の検査。あおる告知や大きな釘の変更が続くと、やって来る',look:{shirt:'#1e293b',hair:'#3b2a1a',skin:'#f3d3b5',out:'suit',hs:'short',glasses:1,pants:'#1f2937'}},
   {k:'goto',name:'ゴト師',desc:'不正な道具で玉を抜く。サングラスが目印。捕まえると図鑑に載る',look:{shirt:'#1f2937',hair:'#0b0b0b',skin:'#e9c7a5',shades:1}},
   ...REG_DEFS.map(d=>({k:'reg:'+d.id,name:d.name,desc:`常連さん。好き：${d.likes}／苦手：${d.hates}`,look:d.look,elder:d.elder,reg:1})),
 ];
@@ -156,6 +158,19 @@ const HON=[
  ['mis1','朝礼の成果','朝礼の目標を3つとも達成','朝礼',c=>c.R.missions&&c.R.missions.n===3],
  ['mis7','皆勤賞','朝礼の目標を7日連続で全部達成','朝礼',c=>(S.missStreak||0)>=7],
  ['mis30','鉄の結束','朝礼の目標を30日連続で全部達成','朝礼',c=>(S.missStreak||0)>=30],
+ /* ホール運営 */
+ ['tenjo1','天井到達','スロットの台が天井まで行った','ホール運営',c=>((S.stat&&S.stat.tenjo)||0)>=1],
+ ['tenjo50','ハイエナの楽園','天井到達が合計50回','ホール運営',c=>((S.stat&&S.stat.tenjo)||0)>=50],
+ ['sue','据え置きの店','お客さんに「よく据え置く店」と思われた','ホール運営',c=>S.mn&&S.mn.sue>=0.65],
+ ['tokka','等価交換の店','パチンコもスロットも等価交換にした','ホール運営',c=>exKey('p')==='25'&&exKey('s')==='50'],
+ ['teika','低価交換の店','パチンコ33玉・スロット7枚交換にした','ホール運営',c=>exKey('p')==='33'&&exKey('s')==='70',1],
+ ['lotall','全台当選','新台の抽選で4台以上予約して、全部当たった','ホール運営',c=>!!(S.stat&&S.stat.lotAll)],
+ ['newrel','新台初日','新台を発売日に置いた','ホール運営',c=>machines().some(m=>S.mn&&S.mn.relDay[m.type]!=null&&m.installDay===S.mn.relDay[m.type])],
+ ['lotq','抽選入場','抽選入場で20人以上が並んだ','ホール運営',c=>!!(c.R.mn&&c.R.mn.lot>=20)],
+ ['mem1k','会員1000人','会員カードの会員が1000人','ホール運営',c=>S.mn&&S.mn.mem>=1000],
+ ['cho1m','貯玉100万','お客さんの貯玉が100万円分たまった','ホール運営',c=>S.mn&&S.mn.cho>=1000000],
+ ['inspok','まっとうな商売','立ち入り検査で「問題なし」','ホール運営',c=>((S.stat&&S.stat.inspOk)||0)>=1],
+ ['stopped','営業停止','立ち入り検査で営業停止になった','ホール運営',c=>!!(S.mn&&S.mn.insp.some(x=>x.res==='stop')),1],
  /* 周回・おもしろ */
  ['ng','2周目','2周目を始めた','周回',c=>(S.cycle||1)>=2],
  ['maxclear','MAXクリア','難易度MAXでエンディング','周回',c=>S.diff==='max'&&S.story&&S.story.awardWon],
