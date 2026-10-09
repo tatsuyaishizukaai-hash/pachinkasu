@@ -113,7 +113,7 @@ function save(){try{localStorage.setItem(SAVE_KEY,S.phase==='open'?openSnap:ser(
 function fillDefaults(){
   const d={loan:0,regu:[],gen:1,goals:{},moved:0,ended:null,yearLog:[],negDays:0,rivalPlans:[],rivalLog:[],incidents:[],selfScout:0};
   for(const k in d)if(S[k]==null)S[k]=JSON.parse(JSON.stringify(d[k]));
-  migrateRivals();growthDefaults();
+  migrateRivals();growthDefaults();ensureHome();
   S.v=3;
 }
 function load(str){

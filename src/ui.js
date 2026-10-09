@@ -35,7 +35,7 @@ function fxLoop(){
 /* ---------- HUD・ステータス ---------- */
 function setT(id,t){const e=$(id);if(e.textContent!==t)e.textContent=t;return e}
 function refreshHud(){
-  setT('#hName',S.name);
+  setT('#hName',storeLabel(G));
   setT('#hDate',dateStr(S.day));
   setT('#hLv',S.mgr?'Lv'+S.mgr.lv:'').classList.toggle('sp',!!(S.mgr&&S.mgr.sp));
   setT('#hWeather',WEATHER[S.weather.today].name).dataset.w=S.weather.today;
@@ -522,9 +522,10 @@ function rivalCard(r,fc){
 }
 function manageSheet(tab){
   tab=tab||'story';
-  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
+  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['chain',`チェーン${S.branches&&S.branches.length?`(${S.branches.length+1})`:''}`],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
   if(tab==='story')h+=storyPanel();
   else if(tab==='mgr')h+=mgrPanel();
+  else if(tab==='chain')h+=chainPanel();
   else if(tab==='staff'){
     const need=needStaff();
     h+=`<div class="box stats">${Object.entries(ROLES).map(([r,v])=>{const n=staffOf(r).length,ok=n>=need[r];return `<span>${v.name} <b class="${ok?'pos':'neg'}">${n}</b>／目安${need[r]}</span>`}).join('')}<span>給料 <b>${yen(wagesTotal())}</b>／日</span></div>`;
@@ -619,6 +620,7 @@ function reportSheet(R){
   if(R.best&&R.best.yest){const g=m=>m.yest.out-m.yest.coin,lv=m=>kindOf(m)==='s'?`設定${m.set}`:`釘${NAIL_SHORT[m.nail+2]}`;h+=`<div class="box stats"><span>いちばん出た台：<b>${R.best.no}番</b>（${lv(R.best)}・客${sgn(g(R.best))}）</span><span>いちばん吸った台：<b>${R.worst.no}番</b>（${lv(R.worst)}・客${sgn(g(R.worst))}）</span></div>`}
   if(R.regVoices.length)h+=`<div class="lbl">常連さんの声</div>`+R.regVoices.map(v=>`<div class="voice ${v.good?'':'bad'}"><b>${esc(v.name)}</b>「${esc(v.say)}」</div>`).join('');
   if(R.voices.length)h+=`<div class="lbl">お客さんの声</div>`+R.voices.map(v=>`<div class="voice ${v.good?'':'bad'}">${esc(WHY[v.k].t)}<span class="cnt">${v.n}人</span></div>`).join('');
+  if(R.branches&&R.branches.length)h+=`<div class="box col"><div class="lbl">ほかのお店（店長まかせ）</div>${R.branches.map(x=>`<div class="hrow"><span class="nm">${esc(x.name)}</span><span class="pc">${x.vis}人</span><span class="dv ${x.net>=0?'pos':'neg'}">${sgn(x.net)}</span></div>${x.goDay?`<div class="sub">グランドオープン${x.goDay}日目${x.goRes?`：<b>${x.goRes}</b>`:''}</div>`:''}${x.noMgr?'<div class="sub neg">店長がいません</div>':''}${x.short?'<div class="sub neg">店員が足りていません</div>':''}`).join('')}<div class="sub">チェーンの今日の利益 合計 <b class="${R.net+R.branchNet>=0?'pos':'neg'}">${sgn(R.net+R.branchNet)}</b></div></div>`;
   if(R.rivalHit&&R.rivalHit.length)h+=`<div class="box pos">${R.rivalHit.map(esc).join('・')}のイベント日に激アツをぶつけた！ 相手の経営に大ダメージ</div>`;
   else if(R.rivalNews.length)h+=`<div class="sub">今日は${R.rivalNews.map(esc).join('・')}もイベントでした</div>`;
   if(R.brokenN)h+=`<div class="sub">今日は${R.brokenN}台が故障しました。ホール係が多いと早く直せます</div>`;
@@ -753,6 +755,7 @@ function monthSheet(r){
   if(r.owner&&!r.pass)h+=r.fired?`<div class="box neg"><b>3か月続けて不合格。クビです…</b></div>`:`<div class="box neg">不合格 ${r.strikes}回目。あと${3-r.strikes}回続けて不合格だとクビになります</div>`;
   if(!r.pass&&!r.fired){const tips=[];if(!r.okG)tips.push('粗利が足りないときは、設定や釘を少し下げる・高レートの台を増やす・人気の台を入れる');if(!r.okU)tips.push('稼働率は、お客さんが座りたくなる台（釘・設定・人気機種）と、イベントで上がります');if(!r.okR)tips.push('評判は、お客さんの満足（勝てた・きれい・待たされない）で上がります');h+=`<div class="sub">${tips.map(esc).join('<br>')}</div>`}
   if(r.pl)h+=monthPLHTML(r.pl);
+  if(r.stores)h+=`<div class="box col"><div class="lbl">お店ごとの${r.m}月の利益</div>${r.stores.map(x=>`<div class="hrow"><span class="nm">${x.home?'<b>':''}${esc(x.name)}${x.home?'</b>':''}</span><span class="dv ${x.net>=0?'pos':'neg'}">${sgn(x.net)}</span></div>`).join('')}${r.stores.length>=3&&r.stores.every(x=>x.net>0)?'<div class="pos"><b>全店そろって黒字！</b></div>':''}</div>`;
   h+=`<button class="btn primary" data-act="month-next" type="button">次へ</button>`;
   return [`${r.m}月の${r.owner?'査定':'成績'}と決算`,h];
 }
@@ -795,6 +798,59 @@ function mgrPanel(){
   h+=`<div class="lbl">お店のコンセプト</div><div class="box">${cur.id?`いまのコンセプト：<b>${esc(CONCEPTS[cur.id].name)}</b>　${on?'<span class="tag new">効果あり</span>':'<span class="tag dark">条件が足りない</span>'}`:'まだコンセプトを決めていません'}<br><span class="sub">条件を満たしているあいだ、お客さんが少し増え、合う台が人気になります。${cur.n>0?`変えるときは${man(CONCEPT_COST)}かかり、決めてから${CONCEPT_WAIT}日たつまで変えられません。`:'最初の1回はタダです。'}</span></div>`;
   h+=Object.entries(CONCEPTS).map(([id,C])=>{const ratio=conceptRatio(id),ok=ratio>=C.need;return `<div class="cpt ${cur.id===id?'cur':''}" style="--cc:${C.col}"><div class="cp-h"><b>${esc(C.name)}</b>${cur.id===id?'<span class="tag new">いまのコンセプト</span>':''}</div><div class="sub">${esc(C.desc)}</div><div class="qrow"><span class="qk">条件</span><span>${esc(C.cond)}<br>${hbar(ratio/C.need,ok?'high':'')}</span><b class="${ok?'pos':'neg'}">${Math.round(ratio*100)}%</b></div>${cur.id===id?'':`<button class="btn sm" data-act="concept" data-v="${id}" ${S.phase==='prep'?'':'disabled'} type="button">このコンセプトにする${cur.n>0?`（${man(CONCEPT_COST)}）`:''}</button>`}</div>`}).join('');
   if(cur.id)h+=`<button class="btn sm ghost" data-act="concept" data-v="" type="button">コンセプトをやめる</button>`;
+  return h;
+}
+
+/* ---------- チェーン（2号店・お店の切り替え） ---------- */
+function storeCardHTML(x){
+  const st=x.st,ms=st.objs.filter(o=>o.kind==='m').length,meta=x.meta,last=meta.last,mon=meta.mon,cd=sheetData&&typeof sheetData==='object'?sheetData:{};
+  const goOn=x.go&&S.day>=x.go.start&&S.day<x.go.start+x.go.len;
+  let h=`<div class="store ${x.home?'cur':''}"><div class="sto-h"><b>${esc(storeLabel(st))}</b>${x.home?'<span class="tag new">いま見ているお店</span>':''}${goOn?`<span class="tag">${esc(goLabel(x.go))}中</span>`:''}</div>`;
+  h+=`<div class="ds">${LOCS[st.loc].name}・${st.W}×${st.H}マス・台${ms}台・店員${x.staff.length}人・家賃${yen(st.W*st.H*LOCS[st.loc].rentTile)}／日</div>`;
+  if(x.home)h+=`<div class="sub">このお店はあなたが直接切り盛りしています</div>`;
+  else{
+    const m=x.staff.find(s=>s.id===meta.mgr);
+    h+=m?`<div class="tm-rv">${ptImg(faceFromLook(staffLook({s:m,role:m.role}),m.id),'happy',ROLES[m.role].col,'sm')}<div><b>店長 ${esc(m.name)}</b> <span class="sub">Lv${m.lv}・${PERS[m.pers].name}</span><br><span class="sub">店長の腕でお客さんの数が変わります</span></div></div>`:`<div class="box neg">店長がいません。お客さんが大きく減ります</div>`;
+  }
+  if(last)h+=`<div class="stats sto-s"><span>昨日 来店<b>${last.vis}</b>人</span><span>利益 <b class="${last.net>=0?'pos':'neg'}">${sgn(last.net)}</b></span>${mon?`<span>今月 <b class="${mon.net>=0?'pos':'neg'}">${sgn(mon.net)}</b></span>`:''}</div>`;
+  if(!x.home){
+    const b=x.b;
+    h+=`<div class="lbl">方針</div><div class="chips">${Object.entries(POLICY).map(([k,P])=>`<button class="chip ${b.pol===k?'cur':''}" data-act="ch-pol" data-id="${b.id}" data-v="${k}" type="button">${P.name}</button>`).join('')}</div><div class="sub">${esc(POLICY[b.pol].desc)}</div>`;
+    if(cd.mgrPick===b.id){
+      const c=b.staff.filter(s=>s.lv>=3);
+      h+=`<div class="chips">${c.map(s=>`<button class="chip ${s.id===b.mgr?'cur':''}" data-act="ch-mgr-set" data-id="${b.id}" data-v="${s.id}" type="button">${esc(s.name)} Lv${s.lv}</button>`).join('')||'<span class="sub">Lv3以上の店員がいません</span>'}</div>`;
+    }
+    h+=cd.sellAsk===b.id?`<div class="box">本当に${esc(storeLabel(st))}を売りますか？ 店長はいまのお店に戻ってきます。</div><div class="actions"><button class="btn sm" data-act="ch-sell-no" type="button">やめる</button><button class="btn sm danger" data-act="ch-sell-yes" data-id="${b.id}" type="button">売る</button></div>`
+      :`<div class="actions"><button class="btn sm primary" data-act="ch-view" data-id="${b.id}" ${S.phase==='prep'?'':'disabled'} type="button">このお店を見る</button><button class="btn sm" data-act="ch-mgr" data-id="${b.id}" type="button">店長を替える</button><button class="btn sm ghost wide2" data-act="ch-sell" data-id="${b.id}" type="button">このお店を売る</button></div>`;
+  }
+  return h+'</div>';
+}
+function newBranchHTML(){
+  const cd=sheetData&&typeof sheetData==='object'&&sheetData.nb2?sheetData.nb2:{loc:'kogai',size:1,offer:null,mgr:null};
+  const rk=rankNo();
+  let h=`<div class="lbl">新しいお店を出す（${storeCount()+1}軒目）</div><div class="box">新しいお店は、あなたの店員から<b>店長（Lv${MGR_LV}以上）</b>を1人連れていきます。ほかの店員は自動で採用されます。店長が「方針」にそって切り盛りし、毎日の利益がまとめて入ります。グランドオープンから始まります。</div>`;
+  h+=`<div class="chips">${Object.entries(LOCS).map(([k,L])=>`<button class="chip ${!cd.offer&&cd.loc===k?'cur':''}" data-act="nb2" data-k="loc" data-v="${k}" ${rk<L.rank?'disabled':''} type="button">${L.name}${rk<L.rank?`(ランク${L.rank})`:''}</button>`).join('')}</div>`;
+  h+=`<div class="chips">${BUILD_SIZES.map((z,i)=>`<button class="chip ${!cd.offer&&cd.size===i?'cur':''}" data-act="nb2" data-k="size" data-v="${i}" ${rk<z.rank?'disabled':''} type="button">${z.W}×${z.H}${rk<z.rank?`(ランク${z.rank})`:''}</button>`).join('')}</div>`;
+  const offers=S.offers.filter(o=>rk>=LOCS[o.loc].rank);
+  if(offers.length)h+=`<div class="sub">居抜き物件で出すこともできます（台と設備つき）</div><div class="chips">${offers.map(o=>`<button class="chip ${cd.offer===o.id?'cur':''}" data-act="nb2" data-k="offer" data-v="${o.id}" type="button">居抜き：${LOCS[o.loc].name} ${o.W}×${o.H}</button>`).join('')}</div>`;
+  const offer=cd.offer?S.offers.find(o=>o.id===cd.offer):null,z=BUILD_SIZES[cd.size];
+  const spec=offer?{offer}:{loc:cd.loc,W:z.W,H:z.H},c=branchCost(spec);
+  h+=`<div class="box">${offer?`居抜き（${LOCS[offer.loc].name}・${offer.W}×${offer.H}マス・元${esc(offer.from||'空き店舗')}）`:`${LOCS[cd.loc].name}・${z.W}×${z.H}マスに新築`}<br>台 約${c.n}台・${offer?'物件の値段':'土地と建物・台一式'} ${man(c.land)}＋店員の採用 ${man(c.hire)}<br><b>合計 ${man(c.total)}</b>　（資金 ${man(S.money)}）</div>`;
+  const cands=mgrCands();
+  h+=`<div class="lbl">新しいお店の店長</div>`+(cands.length?`<div class="chips">${cands.map(s=>`<button class="chip ${cd.mgr===s.id?'cur':''}" data-act="nb2" data-k="mgr" data-v="${s.id}" type="button">${s.title?TITLES[s.title].name+' ':''}${esc(s.name)} Lv${s.lv}</button>`).join('')}</div>`:`<div class="empty">Lv${MGR_LV}以上の店員がいません。店員を育てると、新しいお店の店長にできます（副店長がおすすめ）。</div>`);
+  h+=`<button class="btn ${cands.length&&cd.mgr&&S.money>=c.total?'primary':''}" data-act="nb2-open" ${cands.length&&cd.mgr&&S.money>=c.total&&S.phase==='prep'?'':'disabled'} type="button">この内容で出店する</button>`;
+  return h;
+}
+function chainPanel(){
+  ensureHome();
+  const stores=allStores(),lastSum=stores.reduce((a,x)=>a+(x.meta.last?x.meta.last.net:0),0),monSum=stores.reduce((a,x)=>a+(x.meta.mon?x.meta.mon.net:0),0);
+  let h=`<div class="box stats"><span>お店 <b>${stores.length}</b>／${MAX_STORES}軒</span><span>昨日の合計 <b class="${lastSum>=0?'pos':'neg'}">${sgn(lastSum)}</b></span><span>今月の合計 <b class="${monSum>=0?'pos':'neg'}">${sgn(monSum)}</b></span></div>`;
+  h+=stores.map(storeCardHTML).join('');
+  if(storeCount()<MAX_STORES){
+    if(rankNo()<BRANCH_RANK)h+=`<div class="box">ランク${BRANCH_RANK}「${esc(RANKS[BRANCH_RANK-1].n)}」になると、2号店を出せます。</div>`;
+    else h+=newBranchHTML();
+  }
+  h+=`<div class="sub">・見ていないお店は、店長が方針にそって設定を決めます。利益はまとめてあなたの資金に入ります。<br>・「このお店を見る」で、そのお店を直接切り盛りできます（準備中だけ）。いま見ているお店は、店長がいないあいだ「ふつう」の方針で動きます。<br>・ノルマの粗利には、すべてのお店の粗利が入ります。</div>`;
   return h;
 }
 
@@ -1031,7 +1087,7 @@ function menuSheet(confirm){
   let h=`<div class="actions"><button class="btn sm" data-act="menu-guide" type="button">遊び方</button><button class="btn sm" data-act="menu-bgm" type="button">BGM ${prefs.bgm?'ON':'OFF'}</button><button class="btn sm" data-act="menu-sfx" type="button">効果音 ${prefs.sfx?'ON':'OFF'}</button><button class="btn sm" data-act="menu-manage" type="button">経営の記録</button><button class="btn sm" data-act="menu-tweet" type="button">つぶやき ${prefs.tweets?'ON':'OFF'}</button><button class="btn sm" data-act="menu-chorei" type="button">毎朝の朝礼 ${prefs.chorei!==false?'ON':'OFF'}</button><button class="btn sm wide2" data-act="menu-mdb" type="button">機種データベース（名前・出玉率・確率）</button><button class="btn sm wide2" data-act="menu-transfer" type="button">セーブの引っ越し（${window.APP_MODE?'コピー・読み込み':'アプリ版へ移す'}）</button></div>`;
   if(window.APP_MODE)h+=`<div class="inrow"><span class="sub" style="flex:1;align-self:center">バージョン ${esc(window.APP_VERSION||'')}</span><button class="btn sm" data-act="menu-update" type="button">最新版か確認</button></div>`;
   h+=`<div class="lbl">画面の向き（縦持ちのとき）</div><div class="chips">${[['auto','横画面にする'],['flip','横画面（反対向き）'],['off','縦のまま']].map(([k,l])=>`<button class="chip ${prefs.rot===k?'cur':''}" data-act="menu-rot" data-v="${k}" type="button">${l}</button>`).join('')}</div>`;
-  h+=`<label class="lbl" for="mName">お店の名前</label><div class="inrow"><input class="field" id="mName" maxlength="10" value="${esc(S.name)}"><button class="btn sm" data-act="menu-rename" type="button">変更</button></div>`;
+  h+=`<label class="lbl" for="mName">${G.name?'このお店の名前':'お店の名前'}</label><div class="inrow"><input class="field" id="mName" maxlength="12" value="${esc(storeLabel(G))}"><button class="btn sm" data-act="menu-rename" type="button">変更</button></div>`;
   h+=confirm?`<div class="box">本当にデータを消して最初からやり直しますか？元には戻せません。</div><div class="actions"><button class="btn sm" data-act="menu-reset-no" type="button">やめる</button><button class="btn sm danger" data-act="restart" type="button">消してやり直す</button></div>`:`<button class="btn danger" data-act="menu-reset" type="button">データを消して最初から</button>`;
   return ['メニュー',h];
 }
@@ -1160,6 +1216,19 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'sk-learn':{const why=learnSkill(v);if(why){toast(why);sfx('bad');break}sfx('good');toast(`「${SKB[v].name}」を覚えた！（${sk(v)}段階目）`);save();refreshAll();break}
     case 'st-promote':{const s=findStaff(id);if(s&&promote(s,v)){sfx('fanfare');toast(`${s.name}さんを${TITLES[v].name}にしました！`);save();refreshAll()}break}
     case 'concept':{const why=setConcept(v||null);if(why){toast(why);sfx('bad');break}sfx('fanfare');telop('コンセプト決定！',v?CONCEPTS[v].name:'コンセプトなし','good');save();refreshAll();break}
+    case 'ch-pol':{const b=S.branches.find(x=>x.id===Number(id));if(b){b.pol=v;sfx('tap');save();renderSheet()}break}
+    case 'ch-mgr':{sheetData={tab:'chain',mgrPick:Number(id)};renderSheet();break}
+    case 'ch-mgr-set':{if(setBranchMgr(Number(id),Number(v))){sfx('good');toast('店長を替えました');save()}sheetData={tab:'chain'};renderSheet();break}
+    case 'ch-sell':sheetData={tab:'chain',sellAsk:Number(id)};renderSheet();break;
+    case 'ch-sell-no':sheetData={tab:'chain'};renderSheet();break;
+    case 'ch-sell-yes':{const n=sellBranch(Number(id));if(n){sfx('cash');toast(`${man(n)}で売りました`);save()}sheetData={tab:'chain'};refreshAll();break}
+    case 'ch-view':{const why=switchStore(Number(id));if(why){toast(why);sfx('bad');break}closeSheet();tool='view';moveSel=null;resizeCanvas();fitCam();save();refreshAll();sfx('fanfare');telop(storeLabel(G),'このお店を見に来ました','good');break}
+    case 'nb2':{const cur=sheetData&&sheetData.nb2||{loc:'kogai',size:1,offer:null,mgr:null},k=b.dataset.k,nb={...cur};
+      if(k==='loc'){nb.loc=v;nb.offer=null}else if(k==='size'){nb.size=Number(v);nb.offer=null}else if(k==='offer')nb.offer=Number(v);else if(k==='mgr')nb.mgr=Number(v);
+      sheetData={tab:'chain',nb2:nb};sfx('tap');renderSheet();break}
+    case 'nb2-open':{const nb=sheetData&&sheetData.nb2;if(!nb)break;const offer=nb.offer?S.offers.find(o=>o.id===nb.offer):null,z=BUILD_SIZES[nb.size];
+      const why=openBranch(offer?{offer}:{loc:nb.loc,W:z.W,H:z.H},nb.mgr);if(why){toast(why);sfx('bad');break}
+      save();sheetData={tab:'chain'};refreshAll();sfx('fanfare');telop('新しいお店を出店！',storeLabel(S.branches[S.branches.length-1].st),'good');break}
     case 'st-hire':{const c=S.cands.find(x=>x.id===Number(id));if(c){hireStaff(c);S.cands=S.cands.filter(x=>x!==c);sfx('good');toast(`${c.name}さんを雇いました`);save();refreshAll()}break}
     case 'st-fire':{const s=findStaff(id);if(s){S.staff=S.staff.filter(x=>x!==s);sfx('tap');toast(`${s.name}さんがやめました`);save();refreshAll()}break}
     case 'st-train':{const s=findStaff(id);if(!s)break;const c=trainCost(s);if(S.money<c){toast('お金が足りません');sfx('bad');break}
@@ -1174,7 +1243,7 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'menu-manage':openSheet('manage','log');break;
     case 'menu-bgm':prefs.bgm=!prefs.bgm;savePrefs();audio();setVolumes();if(prefs.bgm)playBgm(bgm.want||'prep');renderSheet();break;
     case 'menu-sfx':prefs.sfx=!prefs.sfx;savePrefs();audio();setVolumes();renderSheet();if(prefs.sfx)sfx('good');break;
-    case 'menu-rename':{const n=($('#mName').value||'').trim().slice(0,10);if(n){S.name=n;save();refreshAll();toast('お店の名前を変えました')}break}
+    case 'menu-rename':{const n=($('#mName').value||'').trim().slice(0,12);if(n){if(G.name)G.name=n;else S.name=n;save();refreshAll();toast('お店の名前を変えました')}break}
     case 'menu-reset':sheetData=true;renderSheet();break;
     case 'menu-update':checkUpdate(true);break;
     case 'menu-reset-no':sheetData=false;renderSheet();break;

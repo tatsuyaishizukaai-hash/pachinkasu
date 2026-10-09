@@ -573,6 +573,7 @@ function closeDay(){
     rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc,exch:D.exch,completes:D.completes,util,brokenLeft};
   S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000,full:D.full});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
+  chainEndDay(R);
   S.negDays=S.money<0?(S.negDays||0)+1:0;
   judgeMissions(R);monAcc(R);yrAcc(R);staffEndDay(R);
   dayEndFeatures(R);

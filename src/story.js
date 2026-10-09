@@ -34,7 +34,7 @@ const CH_NAME=n=>n>=5?'最終章':`第${n}章`;
 const story=()=>S.story;
 const eqMachines=()=>machines().reduce((a,m)=>a+(m.rate==='lo'?0.25:1),0);
 /* 店の大きさの目安（立地の人の多さ × 台数）。粗利ノルマはこれに比例させる */
-const storeScale=()=>LOCS[G.loc].town*capF(eqMachines());
+const storeScale=()=>LOCS[G.loc].town*capF(eqMachines())+(S.branches||[]).reduce((a,b)=>a+LOCS[b.st.loc].town*capF(eqOf(b.st)),0);
 const storeCount=()=>1+((S.branches||[]).length);
 const storeAt=loc=>G.loc===loc||(S.branches||[]).some(b=>b.st&&b.st.loc===loc);
 const ownerSub=()=>S.story&&S.story.bought?'会長（前のオーナー）':'オーナー';
@@ -96,7 +96,7 @@ function objProg(id){
     case 'eki':o={label:'駅前に店を構える',cur:storeAt('ekimae')?1:0,max:1,txt:storeAt('ekimae')?'駅前に出店済み':'経営 → 物件 から駅前に移転（ランク3から）'};break;
     case 'ekiTop20':o={label:'駅前の店でシェア1位の日を20日つくる',cur:Math.min(20,c.ekiTop),max:20};break;
     case 'stores3':o={label:'お店を3軒にする',cur:Math.min(3,storeCount()),max:3};break;
-    case 'chainBlack':o={label:'3軒そろって黒字の月をつくる',cur:st.chainBlack?1:0,max:1};break;
+    case 'chainBlack':o={label:'3軒そろって黒字の月をつくる',cur:st.chainBlack?1:0,max:1,txt:st.chainBlack?'達成！':storeCount()<3?'まずお店を3軒に（経営 → チェーン）':`今月：${allStores().map(x=>`${storeLabel(x.st).replace(S.name,'').trim()||'本店'}${x.meta.mon&&x.meta.mon.net>0?'○':'×'}`).join('・')}`};break;
     case 'rank5':o={label:'ランク5「伝説のホール」になる',cur:Math.min(5,rankNo()),max:5,txt:`来店者の合計 ${S.totalVisitors.toLocaleString('ja-JP')}／${RANKS[4].need.toLocaleString('ja-JP')}人`};break;
     case 'boss':{
       const B=BOSS_BY[ch.boss],r=bossRival(),p=S.rivalPlans.find(x=>x.boss===ch.boss),shop=r?r.name:p?p.shop:B.shop;
@@ -136,7 +136,7 @@ function storyEndDay(R){
   const q=st.quota;
   if(q&&S.day>=q.from&&S.day<=q.to){
     if(D.isGo)q.go++;
-    else{q.g+=R.gross;q.uSum+=R.util;q.sSum+=storeScale();q.n++}
+    else{q.g+=R.gross+(R.branchGross||0);q.uSum+=R.util;q.sSum+=storeScale();q.n++}
   }
   /* シェア1位・ボスとの勝負 */
   const sh=D.shares||{},me=sh.me||0,top=Object.keys(sh).every(k=>k==='me'||sh[k]<me);
@@ -161,7 +161,9 @@ function storyEndDay(R){
   }
   /* 月末の査定 */
   if(q&&S.day>=q.to){
+    if(chainAllBlack()&&!st.chainBlack){st.chainBlack=true;news('チェーンの全店が、そろって黒字の月になった！','good')}
     const res=evaluateMonth();out.month=res;
+    res.stores=storeCount()>1?allStores().map(x=>({name:storeLabel(x.st),net:x.meta.mon?x.meta.mon.net:0,home:x.home})):null;
     out.steps.push({talk:monthTalk(res)});
     if(res.fired){out.fired=true;return}
   }

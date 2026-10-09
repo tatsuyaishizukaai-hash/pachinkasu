@@ -81,11 +81,11 @@ function drawShell(now){
   R(OX-2,OY,2,G.H*TS,'rgba(0,0,0,.25)');R(OX+gw,OY,2,G.H*TS,'rgba(0,0,0,.25)');
   /* 看板（電飾つき） */
   ctx.setTransform(1,0,0,1,0,0);ctx.font='9px "Dela Gothic One","DotGothic16",sans-serif';
-  const tw=Math.min(gw-24,ctx.measureText(S.name).width+20),sx=Math.round(OX+gw/2-tw/2);
+  const sname=storeLabel(G),tw=Math.min(gw-24,ctx.measureText(sname).width+20),sx=Math.round(OX+gw/2-tw/2);
   R(sx-2,1,tw+4,17,K);R(sx-1,2,tw+2,15,'#7f1d1d');R(sx,3,tw,13,'#ff2d55');R(sx,3,tw,2,'#ff7a93');R(sx,14,tw,2,'#c81e3a');
   const blink=Math.floor(now/400)%2;
   for(let x=sx+1;x<sx+tw-1;x+=3){R(x,2,1,1,(x/3+blink)%2<1?'#ffe14f':'#fff');R(x+1,16,1,1,(x/3+blink)%2<1?'#fff':'#ffe14f')}
-  txt(S.name,OX+gw/2,9.6,9,'#fff','"Dela Gothic One","DotGothic16",sans-serif',2);
+  txt(sname,OX+gw/2,9.6,9,'#fff','"Dela Gothic One","DotGothic16",sans-serif',2);
   /* コンセプトのリボン */
   const cid=S.concept&&S.concept.id;
   if(cid&&CONCEPTS[cid]){const C=CONCEPTS[cid],on=conceptOn();ctx.setTransform(1,0,0,1,0,0);ctx.font='4.5px "DotGothic16",sans-serif';const w=Math.min(gw-30,ctx.measureText(C.name).width+12),x0=Math.round(OX+gw/2-w/2);

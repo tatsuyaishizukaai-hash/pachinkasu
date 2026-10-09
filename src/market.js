@@ -82,7 +82,8 @@ const rentOf=()=>G.W*G.H*LOCS[G.loc].rentTile;
 function genLayout(W,H,n){
   const objs=[],doors=[];let placed=0,row=0;
   const L=Math.min(10,W-2);
-  const pPool=MODELS.filter(m=>m.k==='p'&&m.rank<=3),sPool=MODELS.filter(m=>m.k==='s'&&m.rank<=3);
+  const ok=m=>(m.gen||1)<=(S?S.gen:1)&&(!S||modelOnSale(m.id));
+  const pPool=MODELS.filter(m=>m.k==='p'&&m.rank<=3&&ok(m)),sPool=MODELS.filter(m=>m.k==='s'&&m.rank<=3&&ok(m));
   for(let y=2;y+2<=H-2&&placed<n;y+=4,row++){
     const segStart=[];for(let x=1;x<=W-2;x++){if((x-1)%(L+1)===L)continue;segStart.push(x)}
     let segIdx=0,prev=-9,kind=row%2?'s':'p',model=pick(kind==='p'?pPool:sPool).id,rate=Math.random()<0.3?'lo':'hi';
