@@ -28,7 +28,7 @@ function boot(data){
   if(src){try{ok=load(src)}catch(e){console.error(e);ok=false}}
   if(!ok){newGame('パーラー満天');showTitle()}
   applyLayout();fitCam();refreshAll();
-  if(ok&&S.incidents&&S.incidents.length)setTimeout(()=>runIncidents(()=>refreshAll()),700);
+  if(ok)afterLoad(700);
   let rzT=0;const onRz=()=>{clearTimeout(rzT);rzT=setTimeout(()=>{cam.fit=true;applyLayout()},80)};
   window.addEventListener('resize',onRz);window.addEventListener('orientationchange',onRz);
   requestAnimationFrame(loop);
@@ -40,4 +40,5 @@ try{window.claude?.hot?.snapshot?.(()=>({save:S?(S.phase==='open'?openSnap:ser()
 window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
 window.__dbg={MB,mdb:()=>mdbEdits,playBgm,ac:()=>AC&&AC.state,eventTargets,machines,hireStaff,makeCandidate,needStaff,staffOf,forecast,decorRate,addObj,newMachine,validate,layoutChanged,openRivals,dayInfo,portraitURL,BOSSES,BOSS_BY,scheduleRival,talk,speaker,closeDay,rivalAttract,get G(){return G},get islands(){return islands}};
 window.__perf=PERF;
+window.__dbg.ev=src=>eval(src);   /* テスト用：ゲームの中の変数を読む */
 window.__game={get S(){return S},get custs(){return custs},get D(){return D},get staffA(){return staffA},get cam(){return cam},startDay,closeSheet,openSheet,ff:n=>{for(let i=0;i<n&&S.phase==='open';i++)update(1)}};

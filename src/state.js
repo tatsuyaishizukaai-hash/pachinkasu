@@ -100,7 +100,9 @@ function newGame(name){
   S.weather.today=rollWeather(1);S.weather.tomorrow=rollWeather(2);
   refreshCands(true);refreshOffers(true);
   S.go={type:'grand',start:1,len:3,scores:[]};
+  const kin=S.rivals.find(r=>r.boss==='kinjo');if(kin)kin.next=true;   /* ゴールデン会館は隣の店 */
   undoStack=[];layoutChanged();
+  storyInit(false);
 }
 
 /* ---------- 保存 ---------- */
@@ -119,7 +121,9 @@ function load(str){
   if(!o||(o.v!==2&&o.v!==3)||!o.st||!Array.isArray(o.st.objs))return false;
   S=o;fillDefaults();S.phase='prep';bindStore();
   G.objs.forEach(m=>{if(m.kind==='m')m.today=blank()});
-  undoStack=[];layoutChanged();return true;
+  undoStack=[];layoutChanged();
+  if(!S.story)storyInit(true);   /* ストーリーより前のセーブ */
+  return true;
 }
 
 /* ---------- 配置・島 ---------- */

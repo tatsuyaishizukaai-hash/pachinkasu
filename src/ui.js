@@ -40,6 +40,7 @@ function refreshHud(){
   setT('#hWeather',WEATHER[S.weather.today].name).dataset.w=S.weather.today;
   setT('#hMoney',yen(S.money)).classList.toggle('neg',S.money<0);
   setT('#hRep',String(Math.round(S.rep)));setT('#hTrust',String(Math.round(S.trust)));setT('#hDecor',stars());
+  const qc=$('#quotaChip'),qh=quotaChipHTML();if(qc._h!==qh){qc.innerHTML=qh;qc._h=qh;qc.hidden=!qh}
   if(S.phase==='open'&&D){const t=D.coin-D.out+D.drink-D.goto;const e=setT('#hToday','今日 '+sgn(t));e.className='today '+(t>=0?'pos':'neg')}
   else{const e=setT('#hToday',S.loan?'借入 '+man(S.loan):'');e.className='today sub'}
 }
@@ -273,8 +274,11 @@ function swapModel(m,id){
   if(k==='s'){if(!m.set)m.set=2;m.nail=undefined}else{if(m.nail==null)m.nail=0;m.set=undefined}
   layoutChanged();floatAt(m.x,m.y,'新台！','#ff2d55');sfx('good');save();refreshAll();
 }
+/* ごほうびの床は、移転しても使える */
+const ownedAnyFloor=id=>G.ownedFloors.includes(id)||(S.story&&S.story.cleared.some(c=>(CHAPTERS[c.ch].reward||{}).floor===id));
 function buyFloor(id){
   const f=FB[id];pushUndo();
+  if(f.reward&&ownedAnyFloor(id)&&!G.ownedFloors.includes(id))G.ownedFloors.push(id);
   if(!G.ownedFloors.includes(id)){if(S.money<f.price){undoStack.pop();toast('お金が足りません');sfx('bad');return}S.money-=f.price;G.renoSpend+=f.price;G.ownedFloors.push(id)}
   G.floor=id;sfx('place');save();refreshAll();
 }
@@ -286,11 +290,11 @@ function buyWall(id){
 
 /* ---------- シート共通 ---------- */
 let sheetAt=0;
-function openSheet(kind,data){sheetAt=performance.now();sheetKind=kind;sheetData=data;renderSheet();$('#sheet').hidden=false;$('#scrim').hidden=false;$('#sheetBody').scrollTop=0;$('#sheet').classList.toggle('tall',kind==='report'||kind==='guide'||kind==='manage'||kind==='list'||kind==='hall'||kind==='mdb')}
+function openSheet(kind,data){sheetAt=performance.now();sheetKind=kind;sheetData=data;renderSheet();$('#sheet').hidden=false;$('#scrim').hidden=false;$('#sheetBody').scrollTop=0;$('#sheet').classList.toggle('tall',kind==='report'||kind==='guide'||kind==='manage'||kind==='list'||kind==='hall'||kind==='mdb'||kind==='month'||kind==='end')}
 function closeSheet(){
   const was=sheetKind,wasData=sheetData;
   $('#sheet').hidden=true;$('#scrim').hidden=true;sheetKind=null;sheetData=null;panelSel=null;
-  if(was==='report')afterReport();
+  if(was==='report'||was==='month')afterReport();
   if(was==='transfer'&&wasData==='title')showTitle();
 }
 function renderSheet(){
@@ -312,6 +316,8 @@ function renderSheet(){
     case 'transfer':r=transferSheet();break;
     case 'hall':r=hallSheet(sheetData);break;
     case 'mdb':r=mdbSheet(sheetData);break;
+    case 'month':r=monthSheet(sheetData);break;
+    case 'fired':r=firedSheet();break;
     default:return;
   }
   if(!r||!sheetKind)return;
@@ -385,9 +391,9 @@ function shopSheet(tab){
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
     h+=`<div class="lbl">壁に付ける（マスを使わない）</div>`+WALLITEMS.map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="w" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank)).join('');
-    h+=`<div class="lbl">床に置く</div>`+DECOR.map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="d" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank)).join('');
+    h+=`<div class="lbl">床に置く</div>`+DECOR.filter(x=>!x.reward).map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="d" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank)).join('');
   }else if(tab==='f'){
-    h+=`<div class="lbl">床（いちど買えば無料で切り替え）</div>`+FLOORS.map(x=>{const own=G.ownedFloors.includes(x.id),cur=G.floor===x.id;return row(`linear-gradient(135deg,${x.a} 50%,${x.b} 50%)`,x.name,`内装＋${x.appeal}`,cur?'<span class="sub">使用中</span>':`<button class="btn sm" data-act="floor" data-id="${x.id}" type="button">${own?'使う':yen(x.price)}</button>`)}).join('');
+    h+=`<div class="lbl">床（いちど買えば無料で切り替え）</div>`+FLOORS.map(x=>{const own=G.ownedFloors.includes(x.id)||(x.reward&&ownedAnyFloor(x.id)),cur=G.floor===x.id;return row(`linear-gradient(135deg,${x.a} 50%,${x.b} 50%)`,x.name+(x.reward?' <span class="tag new">ごほうび</span>':''),`内装＋${x.appeal}${x.reward&&!own?`・${esc(x.reward)}`:''}`,cur?'<span class="sub">使用中</span>':x.reward&&!own?'<span class="sub">まだ</span>':`<button class="btn sm" data-act="floor" data-id="${x.id}" type="button">${own?'使う':yen(x.price)}</button>`,x.reward&&!own)}).join('');
     h+=`<div class="lbl">壁</div>`+WALLS.map(x=>{const own=G.ownedWalls.includes(x.id),cur=G.wall===x.id;return row(`linear-gradient(90deg,${x.c} 50%,${x.d} 50%)`,x.name,`内装＋${x.appeal}`,cur?'<span class="sub">使用中</span>':`<button class="btn sm" data-act="wall" data-id="${x.id}" type="button">${own?'使う':yen(x.price)}</button>`)}).join('');
   }else if(tab==='s'){
     const gs=storageGroups();
@@ -499,9 +505,10 @@ function rivalCard(r,fc){
   return h+`<div class="sub tdesc">${esc(T.desc)}</div></div>`;
 }
 function manageSheet(tab){
-  tab=tab||'staff';
-  let h=tabs([['staff','店員'],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
-  if(tab==='staff'){
+  tab=tab||'story';
+  let h=tabs([['story','ストーリー'],['staff','店員'],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
+  if(tab==='story')h+=storyPanel();
+  else if(tab==='staff'){
     const need=needStaff();
     h+=`<div class="box stats">${Object.entries(ROLES).map(([r,v])=>{const n=staffOf(r).length,ok=n>=need[r];return `<span>${v.name} <b class="${ok?'pos':'neg'}">${n}</b>／目安${need[r]}</span>`}).join('')}<span>給料 <b>${yen(wagesTotal())}</b>／日</span></div>`;
     h+=`<div class="lbl">いまの店員</div>`;
@@ -545,8 +552,8 @@ function manageSheet(tab){
     h+=`<div class="lbl">借りる</div><div class="chips">${[500000,1000000,3000000,10000000].map(n=>`<button class="chip" data-act="bk-borrow" data-v="${n}" ${room<n?'disabled':''} type="button">${man(n)}</button>`).join('')}</div>`;
     h+=`<div class="lbl">返す</div><div class="chips">${[500000,1000000,3000000].map(n=>`<button class="chip" data-act="bk-repay" data-v="${n}" ${S.loan<=0||S.money<Math.min(n,S.loan)?'disabled':''} type="button">${man(n)}</button>`).join('')}<button class="chip" data-act="bk-repay" data-v="all" ${S.loan<=0||S.money<S.loan?'disabled':''} type="button">全額</button></div>`;
   }else if(tab==='goal'){
-    const left=Math.max(0,END_DAY-S.day+1),done=GOALS.filter(g=>S.goals[g.id]).length;
-    h+=`<div class="burstcard gold"><div class="bc-main">伝説のホールを目指せ</div><div class="bc-sub">${S.ended?(S.ended.type==='clear'?'達成！伝説のホールになりました':'期限が過ぎました（このまま続けられます）'):`2029年3月31日までにランク5「伝説のホール」へ（あと${left}日）`}</div></div>`;
+    const done=GOALS.filter(g=>S.goals[g.id]).length;
+    h+=`<div class="box">ストーリーとは別の「やりこみ目標」です。達成するとボーナスがもらえます。ストーリーの目標は「ストーリー」のタブにあります。</div>`;
     h+=`<div class="sub">目標 ${done}/${GOALS.length} 達成・スコア ${score().toLocaleString('ja-JP')}</div>`;
     h+=GOALS.map(g=>`<div class="goal ${S.goals[g.id]?'done':''}"><span class="ck">${S.goals[g.id]?'✓':''}</span><span>${esc(g.name)}</span><span class="rw">${S.goals[g.id]?dateStr(S.goals[g.id]):'ボーナス'+man(g.reward)}</span></div>`).join('');
     if(S.yearLog.length)h+=`<div class="lbl">年間ランキング</div>`+S.yearLog.map(y=>`<div class="news"><span>${y.year-1}年度</span>${y.place}位</div>`).join('');
@@ -600,6 +607,8 @@ function reportSheet(R){
   if(R.goals&&R.goals.length)h+=R.goals.map(g=>`<div class="rankup">目標達成「${esc(g.name)}」<br><span>ボーナス ${man(g.reward)}</span></div>`).join('');
   if(R.year)h+=`<div class="box col"><div class="lbl">${R.year.year-1}年度 年間ランキング</div>${R.year.rows.map((r,i)=>`<div>${i+1}位 ${r.me?'<b>':''}${esc(r.name)}${r.me?'</b>':''}（シェア${Math.round(r.share*100)}%）</div>`).join('')}${R.year.bonus?`<div class="pos">賞金 ${man(R.year.bonus)}</div>`:''}</div>`;
   if(R.morning&&R.morning.length)h+=R.morning.map(m=>`<div class="box ${m.good?'pos':'neg'}">${esc(m.title)}：${esc(m.sub)}</div>`).join('');
+  if(R.story&&R.story.month){const mo=R.story.month;h+=`<div class="box ${mo.pass?'pos':'neg'}">${mo.m}月の査定：<b>${mo.perfect?'完全達成':mo.pass?'合格':'不合格'}</b>${mo.bonus?`・ボーナス${man(mo.bonus)}`:''}</div>`}
+  else{const qi=quotaInfo();if(qi&&S.story.seen.prologue&&!S.story.fired)h+=`<div class="box stats"><span>${qi.q.m}月のノルマ（あと${qi.left}日）</span><span>粗利ペース <b class="${qi.okG?'pos':'neg'}">${qi.pace==null?'--':Math.round(qi.pace*100)+'%'}</b></span><span>稼働 <b class="${qi.okU?'pos':'neg'}">${qi.util==null?'--':Math.round(qi.util*100)+'%'}</b>／${Math.round(qi.q.util*100)}%</span><span>評判 <b class="${qi.okR?'pos':'neg'}">${Math.round(S.rep)}</b>／${qi.q.rep}</span></div>`}
   if(R.rankUp)h+=`<div class="rankup">ランクアップ！ ランク${R.rankNo}「${esc(R.rankUp)}」<br><span>新しい台・設備・物件が解放されました</span></div>`;
   const t=R.tomorrow;
   h+=`<div class="box tmr col"><div><b>明日 ${dateLong(R.day+1)}</b>　${WEATHER[t.weather].name}${t.info.tags.length?'・'+t.info.tags.join('・'):''}${t.go?'・オープン期間':''}</div>${t.rivals.map(x=>{const B=BOSS_BY[x.boss];return `<div class="tm-rv">${ptImg(B.face,B.ex,B.col,'sm')}<div><b class="neg">${esc(x.name)}が${esc(x.label)}</b><br><span class="sub">${esc(B.name)}「${esc(x.say)}」</span></div></div>`}).join('')}${(t.plans||[]).map(p=>`<div class="neg">${esc(p.shop)}のオープンまであと${p.open-R.day-1}日</div>`).join('')}</div>`;
@@ -618,10 +627,11 @@ function onDayClosed(R){
     if(R.rankUp){setTimeout(()=>{sfx('fanfare');telop('ランクアップ！',R.rankUp,'good')},R.go&&R.go.final?2000:300)}
   },350);
   applyLayout();
-  pendingEnding=R.ending||null;pendingMorning=R.morning||[];pendingTalks=R.talks||[];
+  pendingStory=R.story||null;pendingMonth=R.story&&R.story.month||null;pendingMorning=R.morning||[];pendingTalks=R.talks||[];
 }
-let pendingEnding=null,pendingMorning=[],pendingTalks=[];
+let pendingStory=null,pendingMonth=null,pendingMorning=[],pendingTalks=[];
 function endSheet(type){
+  if(type==='story'||(type&&type.story))return storyEndSheet(!!(type&&type.confirm));
   const clear=type==='clear';
   return [clear?'エンディング':'3年が過ぎました',`<div class="burstcard ${clear?'gold':''}"><div class="bc-main">${clear?'伝説のホール誕生！':'営業3年の結果'}</div><div class="bc-sub">${esc(S.name)}・${dateLong(S.day-1)}</div></div>
 <div class="kpis"><div><b>${S.totalVisitors.toLocaleString('ja-JP')}</b><span>来店者の合計</span></div><div><b>${machines().length}</b><span>台数</span></div><div><b>${score().toLocaleString('ja-JP')}</b><span>スコア</span></div></div>
@@ -630,8 +640,12 @@ function endSheet(type){
 }
 function afterReport(){
   if((S.negDays||0)>=7){openSheet('over');return}
-  if(pendingEnding){const t=pendingEnding;pendingEnding=null;openSheet('end',t);sfx('fanfare');telop(t==='clear'?'伝説達成！':'3年経過','','good');return}
-  const steps=[done=>setTimeout(done,200)];
+  if(pendingMonth){const m=pendingMonth;pendingMonth=null;openSheet('month',m);sfx(m.pass?'stamp':'gagan');return}
+  const ps=pendingStory;pendingStory=null;
+  const steps=[done=>{inputBlock(300);setTimeout(done,200)}];
+  if(ps)for(const st of ps.steps){const f=storyStep(st);if(f)steps.push(f)}
+  if(ps&&ps.fired){steps.push(done=>{openSheet('fired');sfx('gagan');done()});pendingTalks=[];pendingMorning=[];runSeq(steps);return}
+  if(ps&&ps.ending){steps.push(done=>{openSheet('end','story');sfx('fanfare');telop('全国ホールアワード大賞！',S.name,'good');done()});pendingTalks=[];pendingMorning=[];runSeq(steps);return}
   for(const t of pendingTalks)steps.push(done=>talk(t,done));
   for(const m of pendingMorning){steps.push(telopStep(m.title,m.sub,m.good?'good':'bad'));if(m.talk)steps.push(done=>talk(m.talk,done))}
   pendingTalks=[];pendingMorning=[];
@@ -640,7 +654,99 @@ function afterReport(){
   runSeq(steps);
 }
 function overSheet(){
-  return ['倒産…',`<div class="burstcard bad"><div class="bc-main">倒産</div><div class="bc-sub">資金のマイナスが7日続きました</div></div><div class="box">${esc(S.name)}は${S.day-1}日間営業しました。来店者の合計は${S.totalVisitors.toLocaleString('ja-JP')}人でした。</div><button class="btn primary" data-act="restart" type="button">新しいお店で最初から</button>`];
+  return ['倒産…',`<div class="burstcard bad"><div class="bc-main">倒産</div><div class="bc-sub">資金のマイナスが7日続きました</div></div><div class="box">${esc(S.name)}は${S.day-1}日間営業しました。来店者の合計は${S.totalVisitors.toLocaleString('ja-JP')}人でした。</div>${retryBtn()}<button class="btn" data-act="restart" type="button">新しいお店で最初から</button>`];
+}
+
+/* ---------- ストーリー（章の目標・ノルマ・借金） ---------- */
+const pctTxt=v=>v==null?'--':Math.round(v*100)+'%';
+function quotaChipHTML(){
+  const st=S.story;if(!st||!st.seen.prologue||st.fired)return '';
+  const qi=quotaInfo();if(!qi)return '';
+  const q=qi.q,cls=(ok,has)=>has?(ok?'ok':'ng'):'';
+  const cards=!st.bought&&st.strikes?`<span class="q-cards">${'<i></i>'.repeat(st.strikes)}</span>`:'';
+  const g=goActive()?'<span class="q-i">オープン期間はノルマ対象外</span>':
+    `<span class="q-i ${cls(qi.okG,qi.pace!=null)}">粗利 ${pctTxt(qi.pace)}</span><span class="q-i ${cls(qi.okU,qi.util!=null)}">稼働 ${qi.util==null?'--':Math.round(qi.util*100)}/${Math.round(q.util*100)}%</span><span class="q-i ${cls(qi.okR,true)}">評判 ${Math.round(S.rep)}/${q.rep}</span>`;
+  return `<span class="q-h"><b>${CH_NAME(st.ch)}</b>${q.m}月の${st.bought?'目標':'ノルマ'}${cards}<em>あと${qi.left}日</em></span><span class="q-r">${g}</span>`;
+}
+function ownerSay(){
+  const st=S.story,qi=quotaInfo();
+  if(st.ch>=5)return ['smug',st.awardWon?'あんたは日本一の店長だよ。……胸を張りな':'全国一の店か。ここまで来たら、取ってきな'];
+  if(!st.bought&&st.strikes>=2)return ['angry','後がないよ。今月しくじったら、クビだからね'];
+  if(qi&&qi.pace!=null&&qi.q.n>=3&&qi.pace<0.9)return ['angry','粗利が足りないよ。このままだと未達だ。出しすぎじゃないのかい'];
+  if(qi&&qi.q.n>=3&&!qi.okU&&!qi.okR)return ['sad','お客が離れてるよ。稼働か評判、どっちかは何とかしな'];
+  if(st.debt>0&&S.money>st.debt*2)return ['smug','金はあるみたいだね。借金、そろそろ返したらどうだい'];
+  if(st.ch===3&&!st.bought&&S.money>=BUYOUT)return ['smug',`${man(BUYOUT)}、貯まったみたいじゃないか。いつでも買い取りに来な`];
+  if(qi&&qi.okG&&qi.okU&&qi.okR)return ['happy','いい調子だよ。この月は3つとも取れそうだね'];
+  return ['n',pick(['数字は嘘をつかないよ。毎日の日報をよく見な','お客の顔をよく見な。答えはそこにある','焦るんじゃないよ。でも、のんびりもしてられないよ'])];
+}
+function objRow(o){
+  const pc=o.max>1?Math.round(clamp(o.cur/o.max,0,1)*100):null;
+  return `<div class="obj ${o.done?'done':''}"><span class="ck">${o.done?'✓':''}</span><div class="ot"><div class="ol">${esc(o.label)}</div>${pc!=null&&!o.done?`<div class="bar2"><i style="width:${pc}%;background:var(--green)"></i></div>`:''}<div class="os">${o.max>1&&!o.done?`${o.max>=100000?man(o.cur)+'／'+man(o.max):o.cur+'／'+o.max}　`:''}${esc(o.txt||'')}</div></div>${o.boss?ptImg(o.boss.face,o.done?'sad':o.boss.ex,o.boss.col,'sm'):''}</div>`;
+}
+function storyPanel(){
+  const st=S.story,C=CHAPTERS[st.ch],prep=S.phase==='prep';
+  if(st.fired)return `<div class="box neg">あなたはクビになりました。</div>`;
+  let h=`<div class="chapcard"><span class="cn">${CH_NAME(st.ch)}</span><div class="ct">${esc(C.title)}</div><div class="cd">${esc(C.desc)}</div></div>`;
+  const [ex,say]=ownerSay();
+  h+=`<div class="tm-rv">${ptImg(OWNER.face,ex,OWNER.col)}<div><b>${esc(OWNER.name)}</b><span class="sub">（${ownerSub()}）</span><div class="say">「${esc(say)}」</div></div></div>`;
+  h+=`<div class="lbl">この章の目標（すべて達成でクリア）</div>`+chapterObjs().map(objRow).join('');
+  if(st.ch===5&&st.award){const parts=awardParts();if(parts)h+=`<div class="box col"><div class="lbl">審査の内わけ（${st.award.n}日分の平均）</div>${parts.map(p=>`<div class="qrow"><span>${p.k}</span>${hbar(p.pt/(p.k==='稼働率'?25:p.k==='評判'||p.k==='町のシェア'?20:p.k==='信用'?15:10))}<b>${p.fmt(p.v)}・${Math.round(p.pt)}点</b></div>`).join('')}</div>`}
+  const qi=quotaInfo();
+  if(qi){
+    const q=qi.q,word=st.bought?'目標':'ノルマ';
+    h+=`<div class="lbl">${q.m}月の${word}（あと${qi.left}日・ノルマに数える日 ${qi.count}日）</div>`;
+    const row=(k,cur,tgt,ok,has,note)=>`<div class="qrow"><span class="qk">${k}</span><span>${cur}<span class="sub">／${tgt}</span>${note?`<br><span class="sub">${note}</span>`:''}</span><b class="${has?(ok?'pos':'neg'):''}">${has?(ok?'達成ペース':'足りない'):'まだ'}</b></div>`;
+    h+=`<div class="box col">`
+      +row('粗利',man(q.g),man(qi.target),qi.okG,qi.pace!=null,qi.pace!=null?`ペース ${pctTxt(qi.pace)}・このままなら月末 約${man(qi.proj)}`:`1日あたり${man(q.dt)}`)
+      +row('稼働率',pctTxt(qi.util),Math.round(q.util*100)+'%',qi.okU,qi.util!=null,'営業時間のうち台が打たれていた割合（月の平均）')
+      +row('評判',Math.round(S.rep),q.rep,qi.okR,true,'月末の評判')
+      +`</div><div class="sub">合格 ＝ 粗利を達成 ＋ 稼働率か評判のどちらか。3つとも達成で「完全達成」（ボーナスが多い）。粗利 ＝ 売上 − 払い出し（＋交換差益）。グランドオープンなどオープン期間の日はノルマに数えません。</div>`;
+    if(!st.bought)h+=`<div class="box">不合格の回数 <span class="ycards">${[0,1,2].map(i=>`<i class="${i<st.strikes?(st.strikes>=2?'red':'on'):''}"></i>`).join('')}</span>　${st.strikes?`あと${3-st.strikes}回続けて不合格でクビ`:'3か月続けて不合格だとクビ。合格すると0に戻ります'}</div>`;
+  }
+  if(st.debt>0){
+    const can=n=>prep&&S.money>=Math.min(n,st.debt);
+    h+=`<div class="lbl">オーナーへの借金</div><div class="box">残り <b class="neg">${man(st.debt)}</b>（利息なし）　資金 ${yen(S.money)}${prep?'':'<br><span class="sub">返すのは閉店中だけです</span>'}</div>
+<div class="chips">${[100000,500000,1000000].map(n=>`<button class="chip" data-act="debt-pay" data-v="${n}" ${can(n)?'':'disabled'} type="button">${man(n)}返す</button>`).join('')}<button class="chip" data-act="debt-pay" data-v="all" ${prep&&S.money>=st.debt?'':'disabled'} type="button">全額返す</button></div>`;
+  }
+  if(st.ch>=3&&!st.bought){
+    h+=`<div class="lbl">お店の買い取り</div><div class="box">オーナーから<b>${man(BUYOUT)}</b>でお店を買い取ると、あなたがオーナーになります。ノルマは「目標」になり、届かなくてもクビにはなりません。</div><button class="btn ${S.money>=BUYOUT?'primary':''}" data-act="buy-store" ${prep&&S.money>=BUYOUT?'':'disabled'} type="button">お店を買い取る（${man(BUYOUT)}）</button>`;
+  }
+  if(st.log.length)h+=`<div class="lbl">これまでの査定</div><div class="mlog">${st.log.slice(-12).map(l=>`<span class="ml ${l.perfect?'pf':l.pass?'ok':'ng'}"><b>${l.m}月</b>${l.perfect?'完全':l.pass?'合格':'不合格'}</span>`).join('')}</div>`;
+  if(st.cleared.length)h+=`<div class="lbl">クリアした章</div>`+st.cleared.map(c=>`<div class="news good"><span>${dateStr(c.day)}</span>${CH_NAME(c.ch)}「${esc(CHAPTERS[c.ch].title)}」</div>`).join('');
+  return h;
+}
+function monthSheet(r){
+  const stamp=r.perfect?['完全達成','good gold']:r.pass?['合格','good']:['不合格','bad'];
+  const row=(k,ok,cur,tgt)=>`<div class="goal ${ok?'done':''}"><span class="ck">${ok?'✓':'×'}</span><span>${k}</span><span class="rw">${cur}／${tgt}</span></div>`;
+  let h=`<div class="stampbox final"><div class="stamp big ${stamp[1]}">${stamp[0]}</div><div><div class="lbl">${r.m}月の${r.owner?'査定':'成績'}</div><div class="sub">ノルマに数えた日 ${r.n}日${r.go?`（オープン期間${r.go}日は除く）`:''}</div></div></div>`;
+  h+=row('粗利',r.okG,man(r.g),man(r.target))+row('稼働率（平均）',r.okU,pctTxt(r.util),Math.round(r.utilT*100)+'%')+row('月末の評判',r.okR,Math.round(r.rep),r.repT);
+  if(r.bonus)h+=`<div class="rankup">${r.owner?'オーナー':'会長'}からボーナス<br><span>${man(r.bonus)}</span></div>`;
+  if(r.owner&&!r.pass)h+=r.fired?`<div class="box neg"><b>3か月続けて不合格。クビです…</b></div>`:`<div class="box neg">不合格 ${r.strikes}回目。あと${3-r.strikes}回続けて不合格だとクビになります</div>`;
+  if(!r.pass&&!r.fired){const tips=[];if(!r.okG)tips.push('粗利が足りないときは、設定や釘を少し下げる・高レートの台を増やす・人気の台を入れる');if(!r.okU)tips.push('稼働率は、お客さんが座りたくなる台（釘・設定・人気機種）と、イベントで上がります');if(!r.okR)tips.push('評判は、お客さんの満足（勝てた・きれい・待たされない）で上がります');h+=`<div class="sub">${tips.map(esc).join('<br>')}</div>`}
+  h+=`<button class="btn primary" data-act="month-next" type="button">次へ</button>`;
+  return [`${r.m}月の${r.owner?'査定':'成績'}`,h];
+}
+function retryBtn(){const sn=monthSnapInfo();return sn?`<button class="btn primary" data-act="snap-retry" type="button">${dateStr(sn.day)}の朝からやり直す<br><span class="sub">この月のはじめにもどります</span></button>`:''}
+function firedSheet(){
+  return ['クビ…',`<div class="burstcard bad"><div class="bc-main">解任</div><div class="bc-sub">3か月続けてノルマ未達</div></div>
+<div class="box">${esc(S.name)}の店長として${S.day-1}日間働きました。来店者の合計は${S.totalVisitors.toLocaleString('ja-JP')}人でした。</div>
+${retryBtn()}<button class="btn" data-act="restart" type="button">新しいお店で最初から</button>`];
+}
+function storyEndSheet(confirm){
+  const st=S.story,pf=st.log.filter(l=>l.perfect).length;
+  let h=`<div class="burstcard gold"><div class="bc-main">全国ホールアワード大賞</div><div class="bc-sub">${esc(S.name)}・${dateLong(S.day-1)}</div></div>
+<div class="kpis"><div><b>${S.totalVisitors.toLocaleString('ja-JP')}</b><span>来店者の合計</span></div><div><b>${S.day-1}</b><span>営業した日</span></div><div><b>${S.rivalLog.length}</b><span>倒したライバル</span></div></div>
+<div class="box col"><div class="lbl">あなたの歩み</div>${st.cleared.map(c=>`<div>${CH_NAME(c.ch)}「${esc(CHAPTERS[c.ch].title)}」…${dateStr(c.day)}</div>`).join('')}<div>最終章「全国ホールアワード」…${dateStr(S.day-1)}</div><div class="sub">査定の合格 ${st.passes}回（完全達成 ${pf}回）・スコア ${score().toLocaleString('ja-JP')}</div></div>
+<div class="box">おめでとうございます！ このまま営業を続けることもできます。</div>
+<button class="btn primary" data-act="close" type="button">このまま営業を続ける</button>`;
+  h+=confirm?`<div class="box">いまのお店のデータを消して、最初から遊びますか？</div><div class="actions"><button class="btn sm" data-act="end-new-no" type="button">やめる</button><button class="btn sm danger" data-act="restart" type="button">最初から遊ぶ</button></div>`:`<button class="btn" data-act="end-new" type="button">新しいお店で最初から</button>`;
+  return ['エンディング',h];
+}
+/* セーブを読んだあと：クビならその画面、ストーリーがまだならプロローグ */
+function afterLoad(delay){
+  if(S.story&&S.story.fired){setTimeout(()=>openSheet('fired'),delay||0);return}
+  if(S.story&&!S.story.seen.prologue){setTimeout(()=>runPrologue(()=>refreshAll()),delay||0);return}
+  if(S.incidents&&S.incidents.length)setTimeout(()=>runIncidents(()=>refreshAll()),delay||0);
 }
 
 /* ---------- 遊び方 ---------- */
@@ -649,6 +755,11 @@ const GUIDE={
 <h3>1日の流れ</h3><ol><li><b>準備中</b>：釘・設定・配置・イベントを決めます。台をいじれるのは閉店中だけです。</li><li><b>営業中</b>：10:00〜22:45。速さは×1〜×4、「停止」で一時停止できます。</li><li><b>日報</b>：売上・評判・イベントの結果・お客さんの声が出ます。</li></ol>
 <h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート）を切り替えられます。</li></ul>
 <h3>最初の3日間はグランドオープン</h3><p>入りきらないほどお客さんが来ますが、評価がとても厳しい期間です。ここで出さないと信用がガタ落ちします。</p>`],
+  story:['ストーリー',`<p>あなたは借金300万円を抱えた元パチンカス。潰れかけのホールのオーナー<b>大黒千代</b>さんに借金を肩代わりしてもらい、<b>雇われ店長</b>になりました。</p>
+<h3>章とクリア</h3><ol><li><b>借金まみれの雇われ店長</b>：ノルマに3回合格・借金を返す・ゴールデン会館に勝つ</li><li><b>町の人気店へ</b>：町のシェア1位の日を30日・ランク3・大手チェーンに勝つ</li><li><b>駅前の決戦</b>：お店を買い取る・駅前に出る・駅前でシェア1位</li><li><b>チェーン社長</b>：お店を3軒に・3軒そろって黒字・業界の帝王に勝つ</li><li><b>最終章 全国ホールアワード</b>：審査で大賞を取ればエンディング</li></ol>
+<p>今の目標は「経営 → ストーリー」か、左上の「ノルマ」の札をタップすると見られます。章をクリアすると、ごほうび（お金・特別な設備）がもらえます。</p>
+<h3>毎月のノルマ</h3><ul><li>毎月1日に、オーナーが<b>粗利</b>（売上−払い出し）・<b>稼働率</b>・<b>月末の評判</b>のノルマを決めます。</li><li><b>合格</b>：粗利を達成し、さらに稼働率か評判のどちらかを達成。3つとも達成すると<b>完全達成</b>でボーナスが多くなります。</li><li>粗利ノルマは、先月の実績と店の大きさ（台数・立地）で決まります。毎月少しずつ上がります。</li><li>グランドオープンやリニューアルのオープン期間の日は、ノルマに数えません。</li><li><b>3か月続けて不合格だとクビ</b>（ゲームオーバー）。合格すると数え直しになります。クビや倒産のときは、その月のはじめからやり直せます。</li><li>第3章でお店を買い取ると、ノルマは「目標」になり、クビはなくなります。</li></ul>
+<h3>ボスとの勝負</h3><p>各章のボス（ライバル店の店長）には、店を閉店させるか、<b>町のシェアで上回る日</b>を決まった日数つくると勝ちです（オープン期間の日は数えません）。イベントの日は、お客さんを集めやすくなります。</p>`],
   lv:['釘と設定',`<p><b>スロットは設定1〜6</b>、<b>パチンコは釘（締め〜開け）</b>で出し具合を決めます。</p>
 <table class="gt"><tr><th>スロット</th><th>店の取り分</th><th>パチンコ</th><th>店の取り分</th></tr>
 <tr><td><span class="badge c1">1</span></td><td>＋12%</td><td><span class="badge n0">締め</span></td><td>＋14%</td></tr>
@@ -680,7 +791,7 @@ const GUIDE={
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
 <h3>台の故障</h3><p>古い台ほど故障しやすく、ホール係が直します。閉店までに直らなかった台は夜間に修理費がかかります。</p>
 <h3>ゴト師</h3><p>不正な道具で玉を抜く客です。サングラスが目印。壁に付ける防犯カメラと、近くを見回るホール係が見つけます。</p>
-<h3>目標とエンディング</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます。2029年3月31日までにランク5「伝説のホール」になればエンディング。毎年3月31日には年間ランキングも発表されます。</p>`],
+<h3>やりこみ目標</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます（ストーリーとは別）。毎年3月31日には年間ランキングも発表されます。</p>`],
 };
 function guideSheet(tab){
   tab=tab||'start';
@@ -826,7 +937,7 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'store-place':startBuild(b.dataset.k,id,true);break;
     case 'store-sell':{const i=S.storage.findIndex(s=>s.kind===b.dataset.k&&s.type===id);if(i>=0){pushUndo();S.money+=storageValue(S.storage[i]);S.storage.splice(i,1);sfx('cash');save();refreshAll()}break}
     case 'zone-tool':closeSheet();tool='zone';renderDock();toast('マスをタップして喫煙OKゾーンを塗ります');break;
-    case 'floor':buyFloor(id);break;
+    case 'floor':if(FB[id].reward&&!ownedAnyFloor(id))break;buyFloor(id);break;
     case 'wall':buyWall(id);break;
     case 'expand':{const why=expandStore(v);if(why){toast(why);sfx('bad')}else{resizeCanvas();fitCam();sfx('good');toast('お店が広くなりました！');save()}refreshAll();break}
     case 'm-lv':{const m=sheetData.m;if(kindOf(m)==='s')m.set=Number(v);else m.nail=Number(v);sfx('tap');save();refreshAll();break}
@@ -907,12 +1018,30 @@ $('#sheetBody').addEventListener('click',e=>{
       if(r.mdb)mdbSet(r.mdb);
       if(wasOpen){releaseWake();tweetReset();openSnap=null;playBgm('prep')}
       save();custs=[];staffA=[];tool='view';sheetData=null;closeSheet();cam.fit=true;applyLayout();refreshAll();sfx('fanfare');telop('引っ越し完了！',S.name,'good');
+      afterLoad(1900);
       break;}
     case 'menu-rot':prefs.rot=v;savePrefs();applyLayout();renderSheet();break;
     case 'ev-fill':eventTargets().forEach(m=>{if(kindOf(m)==='s')m.set=v==='max'?6:5;else m.nail=v==='max'?2:1});sfx('good');save();refreshAll();break;
     case 'mg-tab':sheetData=v;renderSheet();$('#sheetBody').scrollTop=0;break;
     case 'rv-scout':{const r=S.rivals.find(x=>x.id===Number(id));if(!r||S.phase!=='prep')break;const o=v==='self'?scoutBySelf(r):scoutByStaff(r);if(o.err){toast(o.err);break}save();refreshAll();sfx(v==='self'?(o.res>=0?'cash':'bad'):'tap');talk(o.lines,()=>{if(sheetKind==='manage')renderSheet()});break}
     case 'mg-back':openSheet('manage','prop');break;
+    case 'debt-pay':{if(S.phase!=='prep')break;const n=repayDebt(v==='all'?S.story.debt:Number(v));if(!n){toast('お金が足りません');sfx('bad');break}
+      sfx('cash');toast(`${man(n)}返しました`);save();refreshAll();
+      if(S.story.debt<=0)talk([{who:'owner',ex:'shock',text:'……全部返したのかい。本当に？'},{who:'owner',ex:'happy',text:'見直したよ。あんた、ただのパチンカスじゃなかったんだね'}],()=>{if(sheetKind==='manage')renderSheet()});
+      break;}
+    case 'buy-store':{if(S.phase!=='prep')break;const why=buyStore();if(why){toast(why);sfx('bad');break}
+      save();refreshAll();sfx('fanfare');telop('お店を買い取った！','今日からあなたがオーナー','good');
+      setTimeout(()=>talk([{who:'owner',ex:'happy',text:'たしかに受け取ったよ。今日から、この店はあんたのものだ'},{who:'owner',ex:'smug',text:'あたしは会長として、ときどき口を出させてもらうからね。覚悟しな'},{who:'me',ex:'happy',text:'はい。これからも、よろしくお願いします！'}],()=>{if(sheetKind==='manage')renderSheet()}),1900);
+      break;}
+    case 'snap-retry':{
+      const src=monthSnap();if(!src){toast('やり直せるデータがありません');break}
+      const back=ser();let ok=false;try{ok=load(src)}catch(err){ok=false}
+      if(!ok){try{load(back)}catch(e){}toast('やり直せませんでした');sfx('bad');break}
+      save();custs=[];staffA=[];tool='view';sheetData=null;closeSheet();cam.fit=true;applyLayout();refreshAll();playBgm('prep');sfx('good');telop('やり直し',`${dateLong(S.day)}の朝にもどりました`,'good');
+      break;}
+    case 'end-new':sheetData={story:true,confirm:true};renderSheet();break;
+    case 'end-new-no':sheetData={story:true};renderSheet();break;
+    case 'month-next':closeSheet();refreshAll();break;
     case 'st-hire':{const c=S.cands.find(x=>x.id===Number(id));if(c){hireStaff(c);S.cands=S.cands.filter(x=>x!==c);sfx('good');toast(`${c.name}さんを雇いました`);save();refreshAll()}break}
     case 'st-fire':{const s=findStaff(id);if(s){S.staff=S.staff.filter(x=>x!==s);sfx('tap');toast(`${s.name}さんがやめました`);save();refreshAll()}break}
     case 'st-train':{const s=findStaff(id);if(!s)break;const c=trainCost(s);if(S.money<c){toast('お金が足りません');sfx('bad');break}
@@ -934,7 +1063,7 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'restart':try{localStorage.removeItem(SAVE_KEY)}catch(e){}closeSheet();custs=[];staffA=[];tool='view';newGame('パーラー満天');resizeCanvas();fitCam();refreshAll();showTitle();break;
   }
 });
-function manageTabFromData(){return typeof sheetData==='string'?sheetData:(sheetData&&sheetData.tab)||'staff'}
+function manageTabFromData(){return typeof sheetData==='string'?sheetData:(sheetData&&sheetData.tab)||'story'}
 
 /* ---------- アプリ版の更新チェック ----------
    ホーム画面アプリはiPhoneが閉じずに残しておくことがあるので、開いたときに新しい版がないか確かめる */
@@ -958,7 +1087,7 @@ setTimeout(()=>checkUpdate(),2500);
 
 /* ---------- ドック ---------- */
 function onDock(e){
-  const b=e.target.closest('[data-dock]');if(!b||b.disabled)return;audio();
+  const b=e.target.closest('[data-dock]');if(!b||b.disabled||inputBlocked())return;audio();
   switch(b.dataset.dock){
     case 'build':openSheet('shop','m');break;
     case 'move':tool='move';moveSel=null;moveIsland=false;renderDock();break;
@@ -967,7 +1096,7 @@ function onDock(e){
     case 'list':openSheet('list','all');break;
     case 'hall':openSheet('hall','rank');break;
     case 'event':openSheet('event');break;
-    case 'manage':openSheet('manage','staff');break;
+    case 'manage':openSheet('manage','story');break;
     case 'open':if(S.incidents.length)runIncidents(()=>{if(S.phase==='prep')startDay()});else startDay();break;
     case 'endtool':tool='view';buildItem=null;moveSel=null;renderDock();break;
     case 'dir':buildDir=b.dataset.v!=null?Number(b.dataset.v):(buildDir+1)%4;sfx('tap');renderDock();break;
@@ -985,7 +1114,8 @@ function onDock(e){
 }
 $('#dock').addEventListener('click',onDock);$('#speed').addEventListener('click',onDock);
 function startDay(){
-  const wasGo=goActive(),ev=S.event.type;
+  if(S.story&&S.story.fired){openSheet('fired');return}
+  if((S.negDays||0)>=7){openSheet('over');return}
   if(!openStore())return;
   tool='view';moveSel=null;closeSheet();requestWake();
   sfx('open');
@@ -996,6 +1126,7 @@ function startDay(){
 }
 $('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'off',off:'set'}[prefs.overlay];savePrefs();renderStatus()});
 $('#bMenu').addEventListener('click',()=>{audio();openSheet('menu',false)});
+$('#quotaChip').addEventListener('click',()=>{audio();sfx('tap');openSheet('manage','story')});
 $('#sheetClose').addEventListener('click',()=>{closeSheet();refreshAll()});
 $('#scrim').addEventListener('click',()=>{if(performance.now()-sheetAt<450)return;closeSheet();refreshAll()});
 $('#zIn').addEventListener('click',()=>zoomAt(1.3));
@@ -1036,6 +1167,7 @@ function openThing(t){
   if(t.side)openSheet('door',t);else if(t.kind==='m')openSheet('machine',{m:t});else openSheet('decor',t);
 }
 function onTap(hit,w){
+  if(inputBlocked())return;
   if(S.phase==='open'){
     const wx=(w.x-OX)/TS-0.5,wy=(w.y-OY)/TS-0.4;
     const c=custs.find(c=>c.reg&&!c.hidden&&Math.abs(c.x-wx)<0.6&&Math.abs(c.y-wy)<0.8);
@@ -1056,7 +1188,8 @@ $('#tTransfer').addEventListener('click',()=>{audio();$('#title').hidden=true;op
 $('#tStart').addEventListener('click',()=>{
   audio();const n=($('#tName').value||'').trim().slice(0,10)||'パーラー満天';
   S.name=n;$('#title').hidden=true;save();refreshAll();sfx('fanfare');playBgm('prep');
-  openSheet('guide','start');prefs.guideSeen=true;savePrefs();
+  prefs.guideSeen=true;savePrefs();
+  runPrologue(()=>openSheet('guide','start'));
 });
 async function requestWake(){try{if('wakeLock' in navigator)wakeLock=await navigator.wakeLock.request('screen')}catch(e){}}
 let wakeLock=null;

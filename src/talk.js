@@ -4,7 +4,9 @@ const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* 話している人の名前・顔・色 */
 function speaker(who){
   if(!who||who==='narr')return {name:'',face:null};
-  if(who==='me')return {name:'あなた',sub:'店長',face:ME_FACE,col:'#ff2d55'};
+  if(who==='me')return {name:'あなた',sub:S.story&&S.story.bought?'オーナー店長':'店長',face:ME_FACE,col:'#ff2d55'};
+  if(who==='owner')return {name:OWNER.name,sub:ownerSub(),face:OWNER.face,col:OWNER.col};
+  if(who==='mc')return {name:MC.name,sub:MC.sub,face:MC.face,col:MC.col};
   const i=who.indexOf(':'),k=who.slice(0,i),id=who.slice(i+1);
   if(k==='boss'){
     const B=BOSS_BY[id];
@@ -68,7 +70,11 @@ $('#talk').addEventListener('click',e=>{
 
 /* 朝の出来事を1つずつ（テロップ → 会話 → 相談ごと） */
 function runSeq(steps){const st=steps.filter(Boolean);const next=()=>{const f=st.shift();if(f)f(next)};next()}
-function telopStep(title,sub,kind,snd){return done=>{telop(title,sub,kind);sfx(snd||(kind==='bad'?'gagan':'fanfare'));setTimeout(done,1900)}}
+function telopStep(title,sub,kind,snd){return done=>{telop(title,sub,kind);sfx(snd||(kind==='bad'?'gagan':'fanfare'));inputBlock(2000);setTimeout(done,1900)}}
+/* テロップのあいだに次の出来事が来るので、そのあいだは画面の操作を止める */
+let blockT=0;
+function inputBlock(ms){const r=$('#root');r.classList.add('busy');clearTimeout(blockT);blockT=setTimeout(()=>r.classList.remove('busy'),ms)}
+const inputBlocked=()=>$('#root').classList.contains('busy');
 
 /* ---------- 相談ごと（いまは引き抜き） ---------- */
 function incidentTalk(inc){

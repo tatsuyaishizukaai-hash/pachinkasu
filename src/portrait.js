@@ -72,6 +72,13 @@ function drawPortrait(g,P,ex){
     case 'jacket':{
       body(col);vNeck('#f1f5f9',4);pp(g,20,35,1,5,'#a8a29e');
       pp(g,14,33,3,3,shade(col,.28));pp(g,23,33,3,3,shade(col,.28));break;}
+    case 'kimono':{
+      body(col);
+      for(let y=33;y<40;y++)for(let x=7;x<33;x++){if((x*5+y*3)%13===0)pp(g,x,y,1,1,shade(col,.35));else if((x+y*7)%17===0)pp(g,x,y,1,1,'#f5d76e')}
+      for(let i=0;i<7;i++){pp(g,15+i,32+i,2,1,'#fbcfe8');pp(g,24-i,32+i,2,1,'#fbcfe8')}        // 下の襟（桃色）
+      for(let i=0;i<7;i++){pp(g,13+i,32+i,2,1,'#f8fafc');pp(g,26-i,32+i,2,1,'#f8fafc')}        // 白い半襟
+      for(let i=0;i<5;i++)pp(g,25-i,35+i,1,1,shade(col,-.4));
+      pp(g,6,38,28,2,'#f5d76e');pp(g,6,38,28,1,'#b45309');break;}                           // 帯
     case 'hoodie':{
       body(col);pp(g,13,31,14,3,K);pp(g,14,32,12,2,shade(col,-.2));vNeck(shade(col,-.3),2);pp(g,17,35,1,3,'#f8fafc');pp(g,22,35,1,3,'#f8fafc');break;}
     default:{
@@ -140,7 +147,7 @@ function drawPortrait(g,P,ex){
     case 'messy':hairRects(g,[[13,3,3,2],[18,2,3,3],[24,3,3,2],[11,5,18,6],[10,8,2,8],[28,8,2,8],[11,11,4,3],[16,11,3,2],[20,11,4,3],[25,11,3,2]],hair);pp(g,18,3,1,2,hl);pp(g,13,7,4,1,hl);pp(g,22,6,3,1,hl);break;
     case 'long':hairRects(g,[[13,4,14,1],[11,5,18,6],[10,9,3,17],[27,9,3,17],[12,11,7,2],[21,11,7,2]],hair);pp(g,19,6,2,6,shade(hair,-.25));pp(g,13,6,4,1,hl);pp(g,10,14,1,6,hl);break;
     case 'bob':hairRects(g,[[13,4,14,1],[11,5,18,6],[11,11,18,2],[9,9,4,15],[27,9,4,15]],hair);pp(g,13,6,5,1,hl);pp(g,12,13,1,1,hair);pp(g,9,16,1,5,hl);break;
-    case 'bun':disc(g,20,4,4,K);disc(g,20,4,3,hair);pp(g,18,2,2,1,hl);hairRects(g,[[11,6,18,5],[10,9,2,6],[28,9,2,6]],hair);pp(g,17,1,3,1,hl);pp(g,13,8,5,1,hl);pp(g,16,5,8,1,shade(hair,-.25));if(has('kanzashi')){pp(g,23,1,5,1,'#b45309')}break;
+    case 'bun':disc(g,20,4,4,K);disc(g,20,4,3,hair);pp(g,18,2,2,1,hl);hairRects(g,[[11,6,18,5],[10,9,2,6],[28,9,2,6]],hair);pp(g,17,1,3,1,hl);pp(g,13,8,5,1,hl);pp(g,16,5,8,1,shade(hair,-.25));if(has('kanzashi')){pp(g,22,1,7,1,'#b45309');pp(g,28,0,3,3,K);pp(g,28,0,3,3,'#ef4444');pp(g,29,1,1,1,'#fde047');pp(g,23,2,1,2,'#fde047')}break;
     case 'bald':hairRects(g,[[10,12,2,4],[28,12,2,4]],hair);pp(g,14,8,5,1,'#fff7ed');pp(g,13,9,2,1,'#fff7ed');break;
     case 'perm':hairRects(g,[[12,2,16,2],[10,4,20,7],[9,7,3,10],[28,7,3,10],[12,11,4,2],[18,11,4,2],[24,11,4,2]],hair);for(let i=0;i<5;i++){pp(g,11+i*4,5,2,1,hl);pp(g,13+i*4,8,1,1,hd)}break;
     case 'pony':hairRects(g,[[13,4,14,1],[11,5,18,6],[10,9,2,7],[28,9,2,6],[12,11,6,2],[20,11,3,1]],hair);pp(g,13,6,5,1,hl);pp(g,28,9,3,2,P.ribbon||'#f472b6');break;

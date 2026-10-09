@@ -107,6 +107,7 @@ function closeRival(r){
   news(`${r.name}が閉店しました。居抜き物件として売りに出ています`,'big');
   S.offers.unshift(inukiFromRival(r));
   D.rivalClosed=r.name;D.rivalClosures.push({boss:r.boss,shop:r.name});
+  if(S.story){const C=CHAPTERS[S.story.ch];if(C&&C.boss===r.boss)S.story.bossWin=true}
   for(const d of REG_DEFS){const st=S.regs[d.id];if(st.away&&st.away.rival===r.id){st.away=null;st.loy=clamp(st.loy+5,0,100);news(`${d.name}が戻ってきた`,'good')}}
 }
 
@@ -120,8 +121,9 @@ function scheduleRival(opt){
   const rk=rankNo(),busy=new Set([...openRivals().map(r=>r.boss),...S.rivalPlans.map(p=>p.boss)]),beaten=new Set(S.rivalLog.map(l=>l.boss));
   let B=opt.boss?BOSS_BY[opt.boss]:null,revenge=false;
   if(!B){
-    let pool=BOSSES.filter(b=>!busy.has(b.id)&&!beaten.has(b.id)&&b.minRank<=rk);
-    if(!pool.length){pool=BOSSES.filter(b=>!busy.has(b.id)&&b.minRank<=rk);revenge=true}
+    const later=b=>S.story&&BOSS_CH[b.id]>S.story.ch;   /* 先の章のボスはまだ出さない */
+    let pool=BOSSES.filter(b=>!busy.has(b.id)&&!beaten.has(b.id)&&b.minRank<=rk&&!later(b));
+    if(!pool.length){pool=BOSSES.filter(b=>!busy.has(b.id)&&b.minRank<=rk&&!later(b));revenge=true}
     if(!pool.length)return null;
     B=weighted(pool,pool.map(b=>1+(b.type==='chain'?rk*0.4:0)+(b.minRank>=3?1.5:0)));
   }else revenge=beaten.has(B.id);

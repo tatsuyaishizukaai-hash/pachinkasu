@@ -100,7 +100,6 @@ const GOALS=[
  {id:'r4',name:'ランク4「県内の有名店」',chk:()=>rankNo()>=4,reward:3000000},
  {id:'m120',name:'台を120台にする',chk:()=>machines().length>=120,reward:5000000},
 ];
-const END_DAY=1096;   /* 2029年3月31日 */
 function dayEndFeatures(R){
   R.goals=[];
   for(const g of GOALS){if(!S.goals[g.id]&&g.chk(R)){S.goals[g.id]=S.day;S.money+=g.reward;R.goals.push(g);news(`目標達成「${g.name}」ボーナス${man(g.reward)}`,'good')}}
@@ -114,10 +113,7 @@ function dayEndFeatures(R){
     R.year={year:d.getFullYear(),rows,place,bonus};
     news(`${d.getFullYear()-1}年度の年間ランキング：${place}位${bonus?`（賞金${man(bonus)}）`:''}`,place===1?'good':'');
   }
-  if(!S.ended){
-    if(rankNo()>=5){S.ended={type:'clear',day:S.day};R.ending='clear'}
-    else if(S.day>=END_DAY){S.ended={type:'timeup',day:S.day};R.ending='timeup'}
-  }
+  storyEndDay(R);
 }
 function score(){return Math.round(S.totalVisitors/10+Math.max(0,S.money-S.loan)/100000+S.rep*20+machines().length*10)}
 

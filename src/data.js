@@ -86,6 +86,10 @@ const DECOR=[
  {id:'cat',name:'招き猫の像',price:500000,appeal:12,rank:3,info:'内装＋12'},
  {id:'chandelier',name:'シャンデリア',price:900000,appeal:18,rank:4,info:'内装＋18'},
  {id:'fountain',name:'噴水',price:1200000,appeal:25,rank:4,info:'内装＋25'},
+ /* 章クリアのごほうび（お店では買えない） */
+ {id:'daruma',name:'必勝だるま',price:300000,appeal:8,rank:1,reward:1,info:'第1章クリアのごほうび。オーナーが店を始めた日に買っただるま。内装＋8'},
+ {id:'trophy',name:'優勝トロフィー',price:800000,appeal:15,rank:1,reward:1,info:'第2章クリアのごほうび。町いちばんの証。内装＋15'},
+ {id:'goldcat',name:'黄金の招き猫',price:2000000,appeal:30,rank:1,reward:1,info:'第3章クリアのごほうび。駅前の一番店にふさわしい純金（風）の招き猫。内装＋30'},
 ];
 const DB=Object.fromEntries(DECOR.map(d=>[d.id,d]));
 /* 壁に付ける設備 */
@@ -95,7 +99,7 @@ const WALLITEMS=[
  {id:'camera',name:'防犯カメラ',price:180000,appeal:0,cap:0,rank:1,info:'壁に付く。周り5マスのゴト師を見つけやすくなる',noFront:1},
 ];
 const WB=Object.fromEntries(WALLITEMS.map(d=>[d.id,d]));
-const SWATCH={kiosk:'#0ea5e9',camera:'#111827',counter:'#d9a066',vending:'#ef4444',bench:'#a16207',booth:'#94d8e8',plant:'#22c55e',changer:'#94a3b8',cleaner:'#e0f2fe',neon:'#ff4fa3',cat:'#ffffff',chandelier:'#facc15',fountain:'#38bdf8',toilet:'#3b82f6',smokeroom:'#64748b'};
+const SWATCH={kiosk:'#0ea5e9',camera:'#111827',counter:'#d9a066',vending:'#ef4444',bench:'#a16207',booth:'#94d8e8',plant:'#22c55e',changer:'#94a3b8',cleaner:'#e0f2fe',neon:'#ff4fa3',cat:'#ffffff',chandelier:'#facc15',fountain:'#38bdf8',daruma:'#dc2626',trophy:'#facc15',goldcat:'#eab308',toilet:'#3b82f6',smokeroom:'#64748b'};
 
 const FLOORS=[
  {id:'tile',name:'ラベンダータイル',price:0,appeal:0,a:'#e7e1f5',b:'#dcd4ee'},
@@ -104,6 +108,7 @@ const FLOORS=[
  {id:'blue',name:'青じゅうたん',price:250000,appeal:6,a:'#3b6fe0',b:'#3363d1'},
  {id:'check',name:'市松もよう',price:400000,appeal:9,a:'#fafafa',b:'#3a3a46'},
  {id:'marble',name:'大理石',price:900000,appeal:16,a:'#f6f1ea',b:'#ebe3d6'},
+ {id:'royal',name:'ロイヤルじゅうたん',price:1500000,appeal:20,a:'#5b21b6',b:'#4c1d95',reward:'第2章クリアのごほうび'},
 ];
 const WALLS=[
  {id:'white',name:'白かべ',price:0,appeal:0,c:'#ffffff',d:'#c9c3d9'},

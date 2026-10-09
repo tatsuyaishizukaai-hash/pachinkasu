@@ -2,6 +2,14 @@
 
 釘と設定、イベント日、店づくりで客を呼ぶ、ドット絵のパチンコ屋経営ゲームです。iPhoneのホーム画面に追加すると、全画面のアプリとして遊べます。
 
+## どんなゲーム？
+
+借金300万円の元パチンカスが、潰れかけのホールの雇われ店長になって成り上がるお話です。
+
+- **ストーリー**：第1章「借金まみれの雇われ店長」→ 第2章「町の人気店へ」→ 第3章「駅前の決戦」→ 第4章「チェーン社長」→ 最終章「全国ホールアワード」。章ごとに目標とボス（ライバル店の店長）がいます。
+- **オーナーのノルマ**：毎月、粗利・稼働率・評判のノルマが出ます。3か月続けて不合格だとクビ。
+- **ライバル店**：4つのタイプと12人の店長。閉店した店のあとには新しい店が出店してきます。
+
 ## 遊ぶ
 
 公開URL：https://tatsuyaishizukaai-hash.github.io/pachinkasu/
@@ -23,7 +31,8 @@
 
 ## 開発メモ
 
-- ソースは `src/` にあります。ゲーム本体は `data.js` → `state.js` → `market.js` → `sim.js` → `features.js` → `render.js` → `audio.js` → `ui.js` → `main.js` の順に `src/template.html` に埋め込まれます。
+- ソースは `src/` にあります。ゲーム本体は `src/build-app.js` の `ORDER` の順（`machines.js` → `data.js` → `chars.js` → `state.js` → `market.js` → `rivals.js` → `sim.js` → `features.js` → `story.js` → `sprites.js` → `portrait.js` → `render.js` → `audio.js` → `ui.js` → `talk.js` → `main.js`）に `src/template.html` に埋め込まれます。
+- ストーリー・ノルマ・借金・全国ホールアワードは `story.js`、ライバル店長の顔とセリフは `chars.js` と `rivals.js` にあります。
 - ビルド：`node src/build-app.js`
   - ルートの `index.html` と `sw.js`（ホーム画面アプリ版）を作り直します。`sw.js` のバージョンはビルドのたびに変わるので、公開後は開き直すだけで新しい版に入れ替わります。
   - `dist/artifact.html`（アーティファクト版）も作ります（`dist/` はコミットしません）。
