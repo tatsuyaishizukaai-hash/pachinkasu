@@ -34,7 +34,7 @@ function rollWeather(day){
 function news(text,kind){S.news.unshift({day:S.day,text,kind:kind||''});if(S.news.length>40)S.news.pop()}
 const goActive=()=>!!(S.go&&S.day>=S.go.start&&S.day<S.go.start+S.go.len);
 const goDayIdx=()=>S.go?S.day-S.go.start:-1;
-const GO_MULT={grand:[3.2,2.7,2.3],renewal:[2.4,2.0]};
+const GO_MULT={grand:[3.2,2.7,2.3],renewal:[2.4,2.0],anniv:[2.6,2.2]};
 
 /* ---------- 名物常連 ---------- */
 function initRegs(){S.regs={};REG_DEFS.forEach(r=>{S.regs[r.id]={loy:Math.round(rnd(18,34)),st:'new',visits:0,say:null,met:false}})}

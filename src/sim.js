@@ -13,7 +13,7 @@ function eventTargets(ev=S.event){
     case 'tail':return ms.filter(m=>m.no%10===Number(ev.target));
     case 'model':return ms.filter(m=>m.type===ev.target);
     case 'newm':return ms.filter(m=>m.installDay>=S.day-1);
-    case 'renewal':case 'media':return ms;
+    case 'renewal':case 'media':case 'season':case 'anniv':return ms;
   }
   return [];
 }
@@ -24,6 +24,8 @@ function eventLabel(ev=S.event){
     case 'model':return `${MB[ev.target]?shortName(MB[ev.target].name):''}の日`;
     case 'newm':return '新台入替';
     case 'renewal':return 'リニューアルオープン';
+    case 'season':{const se=seasonInfo(S.day);return se?se.name:'季節イベント'}
+    case 'anniv':{const an=annivInfo();return an?an.label:'周年祭'}
     case 'media':return ev.target==='tube'?'人気配信者の来店取材':'パチンコ雑誌の取材';
   }
   return '通常営業';
@@ -35,10 +37,12 @@ function eventMultToday(){
   if(goActive())return GO_MULT[S.go.type][goDayIdx()]||2;
   const ev=S.event;
   if(ev.type==='renewal')return GO_MULT.renewal[0];
+  if(ev.type==='anniv')return GO_MULT.anniv[0];
   if(ev.type==='none')return 1;
   let m=1+(0.4+S.trust/100)*Math.pow(0.7,recentEvents());
   if(ev.type==='newm')m=1+0.5*Math.pow(0.8,recentEvents())+Math.min(0.4,newCount()*0.04);
   if(ev.type==='media')m=1+(ev.target==='tube'?1.1:0.6)*Math.pow(0.75,recentEvents())+S.trust/400;
+  if(ev.type==='season')m=1+0.6*Math.pow(0.75,recentEvents())+S.trust/300;
   if(ev.ad)m+=0.35;
   if(dateOf(S.day).getDate()%10===7)m+=0.15;
   return m;
@@ -83,20 +87,23 @@ function openStore(){
   const ev=S.event;
   if(goActive())ev.type='none';
   else if(ev.type==='renewal'&&!canRenewal())ev.type='none';
+  else if(ev.type==='season'&&!seasonInfo(S.day))ev.type='none';
+  else if(ev.type==='anniv'&&!(annivInfo()&&!annivInfo().held))ev.type='none';
   else if(ev.type!=='none'&&ev.type!=='renewal'&&eventTargets().length===0)ev.type='none';
-  if(ev.type==='media')ev.ad=false;
-  const cost=ev.type==='renewal'?150000:ev.type==='media'?MEDIA_COST[ev.target==='tube'?'tube':'mag']:(ev.type!=='none'&&ev.ad?50000:0);
+  if(ev.type==='media'||ev.type==='season'||ev.type==='anniv')ev.ad=false;
+  const cost=ev.type==='renewal'?150000:ev.type==='anniv'?ANNIV_COST:ev.type==='season'?SEASON_COST:ev.type==='media'?MEDIA_COST[ev.target==='tube'?'tube':'mag']:(ev.type!=='none'&&ev.ad?50000:0);
   if(cost&&S.money<cost){toast('イベントのお金が足りません');sfx('bad');return false}
   openSnap=ser();
   if(ev.type==='renewal'){S.go={type:'renewal',start:S.day,len:2,scores:[]};S.lastOpen=S.day;G.renoSpend=0;ev.type='none'}
+  if(ev.type==='anniv'){const an=annivInfo();S.go={type:'anniv',label:an.label,n:an.n,start:S.day,len:2,scores:[]};G.annivDone=(G.annivDone||[]).concat([an.n]);ev.type='none'}
   S.money-=cost;
   const fc=forecast();todayInfo=fc.info;
   const isGo=goActive(),isEv=ev.type!=='none';
   D={coin:0,out:0,drink:0,visitors:0,full:0,satSum:0,satN:0,hunters:0,seg:{},reasons:{},calls:[],ad:cost,shares:fc.shares,expected:fc.expected,
-     isGo,goType:isGo?S.go.type:null,goIdx:goDayIdx(),evType:ev.type,evTarget:ev.target,evLabel:isGo?(S.go.type==='grand'?'グランドオープン':'リニューアルオープン'):eventLabel(),bigWins:[],regsVisited:[],rivalClosed:null,nearSmoke:new Set(),smokeSpots:new Map(),
+     isGo,goType:isGo?S.go.type:null,goIdx:goDayIdx(),evType:ev.type,evTarget:ev.target,evLabel:isGo?goLabel(S.go):eventLabel(),bigWins:[],regsVisited:[],rivalClosed:null,nearSmoke:new Set(),smokeSpots:new Map(),
      goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,broken:0,kiosk:hasDecor('kiosk'),exch:0,completes:[],hourly:[],lastHr:-1,elders:0,smokers:0};
   todayTargets=new Set(isEv?eventTargets():[]);
-  hunterFrac=(isGo?0.4:ev.type==='media'?0.5:isEv?0.35:0.1)*(D.kiosk?1.4:1);
+  hunterFrac=(isGo?0.4:ev.type==='media'?0.5:ev.type==='season'?0.4:isEv?0.35:0.1)*(D.kiosk?1.4:1);
   if(S.day>=10&&Math.random()<0.08+(isGo||isEv?0.12:0)+(rankNo()>=3?0.04:0))D.gotoAt=rnd(660,1140);
   const burst=Math.round(fc.expected*(isGo||isEv?0.25:0.05));
   queueLeft=Math.min(isGo?80:50,burst);queueAcc=0;spawnAcc=0;
@@ -492,7 +499,7 @@ function update(dt){
 function closeDay(){
   if(S.phase!=='open')return;
   const ms=machines(),rent=rentOf(),wages=wagesTotal(),power=2500*ms.length;
-  const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE);
+  const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE),goLab=goLabel(S.go);
   ms.forEach(m=>{m.broken=false;m.fixing=false});
   const gross=D.coin-D.out+D.exch,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
   S.money-=rent+wages+power+repairs+interest;
@@ -505,10 +512,10 @@ function closeDay(){
     S.go.scores.push(score);
     gor={type:D.goType,idx:D.goIdx,len:S.go.len,score,dash,satN,mark:score>=0.7?'◎':score>=0.55?'○':score>=0.4?'△':'×'};
     if(S.go.scores.length>=S.go.len){
-      const fin=avgOf(S.go.scores),[j,cls]=goJudge(fin),h=D.goType==='renewal'?0.5:1;
+      const fin=avgOf(S.go.scores),[j,cls]=goJudge(fin),h=D.goType==='renewal'?0.5:D.goType==='anniv'?0.8:1;
       const eff={'大成功':[20,12,1.25,21],'成功':[8,5,1,0],'いまいち':[-15,-8,0.85,14],'大失敗':[-35,-18,0.65,45]}[j];
       S.trust=clamp(S.trust+eff[0]*h,0,100);S.rep=clamp(S.rep+eff[1]*h,0,100);
-      if(eff[3])S.mod={mult:D.goType==='renewal'?1+(eff[2]-1)*0.6:eff[2],until:S.day+eff[3],label:j==='大成功'?(D.goType==='grand'?'グランドオープン大成功の評判':'リニューアル大成功の評判'):'オープンでの悪い評判'};
+      if(eff[3])S.mod={mult:D.goType==='grand'?eff[2]:1+(eff[2]-1)*(D.goType==='anniv'?0.8:0.6),until:S.day+eff[3],label:j==='大成功'?`${goLab}大成功の評判`:`${goLab}での悪い評判`};
       gor.final={score:fin,judge:j,cls,trust:eff[0]*h,rep:eff[1]*h,mod:eff[3]?S.mod:null};
       S.goLog.push({day:S.day,type:D.goType,judge:j});
       goodEvent=cls==='good';
@@ -516,13 +523,14 @@ function closeDay(){
     }
   }else if(D.evType!=='none'){
     const tg=eventTargets({type:D.evType,target:S.event.target}),avg=avgOf(tg.map(dashi));
-    const media=D.evType==='media',tube=media&&D.evTarget==='tube';
-    const [j,cls]=judgeOf(avg,D.evType==='newm'?0.15:media?0.12:0);
-    const mul=tube?1.6:media?1.2:1;
+    const media=D.evType==='media',tube=media&&D.evTarget==='tube',season=D.evType==='season';
+    const [j,cls]=judgeOf(avg,D.evType==='newm'?0.15:media?0.12:season?0.1:0);
+    const mul=tube?1.6:media?1.2:season?1.3:1;
+    if(season)news(cls==='good'?`${D.evLabel}は大盛況！「この店は出す」と評判に`:cls==='bad'?`${D.evLabel}なのに出ないと、お客さんががっかりしている…`:`${D.evLabel}はまずまずの入りだった`,cls==='good'?'good':cls==='bad'?'bad':'');
     const dT=Math.round({激アツ:10,まずまず:4,微妙:-4,ガセ:-12}[j]*mul);
     S.trust=clamp(S.trust+dT,0,100);if(j==='激アツ')S.rep+=2*mul;if(j==='ガセ')S.rep-=3*mul;
     if(media)news(tube?(cls==='good'?'配信動画が大バズリ！「神ホール」と紹介された':cls==='bad'?'配信で「ぼったくり店」と紹介されてしまった…':'配信で「ふつうの店」と紹介された'):(cls==='good'?'雑誌に「出る店」として載った！':cls==='bad'?'雑誌で「出さない店」と書かれた…':'雑誌に小さく載った'),cls==='good'?'good':cls==='bad'?'bad':'');
-    evr={label:D.evLabel,n:tg.length,avg,judge:j,cls,dT,media};goodEvent=cls==='good';
+    evr={label:D.evLabel,n:tg.length,avg,judge:j,cls,dT,media:media||season};goodEvent=cls==='good';
   }
   // 常連
   const regVoices=[];
@@ -552,10 +560,11 @@ function closeDay(){
   const rivalNews=openRivals().filter(r=>r.ev||r.evKind==='newm'||r.evKind==='go').map(r=>r.name+(r.ev?'':`（${RIV_EV_LABEL[r.evKind]}）`));
   const R={day:S.day,date:dateLong(S.day),visitors:D.visitors,full:D.full,hunters:D.hunters,seg:D.seg,coin:D.coin,out:D.out,gross,drink:D.drink,rent,wages,power,ad:D.ad,net,
     rep0,rep1:S.rep,trust0,trust1:S.trust,ev:evr,go:gor,best:byGive[0],worst:byGive[byGive.length-1],voices,regVoices,share:D.shares.me,rivalNews,rivalClosed:D.rivalClosed,rivalHit:D.rivalHit,
-    rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc,exch:D.exch,completes:D.completes,util};
-  S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000});if(S.hist.length>90)S.hist.shift();
+    rankUp:rk1>rk0?RANKS[rk1].n:null,rankNo:rk1+1,money:S.money,avgSat,payR,feel,repairs,interest,brokenN:D.broken,goto:D.goto,gotoCaught:D.gotoCaught,gotoEsc:D.gotoEsc,exch:D.exch,completes:D.completes,util,brokenLeft};
+  S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000,full:D.full});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   S.negDays=S.money<0?(S.negDays||0)+1:0;
+  judgeMissions(R);monAcc(R);yrAcc(R);
   dayEndFeatures(R);
   // 翌日へ
   S.day++;S.event={type:'none',target:null,ad:false};S.phase='prep';
@@ -566,6 +575,8 @@ function closeDay(){
   dayStartFeatures(R);
   rivalsDayStart(R);
   storyDayStart(R);
+  makeMissions();
+  {const an=annivInfo();if(an&&!an.held&&S.day-(G.openDay||1)===an.n){news(`今日で開店${an.n}日！ ${an.label}ができます（イベント →「${an.label}」・7日間だけ）`,'big');R.morning.push({kind:'anniv',good:true,title:`開店${an.n===100?'100日':an.n/365+'周年'}！`,sub:`${an.label}ができます（イベントから・7日間だけ）`})}}
   R.tomorrow={info:dayInfo(S.day),weather:S.weather.today,rivals:openRivals().filter(r=>r.evKind).map(r=>({name:r.name,label:RIV_EV_LABEL[r.evKind],boss:r.boss,say:rivalSay(r).text})),plans:visiblePlans().filter(p=>p.open-S.day<=7).map(p=>({shop:p.shop,open:p.open})),go:goActive()};
   custs=[];staffA=[];undoStack=[];openSnap=null;
   save();

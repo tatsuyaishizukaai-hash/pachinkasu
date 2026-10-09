@@ -102,7 +102,7 @@ function newGame(name){
   S.go={type:'grand',start:1,len:3,scores:[]};
   const kin=S.rivals.find(r=>r.boss==='kinjo');if(kin)kin.next=true;   /* ゴールデン会館は隣の店 */
   undoStack=[];layoutChanged();
-  storyInit(false);
+  storyInit(false);makeMissions();
 }
 
 /* ---------- 保存 ---------- */
@@ -123,6 +123,7 @@ function load(str){
   G.objs.forEach(m=>{if(m.kind==='m')m.today=blank()});
   undoStack=[];layoutChanged();
   if(!S.story)storyInit(true);   /* ストーリーより前のセーブ */
+  ensureMissions();
   return true;
 }
 

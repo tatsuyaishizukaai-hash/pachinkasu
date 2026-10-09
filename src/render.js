@@ -285,7 +285,7 @@ function render(now){
   ctx.imageSmoothingEnabled=false;
   drawBackdrop();
   ctx.setTransform(1,0,0,1,0,0);
-  drawShell(now);drawDoors(now);drawSeats();
+  drawShell(now);drawSeasonDeco(now);drawDoors(now);drawSeats();
   const list=[];
   for(const o of G.objs)list.push({y:o.y+0.5,o});
   if(S.phase==='open'){for(const c of custs)if(!c.hidden)list.push({y:c.y+0.6,c});for(const a of staffA)list.push({y:a.y+0.61,a})}

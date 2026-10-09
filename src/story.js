@@ -202,7 +202,7 @@ const newAward=()=>({from:S.day,n:0,u:0,rep:0,trust:0,sh:0});
 /* ---------- 月末の査定 ---------- */
 function evaluateMonth(){
   const st=S.story,q=st.quota,target=q.dt*q.n,uAvg=q.n?q.uSum/q.n:0;
-  const res={y:q.y,m:q.m,g:Math.round(q.g),target:Math.round(target),dt:q.dt,n:q.n,go:q.go,util:uAvg,utilT:q.util,rep:S.rep,repT:q.rep,
+  const res={pl:monthPL(),y:q.y,m:q.m,g:Math.round(q.g),target:Math.round(target),dt:q.dt,n:q.n,go:q.go,util:uAvg,utilT:q.util,rep:S.rep,repT:q.rep,
     okG:q.n===0||q.g>=target,okU:q.n===0||uAvg>=q.util,okR:S.rep>=q.rep,owner:!st.bought,ch:st.ch,bonus:0,strikes:0};
   res.pass=res.okG&&(res.okU||res.okR);res.perfect=res.okG&&res.okU&&res.okR;
   if(res.pass){

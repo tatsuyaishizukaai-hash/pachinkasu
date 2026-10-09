@@ -104,15 +104,7 @@ function dayEndFeatures(R){
   R.goals=[];
   for(const g of GOALS){if(!S.goals[g.id]&&g.chk(R)){S.goals[g.id]=S.day;S.money+=g.reward;R.goals.push(g);news(`目標達成「${g.name}」ボーナス${man(g.reward)}`,'good')}}
   const d=dateOf(S.day);
-  if(d.getMonth()===2&&d.getDate()===31){
-    const last=S.hist.slice(-120),myShare=avgOf(last.map(h=>h.share||0));
-    const tot=openRivals().reduce((a,r)=>a+rivalAttract(r),0)||1,rest=1-myShare;
-    const rows=[{name:S.name,share:myShare,me:true},...openRivals().map(r=>({name:r.name,share:rest*rivalAttract(r)/tot}))].sort((a,b)=>b.share-a.share);
-    const place=rows.findIndex(r=>r.me)+1,bonus=[0,3000000,1000000,300000][place]||0;
-    S.money+=bonus;S.yearLog.push({year:d.getFullYear(),place});
-    R.year={year:d.getFullYear(),rows,place,bonus};
-    news(`${d.getFullYear()-1}年度の年間ランキング：${place}位${bonus?`（賞金${man(bonus)}）`:''}`,place===1?'good':'');
-  }
+  if(d.getMonth()===11&&d.getDate()===31)R.award=holdAwards();   /* 町のホールアワード（年末） */
   storyEndDay(R);
 }
 function score(){return Math.round(S.totalVisitors/10+Math.max(0,S.money-S.loan)/100000+S.rep*20+machines().length*10)}

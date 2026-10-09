@@ -31,7 +31,7 @@ function planRivals(){
   for(const r of openRivals()){
     const T=typeOf(r);
     const pat=(r.pat.t==='tail'&&d.getDate()%10===r.pat.v)||(r.pat.t==='wd'&&d.getDay()===r.pat.v);
-    r.ev=pat||Math.random()<T.evP;r.evKind=r.ev?'ev':null;
+    r.ev=pat||Math.random()<T.evP+(seasonInfo(S.day)?0.3:0);r.evKind=r.ev?'ev':null;
     if(r.type==='chain'&&S.day>=r.newmDay){r.newmDay=S.day+rndi(10,15);if(!r.ev)r.evKind='newm'}
     if(!r.evKind&&r.type==='oldie'&&info.tags.includes('年金支給日'))r.evKind='pension';
     if(S.day<=r.goUntil){r.ev=false;r.evKind='go'}
