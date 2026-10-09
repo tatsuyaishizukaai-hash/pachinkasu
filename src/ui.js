@@ -37,6 +37,7 @@ function setT(id,t){const e=$(id);if(e.textContent!==t)e.textContent=t;return e}
 function refreshHud(){
   setT('#hName',S.name);
   setT('#hDate',dateStr(S.day));
+  setT('#hLv',S.mgr?'Lv'+S.mgr.lv:'').classList.toggle('sp',!!(S.mgr&&S.mgr.sp));
   setT('#hWeather',WEATHER[S.weather.today].name).dataset.w=S.weather.today;
   setT('#hMoney',yen(S.money)).classList.toggle('neg',S.money<0);
   setT('#hRep',String(Math.round(S.rep)));setT('#hTrust',String(Math.round(S.trust)));setT('#hDecor',stars());
@@ -135,7 +136,7 @@ function toolText(){
   const undoB=`<button class="btn sm" data-dock="undo" type="button" ${undoStack.length?'':'disabled'}>取り消す</button>`;
   const end=`<button class="btn sm primary" data-dock="endtool" type="button">終わる</button>`;
   if(tool==='build'){
-    const it=buildItem,nm=itemName(it),price=it.store?'倉庫から（無料）':yen(itemPrice(it));
+    const it=buildItem,nm=itemName(it),price=it.store?'倉庫から（無料）':yen(priceOf(it));
     const left=it.store?S.storage.filter(s=>s.kind===it.kind&&s.type===it.type).length:null;
     const how=it.kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ（続けて置けます）';
     return `<div class="tt">配置：<b>${esc(nm)}</b> ${price}${left!=null?` ・ 残り${left}`:''}<br><span class="sub">${how}</span></div>
@@ -158,9 +159,11 @@ function refreshAll(){refreshHud();renderStatus();renderDock();if(sheetKind&&she
 /* ---------- 建設の操作 ---------- */
 const itemName=it=>it.kind==='m'?MB[it.type].name:it.kind==='d'?DB[it.type].name:WB[it.type].name;
 const itemPrice=it=>it.kind==='m'?MB[it.type].price:it.kind==='d'?DB[it.type].price:WB[it.type].price;
+/* 買うときの値段（交換上手・佐藤さんの割引） */
+const priceOf=it=>Math.round(itemPrice(it)*skPrice()/1000)*1000;
 function startBuild(kind,type,store){buildItem={kind,type,store:!!store};buildDir=0;tool='build';moveSel=null;closeSheet();renderDock();toast(kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ')}
 function tryPlace(hit){
-  const it=buildItem,price=it.store?0:itemPrice(it);
+  const it=buildItem,price=it.store?0:priceOf(it);
   let sIdx=-1;
   if(it.store){sIdx=S.storage.findIndex(s=>s.kind===it.kind&&s.type===it.type);if(sIdx<0){tool='view';renderDock();return}}
   if(S.money<price){toast('お金が足りません');sfx('bad');return}
@@ -190,7 +193,7 @@ function tryPlace(hit){
   if(it.store&&!S.storage.some(s=>s.kind===it.kind&&s.type===it.type)){tool='view';buildItem=null;toast('倉庫の分を置き終わりました')}
   refreshAll();
 }
-const sellPrice=o=>Math.round(itemPrice(o.side?{kind:'w',type:o.type}:o)*0.5/1000)*1000;
+const sellPrice=o=>{const it=o.side?{kind:'w',type:o.type}:o;return Math.round(Math.min(itemPrice(it)*0.5*skSell(),priceOf(it)*0.9)/1000)*1000};
 function removeThing(o,mode){
   pushUndo();
   if(o.side){G.doors=G.doors.filter(d=>d!==o);if(mode==='store')toStorage({kind:'w',type:o.type});else S.money+=sellPrice(o)}
@@ -267,7 +270,7 @@ function zoneTap(hit){
   sfx('tap');save();
 }
 function swapModel(m,id){
-  const nm=MB[id],trade=Math.round(MB[m.type].price*0.3/1000)*1000,cost=nm.price-trade;
+  const nm=MB[id],trade=Math.round(MB[m.type].price*0.3*skSell()/1000)*1000,cost=priceOf({kind:'m',type:id})-trade;
   if(S.money<cost){toast('お金が足りません');sfx('bad');return}
   pushUndo();S.money-=cost;G.renoSpend+=cost;
   const k=nm.k;m.type=id;m.installDay=S.day;m.yest=null;
@@ -338,9 +341,9 @@ function machineSheet(d){
   const md=MB[m.type],k=md.k,prep=S.phase==='prep',age=S.day-m.installDay,s=seatOf(m),z=zoneAt(s.x,s.y);
   let h=`<div class="mp-head"><div class="mp-no">${m.no}<small>番台</small></div><div class="mp-t"><div class="mp-name">${esc(md.name)}</div><div class="tags"><span class="tag k${k}">${KIND_NAME[k]}</span><span class="tag">${specOf(md)}</span><span class="tag">${m.island}島${islandMixed(m)?'（混在）':''}</span><span class="tag ${z?'smk':''}">${z?'喫煙OK席':'禁煙席'}</span>${m.installDay>0&&age<10?`<span class="tag new">新台${age+1}日目</span>`:''}${regulatedIds().has(m.type)?`<span class="tag dark">規制で撤去予定</span>`:''}${m.broken?'<span class="tag dark">故障中</span>':''}</div></div></div>`;
   if(d.swap){
-    const trade=Math.round(md.price*0.3/1000)*1000;
+    const trade=Math.round(md.price*0.3*skSell()/1000)*1000;
     h+=`<div class="lbl">入れ替える機種（いまの台は${yen(trade)}で下取り）</div>`;
-    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(x.price-trade)}</button>`}</div>`}).join('');
+    h+=MODELS.filter(x=>(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const lock=rankNo()<x.rank||!modelOnSale(x.id);return `<div class="item ${lock?'locked':''}"><span class="sw" style="background:${x.c}"></span><div class="it"><div class="nm">${esc(x.name)}</div><div class="ds">${KIND_NAME[x.k]}／${specLine(x)}・人気${x.pop}</div></div>${!modelOnSale(x.id)?'<span class="sub">販売終了</span>':lock?`<span class="sub">ランク${x.rank}</span>`:x.id===m.type?'<span class="sub">いまの機種</span>':`<button class="btn sm" data-act="swap-to" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id})-trade)}</button>`}</div>`}).join('');
     h+=`<button class="btn" data-act="m-swap-back" type="button">もどる</button>`;
     return [`${m.no}番台を入れ替え`,h];
   }
@@ -383,17 +386,17 @@ function doorSheet(d){
 function shopSheet(tab){
   tab=tab||'m';const rk=rankNo();
   let h=tabs([['m','台'],['d','設備'],['f','床と壁'],['s',`倉庫${S.storage.length?`(${S.storage.length})`:''}`],['x','広げる']],tab,'shop-tab');
-  h+=`<div class="sub">資金 ${yen(S.money)} ・ ランク${rk}「${RANKS[rk-1].n}」・ 内装 ${stars()}</div>`;
+  h+=`<div class="sub">資金 ${yen(S.money)} ・ ランク${rk}「${RANKS[rk-1].n}」・ 内装 ${stars()}${skPrice()<1?` ・ <b class="pos">${Math.round((1-skPrice())*100)}%引き</b>`:''}</div>`;
   const row=(sw,nm,ds,right,lock)=>`<div class="item ${lock?'locked':''}"><span class="sw" style="background:${sw}"></span><div class="it"><div class="nm">${nm}</div><div class="ds">${ds}</div></div>${right}</div>`;
   if(tab==='m'){
     for(const k of ['p','s']){
       h+=`<div class="lbl">${KIND_NAME[k]}</div>`;
-      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${specLine(x)}・人気${x.pop}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank||off)}).join('');
+      h+=MODELS.filter(x=>x.k===k&&(x.gen||1)<=S.gen).sort(byRankPrice).map(x=>{const off=!modelOnSale(x.id);return row(x.c,esc(x.name)+(x.gen?' <span class="tag new">新基準</span>':''),`${specLine(x)}・人気${x.pop}<br>${SPEC_INFO[specOf(x)]}`,off?'<span class="sub">販売終了</span>':rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="m" data-id="${x.id}" type="button">${yen(priceOf({kind:'m',type:x.id}))}</button>`,rk<x.rank||off)}).join('');
     }
   }else if(tab==='d'){
     h+=`<button class="btn" data-act="zone-tool" type="button">たばこゾーンを塗る</button>`;
-    h+=`<div class="lbl">壁に付ける（マスを使わない）</div>`+WALLITEMS.map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="w" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank)).join('');
-    h+=`<div class="lbl">床に置く</div>`+DECOR.filter(x=>!x.reward).map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="d" data-id="${x.id}" type="button">${yen(x.price)}</button>`,rk<x.rank)).join('');
+    h+=`<div class="lbl">壁に付ける（マスを使わない）</div>`+WALLITEMS.map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="w" data-id="${x.id}" type="button">${yen(priceOf({kind:'w',type:x.id}))}</button>`,rk<x.rank)).join('');
+    h+=`<div class="lbl">床に置く</div>`+DECOR.filter(x=>!x.reward).map(x=>row(SWATCH[x.id],esc(x.name),esc(x.info),rk<x.rank?`<span class="sub">ランク${x.rank}</span>`:`<button class="btn sm" data-act="buy" data-k="d" data-id="${x.id}" type="button">${yen(priceOf({kind:'d',type:x.id}))}</button>`,rk<x.rank)).join('');
   }else if(tab==='f'){
     h+=`<div class="lbl">床（いちど買えば無料で切り替え）</div>`+FLOORS.map(x=>{const own=G.ownedFloors.includes(x.id)||(x.reward&&ownedAnyFloor(x.id)),cur=G.floor===x.id;return row(`linear-gradient(135deg,${x.a} 50%,${x.b} 50%)`,x.name+(x.reward?' <span class="tag new">ごほうび</span>':''),`内装＋${x.appeal}${x.reward&&!own?`・${esc(x.reward)}`:''}`,cur?'<span class="sub">使用中</span>':x.reward&&!own?'<span class="sub">まだ</span>':`<button class="btn sm" data-act="floor" data-id="${x.id}" type="button">${own?'使う':yen(x.price)}</button>`,x.reward&&!own)}).join('');
     h+=`<div class="lbl">壁</div>`+WALLS.map(x=>{const own=G.ownedWalls.includes(x.id),cur=G.wall===x.id;return row(`linear-gradient(90deg,${x.c} 50%,${x.d} 50%)`,x.name,`内装＋${x.appeal}`,cur?'<span class="sub">使用中</span>':`<button class="btn sm" data-act="wall" data-id="${x.id}" type="button">${own?'使う':yen(x.price)}</button>`)}).join('');
@@ -469,7 +472,8 @@ function eventSheet(){
   if(ev.type==='tail'){const cnt=d=>ms.filter(m=>m.no%10===d).length;h+=`<div class="lbl">台番号の最後の数字（4と9はありません）</div><div class="chips">${[0,1,2,3,5,6,7,8].map(d=>`<button class="chip ${String(ev.target)===String(d)?'cur':''}" data-act="ev-target" data-v="${d}" ${cnt(d)?'':'disabled'} type="button">末尾${d}（${cnt(d)}台）</button>`).join('')}</div>`}
   if(ev.type==='model'){const ids=[...new Set(ms.map(m=>m.type))];h+=`<div class="lbl">どの機種？</div><div class="chips">${ids.map(id=>`<button class="chip ${ev.target===id?'cur':''}" data-act="ev-target" data-v="${id}" type="button">${esc(shortName(MB[id].name))}（${ms.filter(m=>m.type===id).length}台）</button>`).join('')}</div>`}
   if(ev.type==='media'){
-    h+=`<div class="lbl">どこに取材してもらう？</div><div class="chips">${[['mag',`パチンコ雑誌（${man(MEDIA_COST.mag)}）`,1],['tube',`人気配信者（${man(MEDIA_COST.tube)}）`,3]].map(([k,l,r])=>`<button class="chip ${ev.target===k?'cur':''}" data-act="ev-target" data-v="${k}" ${rankNo()<r?'disabled':''} type="button">${l}${rankNo()<r?`（ランク${r}）`:''}</button>`).join('')}</div>`;
+    const tt=S.regFx&&S.regFx.takaTube,mc=k=>eventCost({type:'media',target:k});
+    h+=`<div class="lbl">どこに取材してもらう？</div><div class="chips">${[['mag',`パチンコ雑誌（${man(mc('mag'))}）`,1],['tube',tt?'人気配信者（タカシの公開収録・タダ）':`人気配信者（${man(mc('tube'))}）`,tt?1:3]].map(([k,l,r])=>`<button class="chip ${ev.target===k?'cur':''}" data-act="ev-target" data-v="${k}" ${rankNo()<r?'disabled':''} type="button">${l}${rankNo()<r?`（ランク${r}）`:''}</button>`).join('')}</div>`;
     const avg=avgOf(ms.map(dashi)),[j,cls]=judgeOf(avg,0.12);
     h+=`<div class="box col"><div>取材では<b>お店全体の出し具合</b>が見られます。いま <b>${Math.round(avg*100)}%</b></div><div>このままだと… <span class="verdict ${cls}">${j}</span></div><div>客足の見込み <b>×${eventMultToday().toFixed(2)}</b>・設定狙いの客が多く来ます</div><div class="sub">${ev.target==='tube'?'配信は影響が大きく、良くも悪くも評判が大きく動きます':'雑誌はほどほどの影響です'}</div></div>
 <div class="actions"><button class="btn sm" data-act="ev-fill-all" data-v="hi" type="button">全台を高めに</button><button class="btn sm" data-act="go-list" type="button">設定一覧を開く</button></div>`;
@@ -483,7 +487,7 @@ function eventSheet(){
     h+=`<div class="box col"><div><b>${esc(se.name)}</b>（飾りつけと告知 ${man(SEASON_COST)}）</div><div>季節のイベントでは<b>お店全体の出し具合</b>が見られます。いま <b>${Math.round(avg*100)}%</b></div><div>このままだと… <span class="verdict ${cls}">${j}</span></div><div>客足の見込み <b>×${eventMultToday().toFixed(2)}</b>（お休みの客足にさらに上乗せ）</div><div class="sub">結果で信用が大きく動きます。ライバル店もこの時期はイベントが多くなります。</div></div>
 <div class="actions"><button class="btn sm" data-act="ev-fill-all" data-v="hi" type="button">全台を高めに</button><button class="btn sm" data-act="go-list" type="button">設定一覧を開く</button></div>`;
   }else if(ev.type!=='none'){
-    h+=`<button class="chip wide ${ev.ad?'cur':''}" data-act="ev-ad" type="button">${ev.ad?'✓ ':''}チラシとSNSで告知する（${yen(50000)}）</button>`;
+    h+=`<button class="chip wide ${ev.ad?'cur':''}" data-act="ev-ad" type="button">${ev.ad?'✓ ':''}チラシとSNSで告知する（${yen(Math.round(50000*skAd()/1000)*1000)}）</button>`;
     const tgs=eventTargets();
     if(tgs.length){
       const avg=avgOf(tgs.map(dashi)),[j,cls]=judgeOf(avg,ev.type==='newm'?0.15:0);
@@ -518,15 +522,17 @@ function rivalCard(r,fc){
 }
 function manageSheet(tab){
   tab=tab||'story';
-  let h=tabs([['story','ストーリー'],['staff','店員'],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
+  let h=tabs([['story','ストーリー'],['mgr',`店長${S.mgr&&S.mgr.sp?'●':''}`],['staff','店員'],['rival','ライバル'],['reg','常連'],['prop','物件'],['bank','銀行'],['goal','目標'],['log','記録']],tab,'mg-tab');
   if(tab==='story')h+=storyPanel();
+  else if(tab==='mgr')h+=mgrPanel();
   else if(tab==='staff'){
     const need=needStaff();
     h+=`<div class="box stats">${Object.entries(ROLES).map(([r,v])=>{const n=staffOf(r).length,ok=n>=need[r];return `<span>${v.name} <b class="${ok?'pos':'neg'}">${n}</b>／目安${need[r]}</span>`}).join('')}<span>給料 <b>${yen(wagesTotal())}</b>／日</span></div>`;
     h+=`<div class="lbl">いまの店員</div>`;
-    h+=S.staff.length?S.staff.map(s=>`<div class="item"><span class="sw" style="background:${ROLES[s.role].col}"></span><div class="it"><div class="nm">${esc(s.name)} <span class="sub">Lv${s.lv}</span></div><div class="ds">${ROLES[s.role].name}・速さ${starTxt(s.spd)}・接客${starTxt(s.srv)}<br>給料 ${yen(s.wage)}／日</div></div><div class="col">${s.lv<5?`<button class="btn sm" data-act="st-train" data-id="${s.id}" type="button">研修 ${yen(trainCost(s))}</button>`:''}<button class="btn sm ghost" data-act="st-fire" data-id="${s.id}" type="button">やめてもらう</button></div></div>`).join(''):'<div class="empty">店員がいません</div>';
+    h+=S.staff.length?S.staff.map(staffCard).join(''):'<div class="empty">店員がいません</div>';
+    h+=`<div class="sub">店員は毎日の仕事で経験値がたまり、Lv${STAFF_MAX_LV}まで育ちます（研修はLv5まで）。Lv${TITLES.shunin.need}で「主任」、主任がLv${TITLES.fuku.need}で「副店長」にできます。主任・副店長がいると、店員みんなの動きが良くなります。やる気が低いと動きが鈍り、相談ごとが増えます。</div>`;
     h+=`<div class="lbl">応募してきた人（毎日入れかわります）</div>`;
-    h+=S.cands.map(c=>`<div class="item"><span class="sw" style="background:${ROLES[c.role].col}"></span><div class="it"><div class="nm">${esc(c.name)}</div><div class="ds">${ROLES[c.role].name}・速さ${starTxt(c.spd)}・接客${starTxt(c.srv)}<br>給料 ${yen(c.wage)}／日</div></div><button class="btn sm" data-act="st-hire" data-id="${c.id}" type="button">雇う</button></div>`).join('')||'<div class="empty">今日の応募はもういません</div>';
+    h+=S.cands.map(c=>{fixStaff(c);return `<div class="item"><span class="sw" style="background:${ROLES[c.role].col}"></span><div class="it"><div class="nm">${esc(c.name)} <span class="tag pers">${PERS[c.pers].name}</span></div><div class="ds">${ROLES[c.role].name}・速さ${starTxt(c.spd)}・接客${starTxt(c.srv)}<br>${esc(PERS[c.pers].desc)}<br>給料 ${yen(Math.round(c.wage*skWage()))}／日</div></div><button class="btn sm" data-act="st-hire" data-id="${c.id}" type="button">雇う</button></div>`}).join('')||'<div class="empty">今日の応募はもういません</div>';
     h+=`<div class="sub">${Object.values(ROLES).map(r=>`${r.name}：${r.desc}`).join('<br>')}</div>`;
   }else if(tab==='rival'){
     const fc=forecast(),vp=visiblePlans(),rp=rumorPlans();
@@ -542,8 +548,8 @@ function manageSheet(tab){
     if(log.length)h+=`<div class="lbl">倒したライバル店（${S.rivalLog.length}軒）</div><div class="rv-logs">${log.map(l=>{const B=BOSS_BY[l.boss];return `<div class="rv-log">${ptImg(B.face,'sad',B.col,'sm')}<div><b>${esc(l.shop)}</b><br><span class="sub">${esc(B.name)}・${dateStr(l.day)}に閉店</span></div></div>`}).join('')}</div>`;
     h+=`<div class="sub">・相手のイベント日にあなたの店が「激アツ」を出すと、相手に大きなダメージ。<br>・偵察すると、還元率・次のイベント日・店の弱点がわかります。弱点の客層の台を増やすと、相手のお客さんを奪いやすくなります。<br>・閉店させた店は居抜き物件として買えることがあります。しばらくすると、別のライバル店が出店してきます。</div>`;
   }else if(tab==='reg'){
-    h+=REG_DEFS.map(def=>{const st=S.regs[def.id],hearts=Math.round(st.loy/20);return `<div class="item ${st.st==='gone'?'locked':''}"><span class="sw face" style="background:${def.look.shirt}"></span><div class="it"><div class="nm">${esc(def.name)} ${st.loy>=70?'<span class="tag new">常連</span>':''}</div><div class="ds">${'♥'.repeat(hearts)}${'♡'.repeat(5-hearts)} ・ ${regStatus(st)}・来店${st.visits}回<br>${st.met?`好き：${esc(def.likes)}／苦手：${esc(def.hates)}`:'まだ好みがわかりません'}${st.say?`<br>「${esc(st.say)}」`:''}</div></div></div>`}).join('');
-    h+=`<div class="sub">常連になった人が多いほど、お店の評判が少しずつ上がります。離れた人も、評判が高くなるとまた来てくれることがあります。</div>`;
+    h+=REG_DEFS.map(def=>{const st=S.regs[def.id],hearts=Math.round(st.loy/20),eps=EPI[def.id]||[],n=st.ep||0;return `<div class="item reg ${st.st==='gone'?'locked':''}">${ptImg(faceFromLook(def.look,def.id.length*31+7,def.elder),st.loy>=60?'happy':'n',def.look.shirt,'sm')}<div class="it"><div class="nm">${esc(def.name)} ${st.loy>=70?'<span class="tag new">常連</span>':''}</div><div class="ds">${'♥'.repeat(hearts)}${'♡'.repeat(5-hearts)} ・ ${regStatus(st)}・来店${st.visits}回<br>${st.met?`好き：${esc(def.likes)}／苦手：${esc(def.hates)}`:'まだ好みがわかりません'}${st.say?`<br>「${esc(st.say)}」`:''}</div><div class="eps">${eps.map((e,i)=>`<span class="ep ${i<n?'on':''}" title="${i<n?esc(e.title):''}">${i<n?esc(e.title):'？'}</span>`).join('')}</div></div></div>`}).join('');
+    h+=`<div class="sub">常連さんとは、仲よくなるほど「物語」が進みます（閉店後に話しかけてきます）。物語の中で、お店で働きたい・仲間を連れてきたい…といった出来事が起こります。常連になった人が多いほど、お店の評判が少しずつ上がります。</div>`;
   }else if(tab==='prop'){
     const sale=Math.round(storeValue()*0.6/10000)*10000;
     h+=`<div class="box"><b>いまの店</b>：${LOCS[G.loc].name}・${G.W}×${G.H}マス（最大${G.maxW}×${G.maxH}）<br>家賃 ${yen(rentOf())}／日・売ると ${yen(sale)}</div>`;
@@ -602,6 +608,7 @@ function reportSheet(R){
   }
   if(R.ev){h+=`<div class="stampbox"><div class="stamp ${R.ev.cls}">${R.ev.judge}</div><div><div class="lbl">${esc(R.ev.label)}</div><div class="sub">対象${R.ev.n}台・出し具合${Math.round(R.ev.avg*100)}%</div><div>信用 ${R.trust0} → ${R.trust1}</div></div></div>`}
   if(R.missions){const mi=R.missions;h+=`<div class="box col mis-res"><div class="lbl">朝礼の目標 ${mi.n}/3 達成${mi.n===3?' <span class="tag new">全部達成！</span>':''}</div>${mi.list.map(m=>`<div class="mr ${m.ok?'ok':'ng'}"><span class="ck">${m.ok?'✓':'×'}</span>${esc(m.label)}</div>`).join('')}<div class="sub">ごほうび ${yen(mi.money)}${mi.bonus?`＋全部達成ボーナス ${yen(mi.bonus)}・信用+1`:''}${mi.streak>=2?`（${mi.streak}日連続で全部達成中）`:''}</div></div>`}
+  if(R.exp||(R.staffUps&&R.staffUps.length))h+=`<div class="sub">店長の経験値 +${R.exp||0}${S.mgr?`（Lv${S.mgr.lv}・次まで${expNeed(S.mgr.lv)-S.mgr.exp}）`:''}${R.staffUps&&R.staffUps.length?`<br>レベルアップ：${R.staffUps.map(esc).join('・')}`:''}</div>`;
   h+=`<div class="kpis"><div><b>${R.visitors}</b><span>来店</span></div><div><b class="${R.full?'neg':''}">${R.full}</b><span>満席で帰った</span></div><div><b>${Math.round(R.share*100)}%</b><span>町のシェア</span></div></div>`;
   h+=`<div class="segs">${SEGS.filter(s=>R.seg[s]).map(s=>`<span>${SEG_NAME[s]} ${R.seg[s]}人</span>`).join('')}</div>`;
   h+=`<table class="mt money"><tr><td>貸し玉・メダルの売上</td><td>${yen(R.coin)}</td></tr><tr><td>払い出し（客の勝ち分）</td><td class="neg">-${yen(R.out)}</td></tr>${R.exch?`<tr><td>スロットの交換差益（5.6枚交換）</td><td>${yen(R.exch)}</td></tr>`:''}<tr><td>自販機</td><td>${yen(R.drink)}</td></tr><tr><td>家賃</td><td class="neg">-${yen(R.rent)}</td></tr><tr><td>店員の給料</td><td class="neg">-${yen(R.wages)}</td></tr><tr><td>電気代</td><td class="neg">-${yen(R.power)}</td></tr>${R.ad?`<tr><td>告知・取材費</td><td class="neg">-${yen(R.ad)}</td></tr>`:''}${R.repairs?`<tr><td>夜間の修理費（${R.repairs/15000}台）</td><td class="neg">-${yen(R.repairs)}</td></tr>`:''}${R.interest?`<tr><td>借入の利息</td><td class="neg">-${yen(R.interest)}</td></tr>`:''}${R.goto?`<tr><td>ゴト被害</td><td class="neg">-${yen(R.goto)}</td></tr>`:''}<tr class="total"><td>今日の利益</td><td class="${R.net>=0?'pos':'neg'}">${sgn(R.net)}</td></tr></table>`;
@@ -667,6 +674,7 @@ function afterReport(){
   pendingTalks=[];pendingMorning=[];
   steps.push(done=>runIncidents(done));
   if(goActive()&&goDayIdx()===0)steps.push(done=>{telop(`${goLabel(S.go)}の準備`,S.go.type==='anniv'?'今日からお祭り！':'今日からオープン期間！','good');done()});
+  steps.push(levelUpStep());
   if(prefs.chorei!==false)steps.push(done=>{if(S.phase==='prep'&&!sheetKind&&!(S.story&&S.story.fired)){ensureMissions();openSheet('morning')}done()});
   runSeq(steps);
 }
@@ -771,13 +779,36 @@ function afterLoad(delay){
   if(S.incidents&&S.incidents.length)setTimeout(()=>runIncidents(()=>refreshAll()),delay||0);
 }
 
+/* ---------- 店長・店員の画面 ---------- */
+function staffCard(s){
+  fixStaff(s);
+  const P=PERS[s.pers],need=40*s.lv,mor=Math.round(s.mor),moodC=mor>=70?'pos':mor<40?'neg':'';
+  const promo=['shunin','fuku'].filter(t=>s.title!==t&&canTitle(s,t)).map(t=>`<button class="btn sm hot" data-act="st-promote" data-id="${s.id}" data-v="${t}" type="button">${TITLES[t].name}にする</button>`);
+  return `<div class="item">${ptImg(faceFromLook(staffLook({s,role:s.role}),s.id),mor>=70?'happy':mor<40?'sad':'n',ROLES[s.role].col,'sm')}<div class="it"><div class="nm">${s.title?`<span class="tag ttl">${TITLES[s.title].name}</span> `:''}${esc(s.name)} <span class="sub">Lv${s.lv}</span></div><div class="ds">${ROLES[s.role].name}・<span class="tag pers">${P.name}</span>・速さ${starTxt(s.spd)}・接客${starTxt(s.srv)}<br>やる気 <b class="${moodC}">${mor}</b>${s.lv<STAFF_MAX_LV?`・次のLvまで ${Math.max(0,Math.round(need-s.exp))}`:'・Lv MAX'}・給料 ${yen(Math.round(s.wage*skWage()))}／日<br><span class="sub">${esc(P.desc)}</span></div></div><div class="col">${promo.join('')}${s.lv<5?`<button class="btn sm" data-act="st-train" data-id="${s.id}" type="button">研修 ${yen(trainCost(s))}</button>`:''}<button class="btn sm ghost" data-act="st-fire" data-id="${s.id}" type="button">やめてもらう</button></div></div>`;
+}
+function mgrPanel(){
+  const M=S.mgr,need=expNeed(M.lv);
+  let h=`<div class="mgrcard">${ptImg(ME_FACE,M.sp?'happy':'smug','#ff2d55')}<div class="mg-t"><div class="mg-lv">店長 <b>Lv${M.lv}</b></div><div class="lvbar"><i style="width:${Math.round(M.exp/need*100)}%"></i></div><div class="sub">次のレベルまで ${need-M.exp}・スキルポイント <b class="${M.sp?'neg':''}">${M.sp}</b></div></div></div>`;
+  h+=`<div class="sub">経験値は、毎日の営業・朝礼の目標・イベントの成功・月の査定・章のクリア・常連さんの物語などでたまります。レベルが上がるとスキルポイントが1もらえ、スキルを覚えられます（各スキル3段階）。</div>`;
+  h+=`<div class="lbl">店長スキル</div>`+SKILLS.map(k=>{const r=sk(k.id);return `<div class="skrow" style="--kc:${k.col}"><div class="sk-h"><b>${esc(k.name)}</b><span class="sk-st">${[0,1,2].map(i=>`<i class="${i<r?'on':''}"></i>`).join('')}</span>${r<3?`<button class="btn sm ${M.sp?'hot':''}" data-act="sk-learn" data-v="${k.id}" ${M.sp?'':'disabled'} type="button">覚える</button>`:'<span class="tag new">MAX</span>'}</div><div class="sk-d">${k.lv.map((t,i)=>`<div class="${i<r?'on':i===r?'next':''}">${i<r?'✓':i+1+'.'} ${esc(t)}</div>`).join('')}</div></div>`}).join('');
+  const cur=S.concept||{},on=conceptOn();
+  h+=`<div class="lbl">お店のコンセプト</div><div class="box">${cur.id?`いまのコンセプト：<b>${esc(CONCEPTS[cur.id].name)}</b>　${on?'<span class="tag new">効果あり</span>':'<span class="tag dark">条件が足りない</span>'}`:'まだコンセプトを決めていません'}<br><span class="sub">条件を満たしているあいだ、お客さんが少し増え、合う台が人気になります。${cur.n>0?`変えるときは${man(CONCEPT_COST)}かかり、決めてから${CONCEPT_WAIT}日たつまで変えられません。`:'最初の1回はタダです。'}</span></div>`;
+  h+=Object.entries(CONCEPTS).map(([id,C])=>{const ratio=conceptRatio(id),ok=ratio>=C.need;return `<div class="cpt ${cur.id===id?'cur':''}" style="--cc:${C.col}"><div class="cp-h"><b>${esc(C.name)}</b>${cur.id===id?'<span class="tag new">いまのコンセプト</span>':''}</div><div class="sub">${esc(C.desc)}</div><div class="qrow"><span class="qk">条件</span><span>${esc(C.cond)}<br>${hbar(ratio/C.need,ok?'high':'')}</span><b class="${ok?'pos':'neg'}">${Math.round(ratio*100)}%</b></div>${cur.id===id?'':`<button class="btn sm" data-act="concept" data-v="${id}" ${S.phase==='prep'?'':'disabled'} type="button">このコンセプトにする${cur.n>0?`（${man(CONCEPT_COST)}）`:''}</button>`}</div>`}).join('');
+  if(cur.id)h+=`<button class="btn sm ghost" data-act="concept" data-v="" type="button">コンセプトをやめる</button>`;
+  return h;
+}
+
 /* ---------- 朝礼・ホールアワード・月末決算の画面 ---------- */
 function morningSheet(){
   ensureMissions();
   const ms=S.missions,prep=S.phase==='prep',who=choreiSpeaker(),sp=speaker(who),[ex,line]=choreiLine();
   const fc=forecast(),info=fc.info,riv=openRivals().filter(r=>r.evKind),each=missionReward();
   let h=`<div class="chorei">${sp.face?ptImg(sp.face,ex,sp.col):''}<div class="ch-t"><b>${esc(sp.name)}</b><span class="sub">${esc(sp.sub||'')}</span><div class="say">「${esc(line)}」</div></div></div>`;
-  h+=`<div class="box stats"><span>${WEATHER[S.weather.today].name}</span>${info.tags.map(t=>`<span>${esc(t)}</span>`).join('')}<span>来店の見込み 約<b>${Math.round(fc.expected)}</b>人</span>${riv.map(r=>`<span class="neg">${esc(r.name)}が${RIV_EV_LABEL[r.evKind]}</span>`).join('')}</div>`;
+  const dr=sk('data');
+  let fcs=dr>=1?`<span>来店の見込み 約<b>${Math.round(fc.expected)}</b>人</span>`:'<span class="sub">（店長スキル「データ分析」で来店の見込みがわかります）</span>';
+  if(dr>=2){const present=new Set(machines().map(segOf)),w=SEGS.filter(x=>present.has(x)).map(x=>[x,SEG_SHARE[x]*(x.endsWith('lo')?info.elder*LOCS[G.loc].elder:info.hi)*conceptSeg(x)]).sort((a,b)=>b[1]-a[1]);if(w.length)fcs+=`<span>多い客層 <b>${SEG_NAME[w[0][0]]}</b></span>`;
+    for(const r of openRivals()){const nd=nextPatDay(r);if(nd)fcs+=`<span class="sub">${esc(r.name)}の次のイベント ${dateStr(nd)}</span>`}}
+  h+=`<div class="box stats"><span>${WEATHER[S.weather.today].name}</span>${info.tags.map(t=>`<span>${esc(t)}</span>`).join('')}${fcs}${riv.map(r=>`<span class="neg">今日は${esc(r.name)}が${RIV_EV_LABEL[r.evKind]}</span>`).join('')}</div>`;
   h+=`<div class="lbl">今日の目標</div>`;
   h+=ms.list.map((m,i)=>{const d=mDef(m),st=mLive(m);return `<div class="mcard ${st||''}"><span class="mn">${st==='ok'?'✓':st==='ng'?'×':i+1}</span><div class="mt"><b>${esc(mLabel(m))}</b>${d.sub?`<span class="sub">${esc(d.sub)}</span>`:''}${S.phase==='open'&&d.prog?`<span class="sub">いま ${esc(d.prog(m))}</span>`:''}</div>${prep&&!ms.rerolled?`<button class="btn sm ghost" data-act="mis-reroll" data-v="${i}" type="button">入れ替え</button>`:st==='ok'?'<span class="tag new">達成</span>':st==='ng'?'<span class="tag dark">失敗</span>':''}</div>`}).join('');
   h+=`<div class="sub">1つ達成ごとに${yen(each)}。3つ全部で${yen(Math.round(each*1.5))}のボーナスと信用+1。${prep?(ms.rerolled?'今日の入れ替えは使いました。':'目標は1日1回だけ、1つ入れ替えられます。'):''}</div>`;
@@ -861,6 +892,11 @@ const GUIDE={
 <h3>コンプリート</h3><p>1台の1日の差玉が<b>パチンコ${COMPLETE.p.toLocaleString('ja-JP')}発・スロット${COMPLETE.s.toLocaleString('ja-JP')}枚</b>に届くと、その台はその日は打ち止めになります（台に「完」が出ます）。</p>
 <h3>ホールデータ</h3><p>営業中の「データ」、設定一覧、日報から見られます。<b>出玉ランキング</b>・<b>台番号別の稼働率</b>・<b>機種別の稼働率</b>・<b>客層と時間ごとの稼働</b>で、どんなお客さんがどの台を打っているかがわかります。稼働の低い機種は入れ替え候補です。</p>
 <h3>機種データベース</h3><p>メニューの「機種データベース」で、機種の名前・出玉率・初当り確率を変えられます。変えた内容はこの端末に保存されます。</p>`],
+  mgr:['店長と店づくり',`<h3>店長のレベルとスキル</h3><p>営業・朝礼の目標・イベント・査定・章のクリア・常連さんの物語などで<b>経験値</b>がたまり、店長のレベルが上がります。レベルが上がるたびにスキルポイントが1もらえ、「経営 → 店長」でスキルを覚えられます。</p>
+<ul><li><b>釘読み</b>：釘を締めても見切られにくく、開けた台でもっと喜ばれる</li><li><b>データ分析</b>：朝礼で来店の見込み・多い客層・ライバルの次のイベント日がわかる。偵察がタダに</li><li><b>煽り上手</b>：イベントの客足アップ・告知や飾りつけの費用ダウン</li><li><b>交渉上手</b>：台と設備が安く買え、高く売れる</li><li><b>人望</b>：給料と研修費が安くなり、引き抜かれにくい</li><li><b>おもてなし</b>：お客さんの満足度アップ・呼び出しの対応が早い</li><li><b>防犯の目</b>：ゴト師を見つけやすく、被害が減る</li><li><b>資金繰り</b>：借りられる上限アップ・利息ダウン</li></ul>
+<h3>店員の育成</h3><p>店員には<b>性格</b>（真面目・元気・のんびり・野心家・お調子者・職人気質）と<b>やる気</b>があります。毎日の仕事で経験値がたまってLv10まで育ち、Lv5で<b>主任</b>、主任がLv8で<b>副店長</b>にできます。主任・副店長がいると店員みんなの動きが良くなります。朝には遅刻・ケンカ・昇給の相談・提案などの相談ごとが起こります。</p>
+<h3>常連さんの物語</h3><p>8人の常連さんには、それぞれ3〜5話の物語があります。仲よくなるほど、閉店後に話しかけてきて物語が進みます。配信者デビュー、孫の就職、独立、出資の話…。選んだ答えで、お店に仲間が増えたり、お客さんが増えたりします。</p>
+<h3>お店のコンセプト</h3><p>「甘デジ天国」「ジャグラー専門」「1円パチの憩いの場」「勝負師の店」から選べます。合う台が決まった割合以上あるあいだ、合う台が人気になり、お客さんが少し増えます。看板の下にコンセプトが出ます。</p>`],
   more:['規制・取材・トラブル',`<h3>規制</h3><p>ときどき国の規制が発表され、対象の機種は期限までに撤去されます（期限を過ぎると自動で撤去・下取りなし）。代わりに「新基準」の新しい機種が買えるようになります。</p>
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
@@ -1121,6 +1157,9 @@ $('#sheetBody').addEventListener('click',e=>{
     case 'chorei-ok':closeSheet();refreshAll();sfx('good');toast('今日もよろしく！');break;
     case 'chorei-pref':prefs.chorei=prefs.chorei===false;savePrefs();renderSheet();break;
     case 'menu-chorei':prefs.chorei=prefs.chorei===false;savePrefs();renderSheet();break;
+    case 'sk-learn':{const why=learnSkill(v);if(why){toast(why);sfx('bad');break}sfx('good');toast(`「${SKB[v].name}」を覚えた！（${sk(v)}段階目）`);save();refreshAll();break}
+    case 'st-promote':{const s=findStaff(id);if(s&&promote(s,v)){sfx('fanfare');toast(`${s.name}さんを${TITLES[v].name}にしました！`);save();refreshAll()}break}
+    case 'concept':{const why=setConcept(v||null);if(why){toast(why);sfx('bad');break}sfx('fanfare');telop('コンセプト決定！',v?CONCEPTS[v].name:'コンセプトなし','good');save();refreshAll();break}
     case 'st-hire':{const c=S.cands.find(x=>x.id===Number(id));if(c){hireStaff(c);S.cands=S.cands.filter(x=>x!==c);sfx('good');toast(`${c.name}さんを雇いました`);save();refreshAll()}break}
     case 'st-fire':{const s=findStaff(id);if(s){S.staff=S.staff.filter(x=>x!==s);sfx('tap');toast(`${s.name}さんがやめました`);save();refreshAll()}break}
     case 'st-train':{const s=findStaff(id);if(!s)break;const c=trainCost(s);if(S.money<c){toast('お金が足りません');sfx('bad');break}

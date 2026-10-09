@@ -12,7 +12,7 @@ function speaker(who){
     const B=BOSS_BY[id];
     if(B){const r=S.rivals.find(x=>x.boss===id&&x.open)||S.rivals.find(x=>x.boss===id);const p=S.rivalPlans.find(x=>x.boss===id);return {name:B.name,sub:`${r?r.name:p?p.shop:B.shop}・${B.title}`,face:B.face,col:B.col}}
   }
-  if(k==='staff'){const s=S.staff.find(x=>String(x.id)===id);if(s)return {name:s.name,sub:ROLES[s.role].name,face:faceFromLook(staffLook({s,role:s.role}),s.id),col:ROLES[s.role].col}}
+  if(k==='staff'){const s=S.staff.find(x=>String(x.id)===id);if(s)return {name:s.name,sub:(s.title?TITLES[s.title].name+'・':'')+ROLES[s.role].name,face:faceFromLook(staffLook({s,role:s.role}),s.id),col:ROLES[s.role].col}}
   if(k==='reg'){const d=REG_BY[id];if(d)return {name:d.name,sub:'常連さん',face:faceFromLook(d.look,id.length*31+7,d.elder),col:d.look.shirt}}
   return {name:'',face:null};
 }
@@ -97,6 +97,7 @@ function incidentTalk(inc){
         {label:'気持ちよく送り出す',sub:'相手の店が少し強くなる',run:res('let')}]},
     ];
   }
+  const st=staffIncidentTalk(inc);if(st)return st;
   S.incidents=S.incidents.filter(x=>x.id!==inc.id);return null;
 }
 function runIncidents(done){

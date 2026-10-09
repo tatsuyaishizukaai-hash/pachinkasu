@@ -119,10 +119,12 @@ function monthPL(){
   const giver=mach.slice().sort((a,b)=>a.store-b.store)[0]||null;
   const rivals=Object.entries(M.shares).filter(([k])=>k!=='me').map(([k,v])=>{const r=S.rivals.find(x=>String(x.id)===k);return r?{name:r.name,col:r.col,boss:r.boss,share:v/M.days}:null}).filter(Boolean).sort((a,b)=>b.share-a.share);
   const prev=S.monPrev||null;
+  const div=S.regFx&&S.regFx.kanedaInv&&M.net>0?Math.round(M.net*0.05/1000)*1000:0;
+  if(div){S.money-=div;M.net-=div}
   const pl={y:M.y,m:M.m,days:M.days,coin:M.coin,out:M.out,exch:M.exch,drink:M.drink,gross,rent:M.rent,wages:M.wages,power:M.power,ad:M.ad,repairs:M.repairs,interest:M.interest,goto:M.goto,net:M.net,
     visitors:M.visitors,full:M.full,util:M.uSum/M.days,best:M.best,worst:M.worst,red:M.red,ev:M.ev,hot:M.hot,gase:M.gase,mis:M.mis,misT:M.misT,netDays:M.netDays.slice(),
     share:(M.shares.me||0)/M.days,rivals,earner:earner&&{name:MB[earner.type].name,store:earner.store,n:earner.n},popular:popular&&{name:MB[popular.type].name,util:popular.util,n:popular.n},
-    giver:giver&&giver.store<0?{no:giver.no,name:MB[giver.type].name,cust:-giver.store}:null,prevNet:prev?prev.net:null,prevVis:prev?prev.visitors:null};
+    giver:giver&&giver.store<0?{no:giver.no,name:MB[giver.type].name,cust:-giver.store}:null,prevNet:prev?prev.net:null,prevVis:prev?prev.visitors:null,div};
   S.monPrev={net:pl.net,visitors:pl.visitors};
   return pl;
 }

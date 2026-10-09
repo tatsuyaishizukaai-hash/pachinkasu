@@ -64,7 +64,7 @@ const regStatus=st=>st.st==='gone'?'来なくなった':st.away?`${st.away.name}
 function makeCandidate(role,spd,srv){
   spd=spd??(1+Math.floor(Math.random()*4));srv=srv??(1+Math.floor(Math.random()*4));
   if(Math.random()<0.12){spd=Math.min(5,spd+1);srv=Math.min(5,srv+1)}
-  return {id:S.nid++,name:pick(FAMILY)+' '+pick(GIVEN),role,spd,srv,lv:1,wage:ROLES[role].base+(spd+srv)*700,hired:0};
+  return {id:S.nid++,name:pick(FAMILY)+' '+pick(GIVEN),role,spd,srv,lv:1,wage:ROLES[role].base+(spd+srv)*700,hired:0,pers:pick(PERS_KEYS),exp:0,mor:70,title:''};
 }
 function refreshCands(force){
   if(!force&&S.day===S.candsDay)return;
@@ -72,8 +72,8 @@ function refreshCands(force){
 }
 function hireStaff(c){c.hired=S.day;S.staff.push(c)}
 const staffOf=role=>S.staff.filter(s=>s.role===role);
-const wagesTotal=()=>S.staff.reduce((a,s)=>a+s.wage,0);
-const trainCost=s=>40000*s.lv;
+const wagesTotal=()=>Math.round(S.staff.reduce((a,s)=>a+s.wage,0)*skWage());
+const trainCost=s=>Math.round(40000*s.lv*skTrain()/1000)*1000;
 function needStaff(){const n=machines().length;return {hall:Math.max(1,Math.ceil(n/12)),counter:G.objs.filter(o=>o.kind==='d'&&o.type==='counter').length,clean:Math.max(1,Math.ceil(n/25))}}
 
 /* ---------- 物件 ---------- */
@@ -166,6 +166,6 @@ function expandStore(dir){
 
 /* ---------- 銀行 ---------- */
 const LOAN_RATE=0.0008;
-const loanLimit=()=>1500000*rankNo()+Math.round(storeValue()*0.3/100000)*100000;
+const loanLimit=()=>Math.round((1500000*rankNo()+storeValue()*0.3)*skLoan()/100000)*100000;
 function borrow(n){n=Math.min(n,loanLimit()-S.loan);if(n<=0)return 0;S.loan+=n;S.money+=n;return n}
 function repay(n){n=Math.min(n,S.loan,Math.max(0,S.money));if(n<=0)return 0;S.loan-=n;S.money-=n;return n}

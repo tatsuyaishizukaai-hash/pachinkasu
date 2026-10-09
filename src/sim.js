@@ -44,6 +44,7 @@ function eventMultToday(){
   if(ev.type==='media')m=1+(ev.target==='tube'?1.1:0.6)*Math.pow(0.75,recentEvents())+S.trust/400;
   if(ev.type==='season')m=1+0.6*Math.pow(0.75,recentEvents())+S.trust/300;
   if(ev.ad)m+=0.35;
+  m+=skEv()+conceptEv()+(S.regFx&&S.regFx.taka&&ev.type!=='newm'?0.05:0);
   if(dateOf(S.day).getDate()%10===7)m+=0.15;
   return m;
 }
@@ -58,7 +59,7 @@ function playerAttract(evMult){
   const lineup=0.8+0.4*Math.min(1,avgPop/80);
   const decorF=0.9+0.2*decorRate();
   const regF=1+0.02*Object.values(S.regs).filter(r=>r.loy>=70&&r.st!=='gone').length;
-  let a=(10+S.rep)*capF(n)*lineup*decorF*regF*evMult;
+  let a=(10+S.rep)*capF(n)*lineup*decorF*regF*evMult*(conceptOn()?1.04:1);
   if(S.mod&&S.day<=S.mod.until)a*=S.mod.mult;
   return a;
 }
@@ -69,12 +70,12 @@ function forecast(){
   const tot=aP+rs.reduce((a,x)=>a+x.a,0);
   const shares={me:aP/tot};rs.forEach(x=>shares[x.r.id]=x.a/tot);
   const info=dayInfo(S.day);
-  const expected=LOCS[G.loc].town*info.mult*WEATHER[S.weather.today].mult*shares.me*(0.5+0.5*segFactor());
+  const expected=LOCS[G.loc].town*info.mult*WEATHER[S.weather.today].mult*shares.me*(0.5+0.5*segFactor())*regVisitF(info);
   return {expected,shares,info,evm};
 }
 function pickSeg(info){
   const present=new Set(machines().map(segOf));
-  const w=SEGS.map(s=>present.has(s)?SEG_SHARE[s]*(s.endsWith('lo')?info.elder*LOCS[G.loc].elder:info.hi):0);
+  const w=SEGS.map(s=>present.has(s)?SEG_SHARE[s]*(s.endsWith('lo')?info.elder*LOCS[G.loc].elder:info.hi)*conceptSeg(s):0);
   let r=Math.random()*w.reduce((a,b)=>a+b,0);
   for(let i=0;i<4;i++){r-=w[i];if(r<=0)return SEGS[i]}
   return SEGS.find(s=>present.has(s));
@@ -91,7 +92,8 @@ function openStore(){
   else if(ev.type==='anniv'&&!(annivInfo()&&!annivInfo().held))ev.type='none';
   else if(ev.type!=='none'&&ev.type!=='renewal'&&eventTargets().length===0)ev.type='none';
   if(ev.type==='media'||ev.type==='season'||ev.type==='anniv')ev.ad=false;
-  const cost=ev.type==='renewal'?150000:ev.type==='anniv'?ANNIV_COST:ev.type==='season'?SEASON_COST:ev.type==='media'?MEDIA_COST[ev.target==='tube'?'tube':'mag']:(ev.type!=='none'&&ev.ad?50000:0);
+  const cost=eventCost(ev);
+  if(ev.type==='media'&&ev.target==='tube'&&S.regFx&&S.regFx.takaTube)S.regFx.takaTube=0;
   if(cost&&S.money<cost){toast('イベントのお金が足りません');sfx('bad');return false}
   openSnap=ser();
   if(ev.type==='renewal'){S.go={type:'renewal',start:S.day,len:2,scores:[]};S.lastOpen=S.day;G.renoSpend=0;ev.type='none'}
@@ -159,8 +161,9 @@ const adjGoal=(x0,y0)=>(x,y)=>Math.abs(x-x0)+Math.abs(y-y0)===1;
 function addWhy(c,k,d){c.sat+=d;c.why[k]=(c.why[k]||0)+d}
 function spawnCust(seg,opt={}){
   const [k,rate]=seg.split('-'),coin=RATE[k][rate].coin,sc=coin/400,lo=rate==='lo';
-  const elder=opt.elder??(Math.random()<(lo?0.55:0.12));
-  const hunter=opt.hunter??(Math.random()<hunterFrac*(lo?0.4:1));
+  const elder=opt.elder??(Math.random()<(lo?0.55:0.12)*conceptElder()*(S.regFx&&S.regFx.tome?1.15:1));
+  const hunter=opt.hunter??(Math.random()<hunterFrac*(lo?0.4:1)*conceptHunter());
+  if(opt.rich==null&&!lo&&S.regFx&&S.regFx.kaneda&&Math.random()<0.03)opt.rich=1;
   const smoker=opt.smoker??(Math.random()<(lo?0.2:0.36));
   const d=doorPos();
   const look=opt.look?Object.assign({},opt.look):{shirt:pick(SHIRTS),hair:elder?pick(['#e5e5e5','#bdbdbd','#9ca3af']):pick(HAIRS),skin:pick(SKINS),cap:hunter?'#1c1c24':null};
@@ -168,7 +171,7 @@ function spawnCust(seg,opt={}){
     x:d.x,y:G.H+0.8,path:[{x:d.x,y:d.y}],st:'enter',m:null,speed:elder?0.2:0.3,
     budget:(hunter?rnd(30000,80000):rnd(8000,40000))*sc*(opt.rich?2.5:1),goal:(hunter?rnd(40000,120000):rnd(10000,50000))*sc,
     maxT:hunter?rnd(240,700):lo?rnd(120,360):rnd(60,240),inv:0,won:0,t:0,sat:0,why:{},plan:[],cur:null,wait:0,emote:null,ph:Math.random()*10,
-    nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false};
+    nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false,born:clock};
   custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;if(elder)D.elders++;if(smoker)D.smokers++;
   return c;
 }
@@ -212,9 +215,11 @@ function onSit(c){
   if(islandMixed(m))addWhy(c,'mix',-0.1);
   if(trash.has(k)){addWhy(c,'dirty',-0.05);trash.delete(k)}
   if(c.k==='p'){
-    if(m.nail<=-1){addWhy(c,'nailBad',m.nail===-2?-0.18:-0.08);c.maxT*=m.nail===-2?0.5:0.75}
-    else if(m.nail>=1)addWhy(c,'nailGood',m.nail===2?0.12:0.06);
+    const kr=sk('kugi');
+    if(m.nail<=-1){const base=m.nail===-2?0.5:0.75;addWhy(c,'nailBad',(m.nail===-2?-0.18:-0.08)*(1-0.25*kr));c.maxT*=base+(1-base)*0.25*kr}
+    else if(m.nail>=1)addWhy(c,'nailGood',(m.nail===2?0.12:0.06)*(1+0.25*kr+(S.regFx&&S.regFx.gen?0.3:0)));
   }
+  if(conceptOn()&&CONCEPTS[conceptOn()].test(m))addWhy(c,'concept',0.04);
   m.occ=c.id;c.st='play';
   if(c.goto)return;
   if(todayTargets.has(m)&&c.hunter)tweet(c,'target',0.5,2);
@@ -348,7 +353,7 @@ function arriveAmenity(c){
     const cx=Math.round(c.x),cy=Math.round(c.y);
     const k=counters.find(k=>k.staff&&Math.abs(k.o.x-cx)+Math.abs(k.o.y-cy)===1)||counters.find(k=>k.staff);
     if(!k){addWhy(c,'noCounter',-0.5);nextPlan(c);return}
-    const dur=Math.max(1.2,(4-k.staff.s.srv*0.5)*(k.help?0.75:1));
+    const dur=Math.max(1.2,(4-staffSrv(k.staff.s)*0.5)*(k.help?0.75:1));k.staff.done++;
     const start=Math.max(clock,k.busyUntil);k.busyUntil=start+dur;
     if(start-clock>6)addWhy(c,'counterWait',-0.1);
     c.wait=k.busyUntil-clock;c.st='wait';return;
@@ -358,7 +363,7 @@ function arriveAmenity(c){
 function applyAmenity(c){
   const a=c.cur&&c.cur.a;
   if(a==='drink'){S.money+=150;D.drink+=150;c.sat+=0.03;floatAt(c.x,c.y,'+¥150','#16a34a')}
-  else if(a==='rest'){addWhy(c,'rest',0.06);c.emote={ch:'♨',t:8}}
+  else if(a==='rest'){addWhy(c,'rest',buffOn('tea')?0.12:0.06);c.emote={ch:'♨',t:8}}
   c.cur=null;
 }
 function goExit(c){
@@ -374,6 +379,8 @@ function finish(c){
   if(dirt>0.2)addWhy(c,'dirty',-Math.min(0.15,dirt*0.2));
   const dr=decorRate();
   if(dr>0.5){addWhy(c,'decorGood',(dr-0.5)*0.4);tweet(c,'decor',0.05,0)}else if(dr<0.2)addWhy(c,'decorBad',(dr-0.2)*0.5);
+  if(skSat())c.sat+=skSat();
+  if(buffOn('greet')&&c.born<720)addWhy(c,'greet',0.04);
   D.satSum+=c.sat;D.satN++;
   for(const[k,v]of Object.entries(c.why)){const r=D.reasons[k]||(D.reasons[k]={n:0,sum:0});r.n++;r.sum+=v}
   if(c.reg){
@@ -400,7 +407,7 @@ function stepCust(c,dt){
     case 'roomQ':{
       const r=rooms.get(c.door.id);
       if(r&&r.inside<WB[c.door.type].cap){r.inside++;c.path=[insideOf(c.door)];c.st='intoRoom';c.door.anim=clock}
-      else if(clock-c.qStart>6&&!c.qPen){c.qPen=true;addWhy(c,'toiletWait',-0.12)}
+      else if(clock-c.qStart>6&&!c.qPen){c.qPen=true;addWhy(c,'toiletWait',buffOn('toilet')?-0.05:-0.12)}
       break;}
     case 'intoRoom':if(moveAlong(c,dt)){c.hidden=true;c.st='inRoom';c.wait=c.roomDur}break;
     case 'inRoom':c.wait-=dt;if(c.wait<=0){c.hidden=false;const r=rooms.get(c.door.id);if(r)r.inside--;c.door.anim=clock;c.path=[frontOf(c.door)];c.st='outRoom'}break;
@@ -419,7 +426,7 @@ function freeAdj(o){
 }
 function initStaffAgents(){
   const d=doorPos();
-  staffA=S.staff.map((s,i)=>({s,role:s.role,x:clamp(d.x+((i%5)-2),0,G.W-1),y:Math.max(0,d.y-1-Math.floor(i/5)),path:[],st:'idle',task:null,t:0,idleT:rnd(2,15),speed:0.7+s.spd*0.08,ph:Math.random()*10}));
+  staffA=S.staff.map((s,i)=>({s,role:s.role,x:clamp(d.x+((i%5)-2),0,G.W-1),y:Math.max(0,d.y-1-Math.floor(i/5)),path:[],st:'idle',task:null,t:0,idleT:rnd(2,15),speed:staffSpeed(s),ph:Math.random()*10,done:0,absentUntil:s.lateToday&&s.role!=='counter'?780:0,hidden:!!(s.lateToday&&s.role!=='counter')}));
   for(const a of staffA){const k=occ.get(key(a.x,a.y));if(k){a.x=d.x;a.y=d.y}}
   let ci=0;
   for(const a of staffA.filter(a=>a.role==='counter')){
@@ -428,13 +435,15 @@ function initStaffAgents(){
   }
 }
 function stepStaff(a,dt){
+  if(a.absentUntil){if(clock<a.absentUntil)return;a.absentUntil=0;a.hidden=false;const d=doorPos();a.x=d.x;a.y=d.y;a.path=[];a.st='idle'}
   if(a.role==='counter'){if(a.path.length)moveAlong(a,dt);return}
   if(a.st==='go'){if(moveAlong(a,dt)){
-    if(a.role==='hall'&&a.fix){if(a.fix.broken){a.st='work';a.t=Math.max(3,7-a.s.srv*0.6)}else{a.fix.fixing=false;a.fix=null;a.st='idle'}}
-    else if(a.role==='hall'){if(a.task&&a.task.st==='call'){a.st='work';a.t=Math.max(1,3-a.s.srv*0.35)}else{a.st='idle';a.task=null}}
+    if(a.role==='hall'&&a.fix){if(a.fix.broken){a.st='work';a.t=Math.max(3,7-staffSrv(a.s)*0.6)*(a.s.pers==='shokunin'?0.7:1)}else{a.fix.fixing=false;a.fix=null;a.st='idle'}}
+    else if(a.role==='hall'){if(a.task&&a.task.st==='call'){a.st='work';a.t=Math.max(1,3-staffSrv(a.s)*0.35)*(1-0.1*sk('omote'))}else{a.st='idle';a.task=null}}
     else{if(a.task&&trash.has(a.task)){a.st='work';a.t=1.5}else{a.st='idle';a.task=null}}
   }return}
   if(a.st==='work'){a.t-=dt;if(a.t<=0){
+    a.done++;
     if(a.role==='hall'&&a.fix){a.fix.broken=false;a.fix.fixing=false;floatAt(a.fix.x,a.fix.y,'修理OK','#16a34a');a.fix=null}
     else if(a.role==='hall'&&a.task&&a.task.st==='call'){
       const c=a.task,w=clock-c.callAt;
@@ -454,7 +463,7 @@ function stepStaff(a,dt){
     const br=machines().find(m=>m.broken&&!m.fixing);
     if(br){const p=bfsTo(a,(x,y)=>Math.abs(x-br.x)+Math.abs(y-br.y)===1);if(p){br.fixing=true;a.fix=br;a.path=p;a.st='go';return}}
     const g=custs.find(c=>c.goto&&c.st==='play'&&!c.caught&&Math.abs(c.x-a.x)+Math.abs(c.y-a.y)<=3);
-    if(g&&Math.random()<0.05*dt*(1+a.s.srv*0.2))catchGoto(g,'staff');
+    if(g&&Math.random()<0.05*dt*(1+staffSrv(a.s)*0.2)*skGoto())catchGoto(g,'staff');
   }else if(a.role==='clean'&&trash.size){
     const taken=new Set(staffA.filter(b=>b.role==='clean'&&b.task).map(b=>b.task));
     const p=bfsTo(a,(x,y)=>{const k=key(x,y);return trash.has(k)&&!taken.has(k)});
@@ -499,7 +508,7 @@ function update(dt){
 function closeDay(){
   if(S.phase!=='open')return;
   const ms=machines(),rent=rentOf(),wages=wagesTotal(),power=2500*ms.length;
-  const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE),goLab=goLabel(S.go);
+  const brokenLeft=ms.filter(m=>m.broken).length,repairs=brokenLeft*15000,interest=Math.round(S.loan*LOAN_RATE*skRate()),goLab=goLabel(S.go);
   ms.forEach(m=>{m.broken=false;m.fixing=false});
   const gross=D.coin-D.out+D.exch,net=gross+D.drink-rent-wages-power-D.ad-repairs-interest;
   S.money-=rent+wages+power+repairs+interest;
@@ -551,6 +560,7 @@ function closeDay(){
     else if(st.loy<60)st.star=false;
   }
   rivalsEndDay(D.shares,goodEvent);
+  const R0={};regEpisodes(R0);
   S.rep=clamp(Math.round(S.rep*10)/10,0,100);S.trust=clamp(Math.round(S.trust),0,100);
   const rk0=rankIdx();S.totalVisitors+=D.visitors;const rk1=rankIdx();
   ms.forEach(m=>{m.yest=m.today;m.today=blank()});
@@ -564,7 +574,7 @@ function closeDay(){
   S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000,full:D.full});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   S.negDays=S.money<0?(S.negDays||0)+1:0;
-  judgeMissions(R);monAcc(R);yrAcc(R);
+  judgeMissions(R);monAcc(R);yrAcc(R);staffEndDay(R);
   dayEndFeatures(R);
   // 翌日へ
   S.day++;S.event={type:'none',target:null,ad:false};S.phase='prep';
@@ -575,6 +585,9 @@ function closeDay(){
   dayStartFeatures(R);
   rivalsDayStart(R);
   storyDayStart(R);
+  staffDayStart(R);
+  if(R0.talks)(R.talks=R.talks||[]).push(...R0.talks);
+  dayExp(R);
   makeMissions();
   {const an=annivInfo();if(an&&!an.held&&S.day-(G.openDay||1)===an.n){news(`今日で開店${an.n}日！ ${an.label}ができます（イベント →「${an.label}」・7日間だけ）`,'big');R.morning.push({kind:'anniv',good:true,title:`開店${an.n===100?'100日':an.n/365+'周年'}！`,sub:`${an.label}ができます（イベントから・7日間だけ）`})}}
   R.tomorrow={info:dayInfo(S.day),weather:S.weather.today,rivals:openRivals().filter(r=>r.evKind).map(r=>({name:r.name,label:RIV_EV_LABEL[r.evKind],boss:r.boss,say:rivalSay(r).text})),plans:visiblePlans().filter(p=>p.open-S.day<=7).map(p=>({shop:p.shop,open:p.open})),go:goActive()};

@@ -86,6 +86,10 @@ function drawShell(now){
   const blink=Math.floor(now/400)%2;
   for(let x=sx+1;x<sx+tw-1;x+=3){R(x,2,1,1,(x/3+blink)%2<1?'#ffe14f':'#fff');R(x+1,16,1,1,(x/3+blink)%2<1?'#fff':'#ffe14f')}
   txt(S.name,OX+gw/2,9.6,9,'#fff','"Dela Gothic One","DotGothic16",sans-serif',2);
+  /* コンセプトのリボン */
+  const cid=S.concept&&S.concept.id;
+  if(cid&&CONCEPTS[cid]){const C=CONCEPTS[cid],on=conceptOn();ctx.setTransform(1,0,0,1,0,0);ctx.font='4.5px "DotGothic16",sans-serif';const w=Math.min(gw-30,ctx.measureText(C.name).width+12),x0=Math.round(OX+gw/2-w/2);
+    R(x0-1,18,w+2,7,K);R(x0,19,w,5,on?C.col:'#6b7280');R(x0-4,20,3,4,K);R(x0+w+1,20,3,4,K);txt(C.name,OX+gw/2,21.7,4.5,'#fff')}
   /* 床 */
   blit(buildFloor(),OX,OY);
   /* 入口と道路 */
@@ -288,7 +292,7 @@ function render(now){
   drawShell(now);drawSeasonDeco(now);drawDoors(now);drawSeats();
   const list=[];
   for(const o of G.objs)list.push({y:o.y+0.5,o});
-  if(S.phase==='open'){for(const c of custs)if(!c.hidden)list.push({y:c.y+0.6,c});for(const a of staffA)list.push({y:a.y+0.61,a})}
+  if(S.phase==='open'){for(const c of custs)if(!c.hidden)list.push({y:c.y+0.6,c});for(const a of staffA)if(!a.hidden)list.push({y:a.y+0.61,a})}
   list.sort((a,b)=>a.y-b.y);
   for(const it of list){if(it.o){it.o.kind==='m'?drawMachine(it.o,now):drawDecor(it.o,now)}else if(it.c)drawCust(it.c,now);else drawStaff(it.a,now)}
   drawQueuePreview(now);

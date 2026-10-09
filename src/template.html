@@ -309,6 +309,29 @@ button{font:inherit;color:inherit}
 .aw-r.me .nm{color:var(--red)}
 .mt tr.sub2 td{border-bottom:2.5px solid var(--ink)}
 .chart.mchart{gap:1px;height:64px}.chart.mchart .cb i{border-width:1px;border-radius:2px 2px 0 0}
+
+/* 店長・店員・常連・コンセプト */
+.lvp{font-family:var(--f-display);font-weight:400;font-size:10px;background:var(--night);color:#fff;border-radius:6px;padding:0 4px;line-height:1.5}
+.lvp.sp{background:var(--red)}
+.tag.pers{background:#e0e7ff}.tag.ttl{background:var(--sun)}
+.item .pt.sm{flex:none}
+.item.reg .it{display:flex;flex-direction:column;gap:2px}
+.eps{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.ep{font-size:10px;font-weight:800;border:1.5px dashed #9ca3af;color:#9ca3af;border-radius:6px;padding:0 5px;line-height:1.5}
+.ep.on{border:1.5px solid var(--ink);color:var(--ink);background:#fef9c3}
+.mgrcard{display:flex;gap:12px;align-items:center;background:var(--night);color:#fff;border:3px solid var(--ink);border-radius:14px;padding:9px 12px;box-shadow:3px 3px 0 var(--ink)}
+.mgrcard .sub{color:#d6d0f5}.mgrcard .sub b{color:var(--sun)}
+.mg-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.mg-lv{font-family:var(--f-display);font-size:14px}.mg-lv b{font-weight:400;font-size:22px;color:var(--sun)}
+.lvbar{height:12px;border:2px solid #000;border-radius:99px;background:#3b3270;overflow:hidden}.lvbar i{display:block;height:100%;background:linear-gradient(90deg,var(--sun),#fb923c)}
+.skrow{background:#fff;border:2.5px solid var(--ink);border-left:8px solid var(--kc);border-radius:12px;padding:6px 9px;display:flex;flex-direction:column;gap:4px}
+.sk-h{display:flex;align-items:center;gap:8px}.sk-h b{font-family:var(--f-display);font-weight:400;font-size:14px;flex:1}
+.sk-st{display:flex;gap:3px}.sk-st i{width:14px;height:14px;border-radius:4px;border:2px solid var(--ink);background:#fff}.sk-st i.on{background:var(--kc)}
+.sk-d{font-size:11px;font-weight:800;color:#9ca3af;line-height:1.5}.sk-d .on{color:var(--ink)}.sk-d .next{color:var(--muted)}
+.cpt{background:#fff;border:2.5px solid var(--ink);border-left:8px solid var(--cc);border-radius:12px;padding:7px 10px;display:flex;flex-direction:column;gap:4px}
+.cpt.cur{background:#fffbeb}
+.cpt .hb{display:block;width:100%;margin-top:3px}
+.cp-h{display:flex;gap:8px;align-items:center}.cp-h b{font-family:var(--f-display);font-weight:400;font-size:14px}
 /* 会話 */
 #talk{position:absolute;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;padding:0 calc(10px + var(--sr)) calc(10px + var(--sb)) calc(10px + var(--sl));background:linear-gradient(to top,rgba(22,18,31,.6),rgba(22,18,31,.12) 60%,rgba(22,18,31,0))}
 #talk[hidden]{display:none}
@@ -413,7 +436,7 @@ button{font:inherit;color:inherit}
   <div class="ui">
     <div class="tl">
       <div class="chipc money-chip">
-        <div class="mc-1"><span class="nm" id="hName">パーラー満天</span><span id="hDate"></span><span class="wx" id="hWeather"></span></div>
+        <div class="mc-1"><span class="nm" id="hName">パーラー満天</span><span class="lvp" id="hLv"></span><span id="hDate"></span><span class="wx" id="hWeather"></span></div>
         <div class="mc-2"><b id="hMoney"></b><span class="today" id="hToday"></span></div>
       </div>
       <button class="chipc quota-chip" id="quotaChip" type="button" hidden></button>

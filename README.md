@@ -11,6 +11,7 @@
 - **ライバル店**：4つのタイプと12人の店長。閉店した店のあとには新しい店が出店してきます。
 - **毎日・毎月・毎年**：朝礼の3つの目標、月末の決算書、年末の町のホールアワード（総合・稼働王・還元王・接客王）。
 - **季節とお祭り**：GW・お盆・年末・正月の季節イベントと店内の飾り、開店100日・周年祭。
+- **育てる**：店長のレベルと8つのスキル、店員の性格・やる気・昇進（主任・副店長）と相談ごと、常連さん8人の物語、お店のコンセプト。
 
 ## 遊ぶ
 
@@ -33,8 +34,8 @@
 
 ## 開発メモ
 
-- ソースは `src/` にあります。ゲーム本体は `src/build-app.js` の `ORDER` の順（`machines.js` → `data.js` → `chars.js` → `state.js` → `market.js` → `rivals.js` → `sim.js` → `features.js` → `story.js` → `daily.js` → `sprites.js` → `portrait.js` → `render.js` → `audio.js` → `ui.js` → `talk.js` → `main.js`）に `src/template.html` に埋め込まれます。
-- ストーリー・ノルマ・借金・全国ホールアワードは `story.js`、朝礼・月末決算・町のホールアワード・季節イベント・周年祭は `daily.js`、ライバル店長の顔とセリフは `chars.js` と `rivals.js` にあります。
+- ソースは `src/` にあります。ゲーム本体は `src/build-app.js` の `ORDER` の順（`machines.js` → `data.js` → `chars.js` → `state.js` → `market.js` → `rivals.js` → `sim.js` → `features.js` → `story.js` → `daily.js` → `growth.js` → `sprites.js` → `portrait.js` → `render.js` → `audio.js` → `ui.js` → `talk.js` → `main.js`）に `src/template.html` に埋め込まれます。
+- ストーリー・ノルマ・借金・全国ホールアワードは `story.js`、朝礼・月末決算・町のホールアワード・季節イベント・周年祭は `daily.js`、店長スキル・店員の育成・常連さんの物語・コンセプトは `growth.js`、ライバル店長の顔とセリフは `chars.js` と `rivals.js` にあります。
 - ビルド：`node src/build-app.js`
   - ルートの `index.html` と `sw.js`（ホーム画面アプリ版）を作り直します。`sw.js` のバージョンはビルドのたびに変わるので、公開後は開き直すだけで新しい版に入れ替わります。
   - `dist/artifact.html`（アーティファクト版）も作ります（`dist/` はコミットしません）。

@@ -196,8 +196,8 @@ function rivalActions(R){
   /* 店員の引き抜き */
   if(!S.incidents.length&&S.staff.length>=3){
     for(const r of op){
-      if(r.health<35||Math.random()>=typeOf(r).poach)continue;
       const tgt=[...S.staff].sort((a,b)=>(b.lv*2+b.spd+b.srv)-(a.lv*2+a.spd+a.srv))[0];
+      if(r.health<35||!tgt||Math.random()>=typeOf(r).poach*((PERS[tgt.pers]||PERS.majime).poach)*(1-0.2*sk('jinbo')))continue;
       if(tgt){S.incidents.push({id:S.nid++,kind:'poach',rival:r.id,staff:tgt.id,day:S.day});break}
     }
   }
@@ -228,12 +228,13 @@ function scoutSnapshot(r,lv){
 }
 const scoutOn=r=>r.scout&&S.day<=r.scout.until;
 function scoutByStaff(r){
-  if(S.money<SCOUT_COST)return {err:'お金が足りません'};
-  if(r.scout&&r.scout.day===S.day)return {err:'今日はもうこの店を偵察しました'};
+  const cost=sk('data')>=3?0:SCOUT_COST;
+  if(S.money<cost)return {err:'お金が足りません'};
+  if(r.scout&&r.scout.day===S.day&&(sk('data')<3||r.scout.n>=2))return {err:'今日はもうこの店を偵察しました'};
   const s=pick(S.staff);if(!s)return {err:'偵察に行ける店員がいません'};
-  S.money-=SCOUT_COST;
-  const lv=scoutOn(r)?Math.max(1,r.scout.lv):1;
-  r.scout=scoutSnapshot(r,lv);
+  S.money-=cost;
+  const lv=scoutOn(r)?Math.max(1,r.scout.lv):1,n=r.scout&&r.scout.day===S.day?(r.scout.n||1)+1:1;
+  r.scout=scoutSnapshot(r,lv);r.scout.n=n;
   const sc=r.scout,pct=Math.round(sc.pay*100);
   return {lines:[
     {who:'staff:'+s.id,ex:'happy',text:`${r.name}、見てきました！ 還元率はだいたい${pct}%くらいだと思います`},
@@ -257,7 +258,7 @@ function scoutBySelf(r){
 }
 
 /* ---------- 引き抜きの相談 ---------- */
-function poachOdds(s){return clamp(0.35+0.08*(s.lv-1)+(S.trust>=60?0.1:0),0.2,0.9)}
+function poachOdds(s){return clamp(0.35+0.08*(s.lv-1)+(S.trust>=60?0.1:0)+0.15*sk('jinbo')+(s.mor-60)/200,0.2,0.95)}
 const raiseCost=s=>Math.round(s.wage*0.3/100)*100;
 function resolvePoach(inc,choice){
   S.incidents=S.incidents.filter(x=>x.id!==inc.id);

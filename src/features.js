@@ -36,9 +36,9 @@ function spawnGoto(){
 function gotoStep(c,dt){
   const m=c.m;
   c.t+=dt;m.today.mins+=dt;
-  const loss=1000*dt;S.money-=loss;D.goto+=loss;c.loot+=loss;m.today.out+=loss;
+  const loss=1000*dt*skGotoLoss();S.money-=loss;D.goto+=loss;c.loot+=loss;m.today.out+=loss;
   if(Math.random()<0.2*dt){m.flash=1.2;floatAt(m.x,m.y,'?','#64748b')}
-  const s=seatOf(m),p=(0.004+0.035*camerasCovering(s.x,s.y))*dt;
+  const s=seatOf(m),p=(0.004+0.035*camerasCovering(s.x,s.y))*dt*skGoto();
   if(Math.random()<p){catchGoto(c,'camera');return}
   if(c.t>c.maxT||clock>=LAST)quit(c);
 }
