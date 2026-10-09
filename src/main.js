@@ -22,7 +22,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 function boot(data){
-  loadPrefs();mdbLoad();
+  loadPrefs();mdbLoad();profLoad();
   let ok=false,src=data&&data.save;
   if(!src){try{src=localStorage.getItem(SAVE_KEY)}catch(e){src=null}}
   if(src){try{ok=load(src)}catch(e){console.error(e);ok=false}}

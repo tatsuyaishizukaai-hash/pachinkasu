@@ -54,17 +54,17 @@ function makeQuota(prev){
   const st=S.story,ch=Math.min(5,st.ch),mr=monthRange(S.day),sNow=storeScale(),n=Math.max(1,machines().length);
   const first=!prev;
   let dt;
-  if(first)dt=500*sNow*0.9;
+  if(first)dt=500*sNow*0.9*diffOf().q;
   else{
     const prevPer=prev.dt/prev.s0,perf=prev.n?(prev.g/prev.n)/(prev.sSum/prev.n):prevPer;
-    let p=Math.max(perf,prevPer*0.9)*CH_GROW[ch];
+    let p=Math.max(perf,prevPer*0.9)*CH_GROW[ch]*(prev.dq?diffOf().q/prev.dq:1);
     p=Math.min(p,prevPer*1.15);
     dt=p*sNow;
   }
   dt=Math.max(30000,Math.round(dt/1000)*1000);
-  const util=Math.round((first?0.36:CH_UTIL[ch])*Math.min(1,Math.pow(30/n,0.25))*100)/100;
-  const rep=first&&ch===1?35:CH_REP[ch];
-  return {y:mr.y,m:mr.m,from:S.day,to:mr.last,dt,util,rep,s0:sNow,g:0,uSum:0,sSum:0,n:0,go:0,first};
+  const util=Math.round(((first?0.36:CH_UTIL[ch])+diffOf().util)*Math.min(1,Math.pow(30/n,0.25))*100)/100;
+  const rep=(first&&ch===1?35:CH_REP[ch])+diffOf().rep;
+  return {y:mr.y,m:mr.m,from:S.day,to:mr.last,dt,util,rep,s0:sNow,g:0,uSum:0,sSum:0,n:0,go:0,first,dq:diffOf().q};
 }
 /* オープン期間のうち、今月の残りに入る日数 */
 function goDaysAhead(q){
@@ -155,7 +155,7 @@ function storyEndDay(R){
       const score=awardScore(),win=score>=AWARD_PASS;
       out.steps.push({talk:awardTalk(score,win)});
       st.awardLog=(st.awardLog||[]).concat([{day:S.day,score,win}]);
-      if(win){st.awardWon=true;S.ended={type:'story',day:S.day};out.ending=true;out.steps.push({talk:endingTalk()})}
+      if(win){st.awardWon=true;S.ended={type:'story',day:S.day};S.endless=true;saveCarry();out.ending=true;out.steps.push({talk:endingTalk()})}
       else{st.award=newAward();news(`全国ホールアワードは${score}点で${score>=65?'準大賞':'優秀賞'}。次の審査が始まった`,'')}
     }
   }
@@ -212,7 +212,7 @@ function evaluateMonth(){
     res.bonus=Math.round(((res.perfect?300000:100000)*Math.min(4,st.ch)+(res.perfect?Math.max(0,q.g-target)*0.2:0))/10000)*10000;
     S.money+=res.bonus;
   }else if(!st.bought){
-    st.strikes++;if(st.strikes>=3){st.fired=true;res.fired=true}
+    st.strikes++;if(st.strikes>=diffOf().fire){st.fired=true;res.fired=true}
   }
   res.strikes=st.strikes;
   st.log.push({y:q.y,m:q.m,pass:res.pass,perfect:res.perfect,okG:res.okG,okU:res.okU,okR:res.okR,g:res.g,target:res.target});
@@ -261,6 +261,7 @@ const BS=(id,ex,text)=>({who:'boss:'+id,ex,text});
 function prologueTalk(){
   const st=S.story,lines=[];
   if(st.migrated)lines.push(NR('ストーリーが始まります。これは、あなたがこの店の店長になった日のお話――'));
+  if((S.cycle||1)>=2)lines.push(NR(`（${S.cycle}周目）……なぜだろう。この景色を、前にも見た気がする――`));
   lines.push(
     NR('パチンコに人生を賭けて、そして負けた。'),
     NR('借金は300万円。家賃は3か月たまり、財布には千円札が1枚だけ。'),
@@ -273,7 +274,7 @@ function prologueTalk(){
     OW('happy','この店の店長をやりな'),
     ME('店長！？ 自分が、ですか！？','shock'),
     OW('n','負け続けた人間は、負けるお客の気持ちがわかる。それに、あんたは台を見る目だけはあった'),
-    OW('angry','ただし条件がある。毎月あたしが決める「ノルマ」は必ず守ること。3か月続けてしくじったら、即クビだよ'),
+    OW('angry',`ただし条件がある。毎月あたしが決める「ノルマ」は必ず守ること。${diffOf().fire}か月続けてしくじったら、即クビだよ`),
     OW('smug',`新しい看板は「${S.name}」か。……悪くないね`),
     ME('やります。この店、絶対に立て直してみせます'),
     NR('こうして、元パチンカスの雇われ店長としての毎日が始まった。'),
@@ -324,8 +325,8 @@ function quotaTalk(first){
   const st=S.story,qi=quotaInfo(),q=qi.q,lines=[];
   const pct=Math.round(q.util*100);
   if(st.bought)lines.push(OW('n',`${q.m}月の目標だよ。もう雇われじゃないから、届かなくてもクビにはしない。でも、あたしは見てるからね`));
-  else if(st.strikes===2)lines.push(OW('angry',`${q.m}月のノルマだ。……後がないよ。今月しくじったらクビだからね`));
-  else if(st.strikes===1)lines.push(OW('angry',`${q.m}月のノルマだ。先月の未達、忘れちゃいないだろうね`));
+  else if(st.strikes>0&&st.strikes>=diffOf().fire-1)lines.push(OW('angry',`${q.m}月のノルマだ。……後がないよ。今月しくじったらクビだからね`));
+  else if(st.strikes>0)lines.push(OW('angry',`${q.m}月のノルマだ。先月の未達、忘れちゃいないだろうね`));
   else lines.push(OW('n',`${q.m}月のノルマを言うよ`));
   lines.push(OW('n',`粗利${man(qi.target)}（1日${man(q.dt)}）、稼働率${pct}%、月末の評判${q.rep}以上`));
   if(first){
@@ -341,14 +342,14 @@ function monthTalk(res){
     return L;
   }
   if(res.fired){
-    L.push(OW('angry','3か月続けてノルマ未達。……約束は約束だ'));
+    L.push(OW('angry',`${diffOf().fire}か月続けてノルマ未達。……約束は約束だ`));
     L.push(OW('sad','あんたはクビだよ。……残念だね。あんたなら、やれると思ったんだけど'));
     L.push(ME('（そんな……）','sad'));
     return L;
   }
   if(res.perfect)L.push(OW('happy',pick(['3つとも達成かい。言うことなしだ。ボーナスをはずんでおいたよ','やるじゃないか。この調子なら、あの頑固じじいも青くなるね'])));
   else if(res.pass)L.push(OW('smug',pick(['合格だ。……ま、及第点ってとこだね。来月も頼むよ','合格。でも満足するんじゃないよ。上には上がいるんだ'])));
-  else if(res.strikes===1)L.push(OW('angry',`ノルマ未達だ。${!res.okG?'粗利が足りないよ。出しすぎじゃないのかい':'稼働も評判もさっぱりだ。お客が逃げてるよ'}`),OW('n','今回は大目に見る。でも、次はないと思いな'));
+  else if(res.strikes<diffOf().fire-1)L.push(OW('angry',`ノルマ未達だ。${!res.okG?'粗利が足りないよ。出しすぎじゃないのかい':'稼働も評判もさっぱりだ。お客が逃げてるよ'}`),OW('n','今回は大目に見る。でも、次はないと思いな'));
   else L.push(OW('angry','また未達かい。……これが最後のチャンスだよ'),OW('angry','来月しくじったら、クビだ。わかってるね'));
   if(res.ch===1&&res.pass){const st=S.story;if(st.chPass<3)L.push(OW('n',`これで${st.chPass}回目の合格だね。あと${3-st.chPass}回だよ`))}
   return L;

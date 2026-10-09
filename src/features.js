@@ -30,7 +30,7 @@ function camerasCovering(x,y){
 function spawnGoto(){
   const segs=[...new Set(machines().map(segOf))].filter(s=>s.endsWith('hi'));
   if(!segs.length)return;
-  const c=spawnCust(pick(segs),{hunter:false,smoker:false,elder:false,look:{shirt:'#1f2937',hair:'#0b0b0b',skin:'#e9c7a5',shades:1}});
+  const c=spawnCust(pick(segs),{hunter:false,smoker:false,elder:false,goto:1,look:{shirt:'#1f2937',hair:'#0b0b0b',skin:'#e9c7a5',shades:1}});
   c.goto=true;c.loot=0;c.maxT=rnd(90,160);c.budget=1e9;c.goal=1e9;D.visitors--;
 }
 function gotoStep(c,dt){
@@ -44,7 +44,7 @@ function gotoStep(c,dt){
 }
 function catchGoto(c,by){
   if(c.caught)return;
-  c.caught=true;D.gotoCaught++;
+  c.caught=true;D.gotoCaught++;dexSeeC('goto');
   const m=c.m;if(m){m.occ=null;m.res=null;m.flash=0}c.m=null;
   c.emote={ch:'!',t:30};c.speed=0.55;
   floatAt(c.x,c.y,'ゴト発見！','#ff2d55');sfx('bad');

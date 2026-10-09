@@ -4,7 +4,7 @@ const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* 話している人の名前・顔・色 */
 function speaker(who){
   if(!who||who==='narr')return {name:'',face:null};
-  if(who==='me')return {name:'あなた',sub:S.story&&S.story.bought?'オーナー店長':'店長',face:ME_FACE,col:'#ff2d55'};
+  if(who==='me')return {name:'あなた',sub:(S.story&&S.story.bought?'オーナー店長':'店長')+(PROF&&PROF.eq&&HON_BY[PROF.eq]?`・${honName(PROF.eq)}`:''),face:ME_FACE,col:'#ff2d55'};
   if(who==='owner')return {name:OWNER.name,sub:ownerSub(),face:OWNER.face,col:OWNER.col};
   if(who==='mc')return {name:MC.name,sub:MC.sub,face:MC.face,col:MC.col};
   const i=who.indexOf(':'),k=who.slice(0,i),id=who.slice(i+1);

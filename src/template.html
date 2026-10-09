@@ -338,6 +338,26 @@ button{font:inherit;color:inherit}
 .store.cur{background:#fff7ed;box-shadow:0 0 0 3px var(--sun)}
 .sto-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sto-h b{font-family:var(--f-display);font-weight:400;font-size:15px}
 .sto-s{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12px;font-weight:800}
+
+/* 図鑑・称号・タイトルの難易度 */
+.topt{display:flex;flex-direction:column;gap:5px}
+.tdiff{display:flex;gap:6px}.tdiff .chip{flex:1;min-height:32px;padding:2px 8px}
+.L .title-card{padding:11px 12px;gap:7px}
+.dexgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
+.dexm{background:#fff;border:2.5px solid var(--ink);border-top:8px solid var(--mc,#9ca3af);border-radius:11px;padding:5px 8px;display:flex;flex-direction:column;gap:1px;font-size:11px}
+.dexm b{font-size:12px;line-height:1.3}.dexm .sub{font-size:10.5px}
+.dexm.none{background:#f3f4f6;border-top-color:#d1d5db;color:#9ca3af}
+.dm-top{display:flex;gap:5px;align-items:center;justify-content:space-between}
+.hongrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.hon{background:#f3f4f6;border:2px dashed #9ca3af;border-radius:10px;padding:5px 8px;display:flex;flex-direction:column;gap:2px;color:#9ca3af}
+.hon b{font-family:var(--f-display);font-weight:400;font-size:13px}.hon span{font-size:10.5px;font-weight:800;line-height:1.35}
+.hon.on{background:#fffbeb;border:2.5px solid var(--ink);color:var(--ink)}.hon.on span{color:var(--muted)}
+.hon.eq{box-shadow:0 0 0 3px var(--red)}
+.hon .chip{min-height:26px;padding:0 8px;font-size:11px;align-self:flex-start;margin-top:2px}
+.recrow{background:#fff;border:2.5px solid var(--ink);border-radius:11px;padding:6px 9px;display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}
+.recrow .rr-n{grid-column:1/-1;font-family:var(--f-display);font-size:13px}
+.rr-c{display:flex;flex-direction:column;font-size:12px}.rr-c b{font-family:var(--f-display);font-weight:400;font-size:15px}
+.rr-l{font-size:10px;font-weight:800;color:var(--muted)}
 /* 会話 */
 #talk{position:absolute;inset:0;z-index:45;display:flex;align-items:flex-end;justify-content:center;padding:0 calc(10px + var(--sr)) calc(10px + var(--sb)) calc(10px + var(--sl));background:linear-gradient(to top,rgba(22,18,31,.6),rgba(22,18,31,.12) 60%,rgba(22,18,31,0))}
 #talk[hidden]{display:none}
@@ -482,6 +502,7 @@ button{font:inherit;color:inherit}
       <div class="title-card">
         <label class="lbl" for="tName">お店の名前</label>
         <input class="field" id="tName" maxlength="10" value="パーラー満天">
+        <div class="topt" id="tOpt"></div>
         <button class="btn primary" id="tStart" type="button">グランドオープン！</button>
         <button class="btn sm" id="tTransfer" type="button">セーブを引き継ぐ</button>
         <span class="sub">スマホを横にして遊んでね。釘と設定、イベントと店づくりで客を呼び、町いちばんのホールを目指そう。</span>

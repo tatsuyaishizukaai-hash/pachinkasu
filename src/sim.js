@@ -103,7 +103,7 @@ function openStore(){
   const isGo=goActive(),isEv=ev.type!=='none';
   D={coin:0,out:0,drink:0,visitors:0,full:0,satSum:0,satN:0,hunters:0,seg:{},reasons:{},calls:[],ad:cost,shares:fc.shares,expected:fc.expected,
      isGo,goType:isGo?S.go.type:null,goIdx:goDayIdx(),evType:ev.type,evTarget:ev.target,evLabel:isGo?goLabel(S.go):eventLabel(),bigWins:[],regsVisited:[],rivalClosed:null,nearSmoke:new Set(),smokeSpots:new Map(),
-     goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,broken:0,kiosk:hasDecor('kiosk'),exch:0,completes:[],hourly:[],lastHr:-1,elders:0,smokers:0};
+     goto:0,gotoCaught:0,gotoEsc:0,gotoAt:null,seenC:{},maxWin:0,broken:0,kiosk:hasDecor('kiosk'),exch:0,completes:[],hourly:[],lastHr:-1,elders:0,smokers:0};
   todayTargets=new Set(isEv?eventTargets():[]);
   hunterFrac=(isGo?0.4:ev.type==='media'?0.5:ev.type==='season'?0.4:isEv?0.35:0.1)*(D.kiosk?1.4:1);
   if(S.day>=10&&Math.random()<0.08+(isGo||isEv?0.12:0)+(rankNo()>=3?0.04:0))D.gotoAt=rnd(660,1140);
@@ -173,6 +173,7 @@ function spawnCust(seg,opt={}){
     maxT:hunter?rnd(240,700):lo?rnd(120,360):rnd(60,240),inv:0,won:0,t:0,sat:0,why:{},plan:[],cur:null,wait:0,emote:null,ph:Math.random()*10,
     nextSmoke:smoker?rnd(40,80):1e9,full:false,hidden:false,born:clock};
   custs.push(c);D.visitors++;D.seg[seg]=(D.seg[seg]||0)+1;if(hunter)D.hunters++;if(elder)D.elders++;if(smoker)D.smokers++;
+  {const k=opt.reg?'reg:'+opt.reg:opt.queue?'queue':opt.rich?'rich':hunter?'hunter':elder?'elder':lo?'lo':smoker?'smoker':'normal';if(!opt.goto)D.seenC[k]=(D.seenC[k]||0)+1}
   return c;
 }
 function chooseMachine(c){
@@ -303,7 +304,7 @@ function quit(c){
   const m=c.m;if(m){m.occ=null;m.res=null;m.call=false;m.brk=false;
     const s=seatOf(m);if(Math.random()<0.22*WEATHER[S.weather.today].dirt&&!trash.has(key(s.x,s.y)))trash.set(key(s.x,s.y),{x:s.x,y:s.y});}
   if(c.goto){m&&(m.occ=null,m.res=null);c.m=null;if(!c.caught){D.gotoEsc+=c.loot;news(`ゴト師に${man(c.loot)}抜かれた…（防犯カメラで防げます）`,'bad')}goExit(c);return}
-  const net=c.won-c.inv;c.net=net;
+  const net=c.won-c.inv;c.net=net;if(net>D.maxWin)D.maxWin=net;
   c.sat+=0.08;
   if(net>=30000*c.sc)tweet(c,'bigwin',0.45,2,{v:man(net)});else if(net<-15000*c.sc)tweet(c,'lose',0.25,1,{v:man(-net)});
   if(net>0)addWhy(c,'win',0.4+Math.min(0.2,net/(150000*c.sc)));else addWhy(c,'lose',-Math.min(0.35,-net/(80000*c.sc)));
@@ -486,7 +487,7 @@ function update(dt){
   const hr=Math.floor((clock-30)/60);
   if(hr!==D.lastHr&&clock>=OPEN+30&&clock<LAST){D.lastHr=hr;const pl=custs.filter(c=>c.m&&(c.st==='play'||c.st==='call')&&!c.goto);D.hourly.push({h:hr,p:pl.filter(c=>c.k==='p').length,s:pl.filter(c=>c.k==='s').length})}
   if(clock<LAST-20){
-    if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<0.75});tweet(c,'queue',0.06,1)}}
+    if(queueLeft>0){queueAcc+=dt;while(queueAcc>=0.5&&queueLeft>0){queueAcc-=0.5;queueLeft--;const c=spawnCust(pickSeg(todayInfo),{hunter:Math.random()<0.75,queue:1});tweet(c,'queue',0.06,1)}}
     while(regQueue.length&&regQueue[0].t<=clock){
       const {def}=regQueue.shift();
       spawnCust(def.seg,{reg:def.id,hunter:!!def.hunter,smoker:!!def.smoker,elder:!!def.elder,look:def.look,rich:def.rich});
@@ -574,6 +575,7 @@ function closeDay(){
   S.hist.push({day:S.day,net:Math.round(net),gross:Math.round(gross),visitors:D.visitors,rep:S.rep,share:D.shares.me,util:Math.round(util*1000)/1000,full:D.full});if(S.hist.length>90)S.hist.shift();
   S.lastDay={day:S.day,seg:D.seg,visitors:D.visitors,hunters:D.hunters,elders:D.elders,smokers:D.smokers,hourly:D.hourly,completes:D.completes};
   chainEndDay(R);
+  statDay(R);dexDay(R);
   S.negDays=S.money<0?(S.negDays||0)+1:0;
   judgeMissions(R);monAcc(R);yrAcc(R);staffEndDay(R);
   dayEndFeatures(R);
@@ -589,6 +591,7 @@ function closeDay(){
   staffDayStart(R);
   if(R0.talks)(R.talks=R.talks||[]).push(...R0.talks);
   dayExp(R);
+  honDay(R);
   makeMissions();
   {const an=annivInfo();if(an&&!an.held&&S.day-(G.openDay||1)===an.n){news(`今日で開店${an.n}日！ ${an.label}ができます（イベント →「${an.label}」・7日間だけ）`,'big');R.morning.push({kind:'anniv',good:true,title:`開店${an.n===100?'100日':an.n/365+'周年'}！`,sub:`${an.label}ができます（イベントから・7日間だけ）`})}}
   R.tomorrow={info:dayInfo(S.day),weather:S.weather.today,rivals:openRivals().filter(r=>r.evKind).map(r=>({name:r.name,label:RIV_EV_LABEL[r.evKind],boss:r.boss,say:rivalSay(r).text})),plans:visiblePlans().filter(p=>p.open-S.day<=7).map(p=>({shop:p.shop,open:p.open})),go:goActive()};
