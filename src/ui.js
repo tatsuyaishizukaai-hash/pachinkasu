@@ -37,14 +37,17 @@ function setT(id,t){const e=$(id);if(e.textContent!==t)e.textContent=t;return e}
 function refreshHud(){
   setT('#hName',storeLabel(G));
   setT('#hDate',dateStr(S.day));
+  {const tg=dayInfo(S.day).tags.map(t=>TAG_SHORT[t]||t).slice(0,2).join('・');const e=setT('#hTag',tg);e.hidden=!tg}
   setT('#hLv',S.mgr?'Lv'+S.mgr.lv:'').classList.toggle('sp',!!(S.mgr&&S.mgr.sp));
-  setT('#hWeather',WEATHER[S.weather.today].name).dataset.w=S.weather.today;
+  setT('#hWeather',{sun:'晴',cloud:'曇',rain:'雨'}[S.weather.today]||WEATHER[S.weather.today].name).dataset.w=S.weather.today;
   setT('#hMoney',yen(S.money)).classList.toggle('neg',S.money<0);
   setT('#hRep',String(Math.round(S.rep)));setT('#hTrust',String(Math.round(S.trust)));setT('#hDecor',stars());
   const qc=$('#quotaChip'),qh=quotaChipHTML();if(qc._h!==qh){qc.innerHTML=qh;qc._h=qh;qc.hidden=!qh}
-  if(S.phase==='open'&&D){const t=D.coin-D.out+D.drink-D.goto;const e=setT('#hToday','今日 '+sgn(t));e.className='today '+(t>=0?'pos':'neg')}
+  if(S.phase==='open'&&D){const t=D.coin-D.out+D.drink-D.goto;const e=setT('#hToday','今日 '+manS(t));e.className='today '+(t>=0?'pos':'neg')}
   else{const e=setT('#hToday',S.loan?'借入 '+man(S.loan):'');e.className='today sub'}
 }
+/* 短いお金の表示（+14.3万・-8,500） */
+const manS=n=>{const a=Math.abs(Math.round(n)),s=n<0?'-':'+';return s+(a>=1e8?(a/1e8).toFixed(1)+'億':a>=1e5?Math.round(a/1e4)+'万':a>=1e4?(a/1e4).toFixed(1)+'万':a.toLocaleString('ja-JP')+'円')};
 function hint(){
   if(!G.objs.some(o=>o.kind==='d'&&o.type==='counter'))return '景品カウンターがありません。建設 → 設備 から置こう';
   if(!staffOf('counter').length)return 'カウンター係がいないと景品交換ができません（経営 → 店員）';
@@ -53,28 +56,78 @@ function hint(){
   if(S.day<=4&&!G.zone.some(z=>z))return 'たばこを吸う客のために「喫煙OKゾーン」や喫煙所を作ろう';
   return '';
 }
-function pills(){
-  const info=dayInfo(S.day),p=[];
-  if(goActive())p.push(`<span class="pill go">${goLabel(S.go)} ${goDayIdx()+1}/${S.go.len}日目</span>`);
-  else if(S.phase==='open'&&D&&D.evType!=='none')p.push(`<span class="pill ev">${esc(D.evLabel)}</span>`);
-  else if(S.event.type!=='none')p.push(`<span class="pill ev">${esc(eventLabel())}</span>`);
-  for(const r of regPending())if(r.n)p.push(`<span class="pill reg">規制 あと${r.until-S.day+1}日で${r.n}台撤去</span>`);
-  info.tags.forEach(t=>p.push(`<span class="pill cal">${t}</span>`));
-  for(const r of openRivals())if(r.evKind)p.push(`<span class="pill riv">${esc(r.name)}が${RIV_EV_LABEL[r.evKind]}</span>`);
-  for(const pl of visiblePlans())p.push(`<span class="pill riv">${esc(pl.shop)} オープンまで${pl.open-S.day}日</span>`);
-  return p.join('');
+/* 上のまん中は1行だけ：今日のイベント（またはオープン期間）と「お知らせ」ボタン。
+   ライバル店・新しい店・規制・新台などは「お知らせ」の中にまとめる */
+function mainPill(){
+  if(goActive())return `<span class="pill go">${esc(goLabel(S.go))} ${goDayIdx()+1}/${S.go.len}日目</span>`;
+  if(S.phase==='open'&&D&&D.stopped)return '<span class="pill reg">営業停止</span>';
+  if(S.phase==='open'&&D&&D.evType!=='none')return `<span class="pill ev">${esc(D.evLabel)}</span>`;
+  if(S.phase==='prep'&&stopToday())return '<span class="pill reg">今日は営業停止</span>';
+  if(S.phase==='prep'&&S.event.type!=='none')return `<span class="pill ev">${esc(eventLabel())}</span>`;
+  return '';
+}
+/* 日付の横に出す短いしるし（給料日・土日など） */
+const TAG_SHORT={'ゴールデンウィーク':'GW','年末年始':'年末年始','お盆':'お盆','祝日':'祝日','土日':'土日','年金支給日':'年金日','給料日':'給料日','7のつく日':'7の日'};
+const TAG_INFO={'ゴールデンウィーク':'町じゅうのお客さんが打ちに来ます。季節のイベントができます','年末年始':'町じゅうのお客さんが打ちに来ます。季節のイベントができます','お盆':'町じゅうのお客さんが打ちに来ます。季節のイベントができます','祝日':'お休みで、お客さんが多い日です','土日':'お休みで、お客さんが多い日です','年金支給日':'1円パチの年配のお客さんが増えます','給料日':'高レートのお客さんが増えます','7のつく日':'イベントの効き目が少し上がります'};
+/* お知らせの中身 */
+function noticeList(){
+  const L=[],add=(sec,o)=>L.push(Object.assign({sec},o));
+  if(stopToday())add('hall',{urgent:1,title:'今日は営業停止',sub:'立ち入り検査の処分で、今日はお店を開けられません'});
+  for(const r of openRivals())if(r.evKind){const B=bossOf(r),say=rivalSay(r);add('riv',{urgent:r.evKind==='go',face:[B.face,say.ex,B.col],title:`${r.name}が${RIV_EV_LABEL[r.evKind]}`,sub:`${B.name}「${say.text}」`})}
+  for(const p of visiblePlans()){const B=BOSS_BY[p.boss],n=p.open-S.day;add('plan',{urgent:n<=3,face:B?[B.face,B.ex,B.col]:null,title:n<=0?`${p.shop}がオープン！`:`${p.shop} オープンまであと${n}日`,sub:`${p.site}・${dateStr(p.open)}グランドオープン`})}
+  for(const p of rumorPlans())add('plan',{title:'工事中…新しい店ができるらしい',sub:p.site});
+  for(const r of regPending())if(r.n){const n=r.until-S.day+1;add('reg',{urgent:n<=3,title:`規制「${r.rg.name}」`,sub:`あと${n}日で${r.n}台が撤去されます（${r.rg.ids.map(id=>shortName(MB[id].name)).join('・')}）`})}
+  if(S.mn){
+    for(const e of S.mn.cal){
+      if(e.st==='done')continue;const md=MB[e.id],left=e.day-S.day;if(left<0||left>7)continue;
+      const dl=e.day-REL_DEAD-S.day,can=canReserve(e.id);
+      add('rel',{urgent:relOpen(e)&&can&&!e.req&&dl<=1,thumb:e.id,title:`新台「${shortName(md.name)}」${left<=0?'今日発売':`${dateStr(e.day)}発売`}`,
+        sub:e.st==='drawn'?(e.req?`抽選で${e.got}台当選（発売日に届きます）`:'予約していません'):relOpen(e)&&can?(e.req?`${e.req}台予約ずみ`:`予約の締切まであと${dl}日`):can?`締切ずみ（予約${e.req}台）`:`ランク${md.rank-1}から予約できます`});
+    }
+    const fresh=S.storage.filter(x=>x.fresh).length;if(fresh)add('rel',{title:`倉庫に新台が${fresh}台あります`,sub:'置いて「新台入替」イベントをすると効果的です'});
+    if(adBanned())add('hall',{title:'警察の指導中',sub:`${dateStr(S.mn.adBan)}までイベントの告知ができません`});
+    else if(S.mn.heat>=40)add('hall',{urgent:S.mn.heat>=70,title:`立ち入り検査のリスクが${heatWord(S.mn.heat)[0]}`,sub:'告知や大きな釘の変更をひかえると、少しずつ下がります'});
+  }
+  if(S.mgr&&S.mgr.sp)add('mgr',{title:`スキルポイントが${S.mgr.sp}あります`,sub:'「経営 → 店長」でスキルを覚えられます'});
+  return L;
+}
+function noticeBtn(){
+  const L=noticeList(),n=L.length,u=L.some(x=>x.urgent);
+  return `<button class="nbtn ${u?'hot':''} ${n?'':'zero'}" data-notice="1" type="button"><span class="nl">お知らせ</span>${n?`<b>${n}</b>`:'<b>0</b>'}</button>`;
+}
+const NOTICE_SEC={hall:['ホール運営','manage','hall'],riv:['今日のライバル店','manage','rival'],plan:['新しいライバル店','manage','rival'],reg:['規制','list','all'],rel:['新台','shop','n'],mgr:['店長','manage','mgr']};
+function noticeSheet(){
+  const info=dayInfo(S.day),L=noticeList();
+  let h=`<div class="nt-day"><div class="nt-date"><b>${dateLong(S.day)}</b><span class="wx" data-w="${S.weather.today}">${WEATHER[S.weather.today].name}</span><span class="sub">明日は${WEATHER[S.weather.tomorrow].name}</span></div>`;
+  h+=info.tags.length?info.tags.map(t=>`<div class="nt-tag"><span class="pill cal">${esc(t)}</span><span class="sub">${esc(TAG_INFO[t]||'')}</span></div>`).join(''):'<div class="sub">今日はふつうの平日です</div>';
+  const mp=mainPill();if(mp)h+=`<div class="nt-tag">${mp}<span class="sub">${goActive()?'オープン期間中です':stopToday()?'':'今日のイベント'}</span></div>`;
+  h+=`</div>`;
+  if(!L.length)h+=`<div class="empty">ほかのお知らせはありません</div>`;
+  for(const k of Object.keys(NOTICE_SEC)){
+    const it=L.filter(x=>x.sec===k);if(!it.length)continue;const [nm,kind,tab]=NOTICE_SEC[k];
+    h+=`<div class="nt-h"><span class="lbl">${nm}</span><button class="chip sm" data-act="nt-go" data-k="${kind}" data-v="${tab}" type="button">くわしく ›</button></div>`;
+    h+=it.map(x=>`<div class="nt-row ${x.urgent?'urgent':''}">${x.face?ptImg(x.face[0],x.face[1],x.face[2],'sm'):x.thumb?`<img class="mthumb sm" src="${machThumb(x.thumb)}" alt="">`:`<span class="nt-ic">${k==='reg'?'規':k==='hall'?'！':k==='mgr'?'★':k==='plan'?'？':'新'}</span>`}<div class="it"><div class="nm">${esc(x.title)}</div><div class="ds">${esc(x.sub)}</div></div></div>`).join('');
+  }
+  h+=`<button class="btn primary" data-act="close" type="button">とじる</button>`;
+  return ['お知らせ',h];
 }
 function renderStatus(){
   const ov={set:'設定',no:'番号',rate:'レート',hama:'ハマり',off:'なし'}[prefs.overlay];
   let msg='',h='';
-  if(S.phase==='prep'){h=hint();msg=`<span class="tm prep">準備中</span>${pills()}`}
+  if(S.phase==='prep'){h=hint();msg=`<span class="tm prep">準備中</span>${mainPill()}${noticeBtn()}`}
   else if(S.phase==='open'){
     const playing=custs.filter(c=>c.st==='play'||c.st==='call').length;
-    msg=`<span class="tm">${hhmm(clock)}</span><span class="stt">${clock>=LAST?'閉店準備中':`来店${D.visitors}・稼働${playing}/${machines().length}`}</span>${pills()}`;
+    msg=`<span class="tm">${hhmm(clock)}</span><span class="stt">${clock>=LAST?'閉店準備中':`<i class="v">来店${D.visitors}・</i>稼働${playing}/${machines().length}`}</span>${mainPill()}${noticeBtn()}`;
   }
-  const el=$('#statusMsg');if(el._h!==msg){el.innerHTML=msg;el._h=msg}
+  const el=$('#statusMsg');if(el._h!==msg){el.innerHTML=msg;el._h=msg;fitStatus()}
   const he=$('#hint');if(he._h!==h){he.textContent=h;he.hidden=!h;he._h=h}
   const bo=$('#bOverlay'),bt=`<span class="ibs">表示</span>${ov}`;if(bo._h!==bt){bo.innerHTML=bt;bo._h=bt}
+}
+/* 入りきらないときは、イベント名 → 来店数 → 「お知らせ」の文字 の順に省く */
+function fitStatus(){
+  const el=$('#statusMsg');if(!el)return;
+  el.classList.remove('t1','t2','t3','t4');
+  for(const c of ['t1','t2','t3','t4']){if(el.scrollWidth<=el.clientWidth+1)break;el.classList.add(c)}
 }
 const hhmm=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 /* 道具バーが高くなっても、お知らせがかぶらないようにする */
@@ -323,6 +376,7 @@ function renderSheet(){
     case 'award':r=awardSheet(sheetData);break;
     case 'morning':r=morningSheet();break;
     case 'dex':r=dexSheet(sheetData);break;
+    case 'notice':r=noticeSheet();break;
     case 'fired':r=firedSheet();break;
     default:return;
   }
@@ -831,7 +885,14 @@ function quotaChipHTML(){
   const cards=!st.bought&&st.strikes?`<span class="q-cards">${'<i></i>'.repeat(st.strikes)}</span>`:'';
   const g=goActive()?'<span class="q-i">オープン期間はノルマ対象外</span>':
     `<span class="q-i ${cls(qi.okG,qi.pace!=null)}">粗利 ${pctTxt(qi.pace)}</span><span class="q-i ${cls(qi.okU,qi.util!=null)}">稼働 ${qi.util==null?'--':Math.round(qi.util*100)}/${Math.round(q.util*100)}%</span><span class="q-i ${cls(qi.okR,true)}">評判 ${Math.round(S.rep)}/${q.rep}</span>`;
-  return `<span class="q-h"><b>${S.endless?'エンドレス':CH_NAME(st.ch)}</b>${q.m}月の${st.bought?'目標':'ノルマ'}${cards}<em>あと${qi.left}日</em></span><span class="q-r">${g}</span>${missionRowHTML()}`;
+  const chN=S.endless?'エンドレス':CH_NAME(st.ch);
+  /* たたんだとき：章・ノルマの3つの丸・残り日数だけの1行 */
+  if(prefs.qfold){
+    const dot=(ok,has)=>`<i class="${has?(ok?'ok':'ng'):''}"></i>`;
+    const ms=S.missions,md=S.phase==='open'&&ms&&ms.day===S.day&&ms.list.length?`<span class="q-md">今日${ms.list.filter(m=>mLive(m)==='ok').length}/${ms.list.length}</span>`:'';
+    return `<span class="q-h"><b>${chN}</b>${goActive()?'':`<span class="q-dots">${dot(qi.okG,qi.pace!=null)}${dot(qi.okU,qi.util!=null)}${dot(qi.okR,true)}</span>`}${cards}<em>あと${qi.left}日</em>${md}<span class="q-tg" data-fold="1" aria-label="ひらく">▼</span></span>`;
+  }
+  return `<span class="q-h"><b>${chN}</b>${q.m}月の${st.bought?'目標':'ノルマ'}${cards}<em>あと${qi.left}日</em>${S.phase==='open'?'':'<span class="q-mb" data-mis="1">目標</span>'}<span class="q-tg" data-fold="1" aria-label="たたむ">▲</span></span><span class="q-r">${g}</span>${S.phase==='open'?missionRowHTML():''}`;
 }
 function missionRowHTML(){
   const ms=S.missions;if(!ms||ms.day!==S.day||!ms.list.length)return '';
@@ -1081,7 +1142,7 @@ function monthPLHTML(p){
 const GUIDE={
   start:['はじめに',`<p>あなたはパチンコ屋の店長です。台の<b>釘と設定</b>、<b>イベント</b>、<b>店づくり</b>でお客さんを集め、ライバル店に勝って大きな店にしていきましょう。</p>
 <h3>1日の流れ</h3><ol><li><b>準備中</b>：釘・設定・配置・イベントを決めます。台をいじれるのは閉店中だけです。</li><li><b>営業中</b>：10:00〜22:45。速さは×1〜×4、「停止」で一時停止できます。</li><li><b>日報</b>：売上・評判・イベントの結果・お客さんの声が出ます。</li></ol>
-<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート・ハマり）を切り替えられます。</li></ul>
+<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート・ハマり）を切り替えられます。</li><li>上のまん中の<b>「お知らせ」</b>に、ライバル店の動き・新しい店のオープン・規制・新台などがまとまっています。数字が赤く光っているときは、急ぎのお知らせがあります。</li><li>左上のノルマの札は <b>▲</b> でたたむと、店内が広く見えます（▼でひらく）。</li></ul>
 <h3>最初の3日間はグランドオープン</h3><p>入りきらないほどお客さんが来ますが、評価がとても厳しい期間です。ここで出さないと信用がガタ落ちします。</p>`],
   story:['ストーリー',`<p>あなたは借金300万円を抱えた元パチンカス。潰れかけのホールのオーナー<b>大黒千代</b>さんに借金を肩代わりしてもらい、<b>雇われ店長</b>になりました。</p>
 <h3>章とクリア</h3><ol><li><b>借金まみれの雇われ店長</b>：ノルマに3回合格・借金を返す・ゴールデン会館に勝つ</li><li><b>町の人気店へ</b>：町のシェア1位の日を30日・ランク3・大手チェーンに勝つ</li><li><b>駅前の決戦</b>：お店を買い取る・駅前に出る・駅前でシェア1位</li><li><b>チェーン社長</b>：お店を3軒に・3軒そろって黒字・業界の帝王に勝つ</li><li><b>最終章 全国ホールアワード</b>：審査で大賞を取ればエンディング</li></ol>
@@ -1321,6 +1382,7 @@ $('#sheetBody').addEventListener('click',e=>{
       if(t==='none'||t==='renewal'||t==='media'||t==='season'||t==='anniv')ev.ad=false;
       sfx('tap');save();refreshAll();break}
     case 'ev-target':S.event.target=S.event.type==='tail'?Number(v):v;sfx('tap');save();refreshAll();break;
+    case 'nt-go':openSheet(b.dataset.k,v);break;
     case 'ev-ad':if(adBanned())break;S.event.ad=!S.event.ad;sfx('tap');save();refreshAll();break;
     case 'ex-set':{if(exKey(b.dataset.k)===v)break;if(setExch(b.dataset.k,v)){sfx('good');save();refreshAll()}else sfx('bad');renderSheet();break}
     case 'mn-reset':S.mn.reset=v;sfx('tap');save();renderSheet();break;
@@ -1510,7 +1572,12 @@ function startDay(){
 }
 $('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'hama',hama:'off',off:'set'}[prefs.overlay]||'set';savePrefs();renderStatus()});
 $('#bMenu').addEventListener('click',()=>{audio();openSheet('menu',false)});
-$('#quotaChip').addEventListener('click',e=>{audio();sfx('tap');if(e.target.closest('[data-mis]'))openSheet('morning');else openSheet('manage','story')});
+/* 上のまん中が、左右の札にかぶらない幅にする */
+try{const ro=new ResizeObserver(()=>{const r=$('#root').style;r.setProperty('--hudl',$('.tl').offsetWidth+'px');r.setProperty('--hudr',$('.tr').offsetWidth+'px');r.setProperty('--hudlh',$('.tl').offsetHeight+'px');fitStatus()});ro.observe($('.tl'));ro.observe($('.tr'))}catch(e){}
+$('#statusMsg').addEventListener('click',e=>{if(e.target.closest('[data-notice]')){audio();sfx('tap');openSheet('notice')}});
+$('#quotaChip').addEventListener('click',e=>{audio();sfx('tap');
+  if(e.target.closest('[data-fold]')){prefs.qfold=!prefs.qfold;savePrefs();refreshHud();return}
+  if(e.target.closest('[data-mis]'))openSheet('morning');else openSheet('manage','story')});
 $('#sheetClose').addEventListener('click',()=>{closeSheet();refreshAll()});
 $('#scrim').addEventListener('click',()=>{if(performance.now()-sheetAt<450)return;closeSheet();refreshAll()});
 $('#zIn').addEventListener('click',()=>zoomAt(1.3));

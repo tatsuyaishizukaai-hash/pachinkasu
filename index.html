@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>[hidden]{display:none!important}</style>
-<script>window.APP_MODE=true;window.APP_VERSION='202610090741';</script>
+<script>window.APP_MODE=true;window.APP_VERSION='202610090827';</script>
 <title>パチンカスの成り上がり店長録</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,7 +43,7 @@ button{font:inherit;color:inherit}
 
 /* 上の端 */
 .tl{position:absolute;top:calc(6px + var(--st));left:calc(6px + var(--sl));display:flex;flex-direction:column;gap:5px;max-width:42%}
-.money-chip{padding:4px 9px 5px;display:flex;flex-direction:column;gap:1px;min-width:150px}
+.money-chip{padding:4px 9px 5px;display:flex;flex-direction:column;gap:1px;min-width:150px;align-self:flex-start;max-width:100%}
 .mc-1{display:flex;gap:6px;align-items:baseline;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden}
 .mc-1 .nm{font-family:var(--f-display);color:var(--red);font-size:12px;overflow:hidden;text-overflow:ellipsis;max-width:9em}
 .wx{font-size:10px;font-weight:800;border:2px solid var(--ink);border-radius:99px;padding:0 5px;background:#fff7b0;line-height:1.3}
@@ -58,16 +58,27 @@ button{font:inherit;color:inherit}
 .ib{min-width:34px;height:32px;border:2.5px solid var(--ink);border-radius:10px;background:var(--paper);font-weight:800;font-size:11.5px;cursor:pointer;box-shadow:2px 3px 0 var(--ink);padding:0 7px;white-space:nowrap}
 .ib:active{transform:translateY(2px);box-shadow:none}
 .ibs{display:block;font-size:8.5px;color:var(--muted);line-height:1;margin-bottom:1px}
-.tc{position:absolute;top:calc(6px + var(--st));left:50%;transform:translateX(-50%);max-width:38%;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.tc{position:absolute;top:calc(6px + var(--st));left:calc(var(--sl) + 14px + var(--hudl,200px));right:calc(var(--sr) + 14px + var(--hudr,200px));display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
 .tc>*{pointer-events:auto}
-.clock{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;align-items:center}
+.clock{display:flex;flex-wrap:nowrap;justify-content:center;gap:4px;align-items:center;max-width:100%;min-width:0;overflow:hidden;padding:0 2px 3px}
+.clock.t1 .pill{display:none}.clock.t2 .stt .v{display:none}.clock.t3 .nbtn .nl{display:none}.clock.t4 .stt{display:none}
+.stt .v{font-style:normal}
+.clock .pill{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:12em;flex:0 1 auto}
+.clock .tm,.clock .stt,.nbtn{flex:none}
+.nbtn{display:inline-flex;align-items:center;gap:4px;border:2px solid var(--ink);border-radius:99px;background:#fff;font-weight:800;font-size:11px;padding:0 4px 0 9px;height:24px;cursor:pointer;box-shadow:1px 2px 0 var(--ink);white-space:nowrap;font-family:var(--f-body)}
+.nbtn b{display:inline-grid;place-items:center;min-width:17px;height:17px;border-radius:99px;background:var(--ink);color:var(--sun);font-size:10.5px;padding:0 4px;font-family:var(--f-display);font-weight:400}
+.nbtn.zero{padding-right:9px;color:var(--muted)}
+.nbtn.hot{background:#fff1f3;border-color:var(--red)}.nbtn.hot b{background:var(--red);color:#fff;animation:nbp 1.6s ease-in-out infinite}
+.nbtn:active{transform:translateY(1px);box-shadow:none}
+@keyframes nbp{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.dtag{font-size:9.5px;font-weight:800;border:2px solid var(--ink);border-radius:99px;padding:0 5px;background:#bfe1ff;line-height:1.3;white-space:nowrap}
 .clock .tm{font-family:var(--f-display);font-size:14px;background:var(--ink);color:var(--sun);border-radius:9px;padding:1px 8px;border:2px solid var(--ink)}
 .clock .tm.prep{background:var(--sun);color:var(--ink)}
 .clock .stt{font-size:11px;font-weight:800;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:0 7px;white-space:nowrap}
 .pill{display:inline-block;border:2px solid var(--ink);border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:800;white-space:nowrap;background:#fff;line-height:1.45}
 .pill.go,.pill.ev{background:var(--red);color:#fff}
 .pill.cal{background:#bfe1ff}.pill.riv{background:#e9d5ff}.pill.reg{background:#111;color:#fff}
-.hint{font-size:11px;font-weight:800;background:var(--paper-3);border:2px solid var(--ink);border-radius:9px;padding:2px 8px;text-align:center;max-width:100%}
+.hint{font-size:10.5px;font-weight:800;background:var(--paper-3);border:2px solid var(--ink);border-radius:9px;padding:1px 8px;text-align:center;max-width:100%;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* つぶやき */
 .tw{background:rgba(255,255,255,.93);border:2px solid var(--ink);border-radius:10px;padding:3px 7px;font-size:11px;font-weight:800;line-height:1.35;display:flex;gap:6px;align-items:flex-start;transition:opacity .5s,transform .3s;animation:twin .3s ease-out}
@@ -257,7 +268,7 @@ button{font:inherit;color:inherit}
 .quota-chip:active{transform:translateY(2px);box-shadow:none}
 .q-h{display:flex;gap:5px;align-items:center;font-size:10px;font-weight:800;white-space:nowrap}
 .q-h b{font-family:var(--f-display);font-weight:400;background:var(--night);color:var(--sun);border-radius:6px;padding:0 5px;font-size:10px;line-height:1.5}
-.q-h em{font-style:normal;color:var(--muted);margin-left:auto;padding-left:6px}
+.q-h em{font-style:normal;color:var(--muted);margin-left:auto;padding-left:4px}
 .q-cards{display:inline-flex;gap:2px}.q-cards i{width:7px;height:10px;border:1.5px solid var(--ink);border-radius:2px;background:#facc15}
 .q-r{display:flex;gap:3px;flex-wrap:wrap}
 .q-i{font-size:9.5px;font-weight:800;border:2px solid var(--ink);border-radius:7px;padding:0 4px;background:#fff;white-space:nowrap;line-height:1.35;font-variant-numeric:tabular-nums}
@@ -467,9 +478,10 @@ button{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){#chap::before,#chap.go *{animation:none!important}.tk-box,.tk-next{animation:none!important}.balls i,.stamp,.tw,#telop.go .burst,#telop.go .tel-in{animation:none!important}#telop.go .burst,#telop.go .tel-in{opacity:1}#toast,.tw{transition:none}}
 .P #dock{flex-wrap:wrap;justify-content:center;max-width:calc(100% - 12px)}
 .P #dock .btn{min-width:calc(25% - 6px);flex:1}
-.P .tc{top:calc(108px + var(--st));max-width:70%}
+.P .tc{top:calc(var(--st) + 12px + var(--hudlh,130px));left:calc(var(--sl) + 6px);right:calc(var(--sr) + 6px)}
+.P .mc-1{flex-wrap:wrap;row-gap:2px}
 .P .tr{top:calc(6px + var(--st))}
-.P .tl{max-width:56%}
+.P .tl{max-width:calc(100% - var(--hudr,190px) - 20px)}
 /* ⑦ ホール運営・新台カレンダー */
 .relcard{display:flex;gap:9px;background:#fff;border:2.5px solid var(--ink);border-radius:13px;padding:7px 9px;box-shadow:2px 3px 0 var(--ink);position:relative;overflow:hidden}
 .relcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(var(--mc),var(--mc2))}
@@ -482,6 +494,20 @@ button{font:inherit;color:inherit}
 .rc-name .sw,.sw.sm{display:inline-block;width:12px;height:12px;border-radius:4px;border:2px solid var(--ink);flex:none;vertical-align:-1px;margin-right:4px}
 .rc-st{font-weight:800;font-size:12px}.rc-st.ok{color:var(--green)}.rc-st.ng{color:#be123c}
 .rc-req{gap:4px}.rc-req .chip{min-height:28px;padding:1px 9px;font-size:12px}
+.q-tg{display:inline-grid;place-items:center;width:20px;height:17px;margin:-2px -4px -2px 3px;border-radius:6px;background:var(--paper-2);border:2px solid var(--ink);font-size:8px;line-height:1;color:var(--ink)}
+.q-dots{display:inline-flex;gap:3px;margin-left:2px}.q-dots i{width:9px;height:9px;border-radius:50%;border:2px solid var(--ink);background:#fff}.q-dots i.ok{background:#22c55e}.q-dots i.ng{background:#fb7185}
+.q-md{font-size:9px;font-weight:800;border:2px solid var(--ink);border-radius:99px;padding:0 5px;background:#fff;margin-left:4px;line-height:1.35}
+.q-mb{font-size:9px;font-weight:800;border:2px solid var(--ink);border-radius:99px;padding:0 5px;background:var(--sun);margin-left:4px;line-height:1.35}
+.nt-day{background:linear-gradient(90deg,#e0f2fe,#fff);border:2.5px solid var(--ink);border-radius:13px;padding:7px 10px;display:flex;flex-direction:column;gap:4px}
+.nt-date{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.nt-date b{font-family:var(--f-display);font-weight:400;font-size:15px}
+.nt-tag{display:flex;gap:8px;align-items:center}.nt-tag .pill{flex:none}
+.nt-h{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
+.chip.sm{min-height:26px;padding:0 9px;font-size:11px}
+.nt-row{display:flex;gap:9px;align-items:center;background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:6px 9px}
+.nt-row.urgent{background:#fff1f3;border-color:var(--red);box-shadow:inset 4px 0 0 var(--red)}
+.nt-row .it{flex:1;min-width:0}.nt-row .nm{font-weight:800;font-size:13px}.nt-row .ds{font-size:11.5px;color:var(--muted);font-weight:800;line-height:1.4}
+.nt-ic{flex:none;width:30px;height:30px;border-radius:9px;border:2.5px solid var(--ink);display:grid;place-items:center;font-family:var(--f-display);background:var(--sun);font-size:13px}
+.mthumb.sm{width:24px;height:33px}
 .mthumb{width:36px;height:50px;flex:none;align-self:center;image-rendering:pixelated;filter:drop-shadow(1px 2px 0 rgba(22,18,31,.35))}
 .item .sw{image-rendering:pixelated}
 .tag.hot{background:linear-gradient(90deg,#ff2d55,#f97316);color:#fff}
@@ -516,7 +542,7 @@ button{font:inherit;color:inherit}
   <div class="ui">
     <div class="tl">
       <div class="chipc money-chip">
-        <div class="mc-1"><span class="nm" id="hName">パーラー満天</span><span class="lvp" id="hLv"></span><span id="hDate"></span><span class="wx" id="hWeather"></span></div>
+        <div class="mc-1"><span class="nm" id="hName">パーラー満天</span><span class="lvp" id="hLv"></span><span id="hDate"></span><span class="wx" id="hWeather"></span><span class="dtag" id="hTag" hidden></span></div>
         <div class="mc-2"><b id="hMoney"></b><span class="today" id="hToday"></span></div>
       </div>
       <button class="chipc quota-chip" id="quotaChip" type="button" hidden></button>
@@ -5411,14 +5437,17 @@ function setT(id,t){const e=$(id);if(e.textContent!==t)e.textContent=t;return e}
 function refreshHud(){
   setT('#hName',storeLabel(G));
   setT('#hDate',dateStr(S.day));
+  {const tg=dayInfo(S.day).tags.map(t=>TAG_SHORT[t]||t).slice(0,2).join('・');const e=setT('#hTag',tg);e.hidden=!tg}
   setT('#hLv',S.mgr?'Lv'+S.mgr.lv:'').classList.toggle('sp',!!(S.mgr&&S.mgr.sp));
-  setT('#hWeather',WEATHER[S.weather.today].name).dataset.w=S.weather.today;
+  setT('#hWeather',{sun:'晴',cloud:'曇',rain:'雨'}[S.weather.today]||WEATHER[S.weather.today].name).dataset.w=S.weather.today;
   setT('#hMoney',yen(S.money)).classList.toggle('neg',S.money<0);
   setT('#hRep',String(Math.round(S.rep)));setT('#hTrust',String(Math.round(S.trust)));setT('#hDecor',stars());
   const qc=$('#quotaChip'),qh=quotaChipHTML();if(qc._h!==qh){qc.innerHTML=qh;qc._h=qh;qc.hidden=!qh}
-  if(S.phase==='open'&&D){const t=D.coin-D.out+D.drink-D.goto;const e=setT('#hToday','今日 '+sgn(t));e.className='today '+(t>=0?'pos':'neg')}
+  if(S.phase==='open'&&D){const t=D.coin-D.out+D.drink-D.goto;const e=setT('#hToday','今日 '+manS(t));e.className='today '+(t>=0?'pos':'neg')}
   else{const e=setT('#hToday',S.loan?'借入 '+man(S.loan):'');e.className='today sub'}
 }
+/* 短いお金の表示（+14.3万・-8,500） */
+const manS=n=>{const a=Math.abs(Math.round(n)),s=n<0?'-':'+';return s+(a>=1e8?(a/1e8).toFixed(1)+'億':a>=1e5?Math.round(a/1e4)+'万':a>=1e4?(a/1e4).toFixed(1)+'万':a.toLocaleString('ja-JP')+'円')};
 function hint(){
   if(!G.objs.some(o=>o.kind==='d'&&o.type==='counter'))return '景品カウンターがありません。建設 → 設備 から置こう';
   if(!staffOf('counter').length)return 'カウンター係がいないと景品交換ができません（経営 → 店員）';
@@ -5427,28 +5456,78 @@ function hint(){
   if(S.day<=4&&!G.zone.some(z=>z))return 'たばこを吸う客のために「喫煙OKゾーン」や喫煙所を作ろう';
   return '';
 }
-function pills(){
-  const info=dayInfo(S.day),p=[];
-  if(goActive())p.push(`<span class="pill go">${goLabel(S.go)} ${goDayIdx()+1}/${S.go.len}日目</span>`);
-  else if(S.phase==='open'&&D&&D.evType!=='none')p.push(`<span class="pill ev">${esc(D.evLabel)}</span>`);
-  else if(S.event.type!=='none')p.push(`<span class="pill ev">${esc(eventLabel())}</span>`);
-  for(const r of regPending())if(r.n)p.push(`<span class="pill reg">規制 あと${r.until-S.day+1}日で${r.n}台撤去</span>`);
-  info.tags.forEach(t=>p.push(`<span class="pill cal">${t}</span>`));
-  for(const r of openRivals())if(r.evKind)p.push(`<span class="pill riv">${esc(r.name)}が${RIV_EV_LABEL[r.evKind]}</span>`);
-  for(const pl of visiblePlans())p.push(`<span class="pill riv">${esc(pl.shop)} オープンまで${pl.open-S.day}日</span>`);
-  return p.join('');
+/* 上のまん中は1行だけ：今日のイベント（またはオープン期間）と「お知らせ」ボタン。
+   ライバル店・新しい店・規制・新台などは「お知らせ」の中にまとめる */
+function mainPill(){
+  if(goActive())return `<span class="pill go">${esc(goLabel(S.go))} ${goDayIdx()+1}/${S.go.len}日目</span>`;
+  if(S.phase==='open'&&D&&D.stopped)return '<span class="pill reg">営業停止</span>';
+  if(S.phase==='open'&&D&&D.evType!=='none')return `<span class="pill ev">${esc(D.evLabel)}</span>`;
+  if(S.phase==='prep'&&stopToday())return '<span class="pill reg">今日は営業停止</span>';
+  if(S.phase==='prep'&&S.event.type!=='none')return `<span class="pill ev">${esc(eventLabel())}</span>`;
+  return '';
+}
+/* 日付の横に出す短いしるし（給料日・土日など） */
+const TAG_SHORT={'ゴールデンウィーク':'GW','年末年始':'年末年始','お盆':'お盆','祝日':'祝日','土日':'土日','年金支給日':'年金日','給料日':'給料日','7のつく日':'7の日'};
+const TAG_INFO={'ゴールデンウィーク':'町じゅうのお客さんが打ちに来ます。季節のイベントができます','年末年始':'町じゅうのお客さんが打ちに来ます。季節のイベントができます','お盆':'町じゅうのお客さんが打ちに来ます。季節のイベントができます','祝日':'お休みで、お客さんが多い日です','土日':'お休みで、お客さんが多い日です','年金支給日':'1円パチの年配のお客さんが増えます','給料日':'高レートのお客さんが増えます','7のつく日':'イベントの効き目が少し上がります'};
+/* お知らせの中身 */
+function noticeList(){
+  const L=[],add=(sec,o)=>L.push(Object.assign({sec},o));
+  if(stopToday())add('hall',{urgent:1,title:'今日は営業停止',sub:'立ち入り検査の処分で、今日はお店を開けられません'});
+  for(const r of openRivals())if(r.evKind){const B=bossOf(r),say=rivalSay(r);add('riv',{urgent:r.evKind==='go',face:[B.face,say.ex,B.col],title:`${r.name}が${RIV_EV_LABEL[r.evKind]}`,sub:`${B.name}「${say.text}」`})}
+  for(const p of visiblePlans()){const B=BOSS_BY[p.boss],n=p.open-S.day;add('plan',{urgent:n<=3,face:B?[B.face,B.ex,B.col]:null,title:n<=0?`${p.shop}がオープン！`:`${p.shop} オープンまであと${n}日`,sub:`${p.site}・${dateStr(p.open)}グランドオープン`})}
+  for(const p of rumorPlans())add('plan',{title:'工事中…新しい店ができるらしい',sub:p.site});
+  for(const r of regPending())if(r.n){const n=r.until-S.day+1;add('reg',{urgent:n<=3,title:`規制「${r.rg.name}」`,sub:`あと${n}日で${r.n}台が撤去されます（${r.rg.ids.map(id=>shortName(MB[id].name)).join('・')}）`})}
+  if(S.mn){
+    for(const e of S.mn.cal){
+      if(e.st==='done')continue;const md=MB[e.id],left=e.day-S.day;if(left<0||left>7)continue;
+      const dl=e.day-REL_DEAD-S.day,can=canReserve(e.id);
+      add('rel',{urgent:relOpen(e)&&can&&!e.req&&dl<=1,thumb:e.id,title:`新台「${shortName(md.name)}」${left<=0?'今日発売':`${dateStr(e.day)}発売`}`,
+        sub:e.st==='drawn'?(e.req?`抽選で${e.got}台当選（発売日に届きます）`:'予約していません'):relOpen(e)&&can?(e.req?`${e.req}台予約ずみ`:`予約の締切まであと${dl}日`):can?`締切ずみ（予約${e.req}台）`:`ランク${md.rank-1}から予約できます`});
+    }
+    const fresh=S.storage.filter(x=>x.fresh).length;if(fresh)add('rel',{title:`倉庫に新台が${fresh}台あります`,sub:'置いて「新台入替」イベントをすると効果的です'});
+    if(adBanned())add('hall',{title:'警察の指導中',sub:`${dateStr(S.mn.adBan)}までイベントの告知ができません`});
+    else if(S.mn.heat>=40)add('hall',{urgent:S.mn.heat>=70,title:`立ち入り検査のリスクが${heatWord(S.mn.heat)[0]}`,sub:'告知や大きな釘の変更をひかえると、少しずつ下がります'});
+  }
+  if(S.mgr&&S.mgr.sp)add('mgr',{title:`スキルポイントが${S.mgr.sp}あります`,sub:'「経営 → 店長」でスキルを覚えられます'});
+  return L;
+}
+function noticeBtn(){
+  const L=noticeList(),n=L.length,u=L.some(x=>x.urgent);
+  return `<button class="nbtn ${u?'hot':''} ${n?'':'zero'}" data-notice="1" type="button"><span class="nl">お知らせ</span>${n?`<b>${n}</b>`:'<b>0</b>'}</button>`;
+}
+const NOTICE_SEC={hall:['ホール運営','manage','hall'],riv:['今日のライバル店','manage','rival'],plan:['新しいライバル店','manage','rival'],reg:['規制','list','all'],rel:['新台','shop','n'],mgr:['店長','manage','mgr']};
+function noticeSheet(){
+  const info=dayInfo(S.day),L=noticeList();
+  let h=`<div class="nt-day"><div class="nt-date"><b>${dateLong(S.day)}</b><span class="wx" data-w="${S.weather.today}">${WEATHER[S.weather.today].name}</span><span class="sub">明日は${WEATHER[S.weather.tomorrow].name}</span></div>`;
+  h+=info.tags.length?info.tags.map(t=>`<div class="nt-tag"><span class="pill cal">${esc(t)}</span><span class="sub">${esc(TAG_INFO[t]||'')}</span></div>`).join(''):'<div class="sub">今日はふつうの平日です</div>';
+  const mp=mainPill();if(mp)h+=`<div class="nt-tag">${mp}<span class="sub">${goActive()?'オープン期間中です':stopToday()?'':'今日のイベント'}</span></div>`;
+  h+=`</div>`;
+  if(!L.length)h+=`<div class="empty">ほかのお知らせはありません</div>`;
+  for(const k of Object.keys(NOTICE_SEC)){
+    const it=L.filter(x=>x.sec===k);if(!it.length)continue;const [nm,kind,tab]=NOTICE_SEC[k];
+    h+=`<div class="nt-h"><span class="lbl">${nm}</span><button class="chip sm" data-act="nt-go" data-k="${kind}" data-v="${tab}" type="button">くわしく ›</button></div>`;
+    h+=it.map(x=>`<div class="nt-row ${x.urgent?'urgent':''}">${x.face?ptImg(x.face[0],x.face[1],x.face[2],'sm'):x.thumb?`<img class="mthumb sm" src="${machThumb(x.thumb)}" alt="">`:`<span class="nt-ic">${k==='reg'?'規':k==='hall'?'！':k==='mgr'?'★':k==='plan'?'？':'新'}</span>`}<div class="it"><div class="nm">${esc(x.title)}</div><div class="ds">${esc(x.sub)}</div></div></div>`).join('');
+  }
+  h+=`<button class="btn primary" data-act="close" type="button">とじる</button>`;
+  return ['お知らせ',h];
 }
 function renderStatus(){
   const ov={set:'設定',no:'番号',rate:'レート',hama:'ハマり',off:'なし'}[prefs.overlay];
   let msg='',h='';
-  if(S.phase==='prep'){h=hint();msg=`<span class="tm prep">準備中</span>${pills()}`}
+  if(S.phase==='prep'){h=hint();msg=`<span class="tm prep">準備中</span>${mainPill()}${noticeBtn()}`}
   else if(S.phase==='open'){
     const playing=custs.filter(c=>c.st==='play'||c.st==='call').length;
-    msg=`<span class="tm">${hhmm(clock)}</span><span class="stt">${clock>=LAST?'閉店準備中':`来店${D.visitors}・稼働${playing}/${machines().length}`}</span>${pills()}`;
+    msg=`<span class="tm">${hhmm(clock)}</span><span class="stt">${clock>=LAST?'閉店準備中':`<i class="v">来店${D.visitors}・</i>稼働${playing}/${machines().length}`}</span>${mainPill()}${noticeBtn()}`;
   }
-  const el=$('#statusMsg');if(el._h!==msg){el.innerHTML=msg;el._h=msg}
+  const el=$('#statusMsg');if(el._h!==msg){el.innerHTML=msg;el._h=msg;fitStatus()}
   const he=$('#hint');if(he._h!==h){he.textContent=h;he.hidden=!h;he._h=h}
   const bo=$('#bOverlay'),bt=`<span class="ibs">表示</span>${ov}`;if(bo._h!==bt){bo.innerHTML=bt;bo._h=bt}
+}
+/* 入りきらないときは、イベント名 → 来店数 → 「お知らせ」の文字 の順に省く */
+function fitStatus(){
+  const el=$('#statusMsg');if(!el)return;
+  el.classList.remove('t1','t2','t3','t4');
+  for(const c of ['t1','t2','t3','t4']){if(el.scrollWidth<=el.clientWidth+1)break;el.classList.add(c)}
 }
 const hhmm=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 /* 道具バーが高くなっても、お知らせがかぶらないようにする */
@@ -5697,6 +5776,7 @@ function renderSheet(){
     case 'award':r=awardSheet(sheetData);break;
     case 'morning':r=morningSheet();break;
     case 'dex':r=dexSheet(sheetData);break;
+    case 'notice':r=noticeSheet();break;
     case 'fired':r=firedSheet();break;
     default:return;
   }
@@ -6205,7 +6285,14 @@ function quotaChipHTML(){
   const cards=!st.bought&&st.strikes?`<span class="q-cards">${'<i></i>'.repeat(st.strikes)}</span>`:'';
   const g=goActive()?'<span class="q-i">オープン期間はノルマ対象外</span>':
     `<span class="q-i ${cls(qi.okG,qi.pace!=null)}">粗利 ${pctTxt(qi.pace)}</span><span class="q-i ${cls(qi.okU,qi.util!=null)}">稼働 ${qi.util==null?'--':Math.round(qi.util*100)}/${Math.round(q.util*100)}%</span><span class="q-i ${cls(qi.okR,true)}">評判 ${Math.round(S.rep)}/${q.rep}</span>`;
-  return `<span class="q-h"><b>${S.endless?'エンドレス':CH_NAME(st.ch)}</b>${q.m}月の${st.bought?'目標':'ノルマ'}${cards}<em>あと${qi.left}日</em></span><span class="q-r">${g}</span>${missionRowHTML()}`;
+  const chN=S.endless?'エンドレス':CH_NAME(st.ch);
+  /* たたんだとき：章・ノルマの3つの丸・残り日数だけの1行 */
+  if(prefs.qfold){
+    const dot=(ok,has)=>`<i class="${has?(ok?'ok':'ng'):''}"></i>`;
+    const ms=S.missions,md=S.phase==='open'&&ms&&ms.day===S.day&&ms.list.length?`<span class="q-md">今日${ms.list.filter(m=>mLive(m)==='ok').length}/${ms.list.length}</span>`:'';
+    return `<span class="q-h"><b>${chN}</b>${goActive()?'':`<span class="q-dots">${dot(qi.okG,qi.pace!=null)}${dot(qi.okU,qi.util!=null)}${dot(qi.okR,true)}</span>`}${cards}<em>あと${qi.left}日</em>${md}<span class="q-tg" data-fold="1" aria-label="ひらく">▼</span></span>`;
+  }
+  return `<span class="q-h"><b>${chN}</b>${q.m}月の${st.bought?'目標':'ノルマ'}${cards}<em>あと${qi.left}日</em>${S.phase==='open'?'':'<span class="q-mb" data-mis="1">目標</span>'}<span class="q-tg" data-fold="1" aria-label="たたむ">▲</span></span><span class="q-r">${g}</span>${S.phase==='open'?missionRowHTML():''}`;
 }
 function missionRowHTML(){
   const ms=S.missions;if(!ms||ms.day!==S.day||!ms.list.length)return '';
@@ -6455,7 +6542,7 @@ function monthPLHTML(p){
 const GUIDE={
   start:['はじめに',`<p>あなたはパチンコ屋の店長です。台の<b>釘と設定</b>、<b>イベント</b>、<b>店づくり</b>でお客さんを集め、ライバル店に勝って大きな店にしていきましょう。</p>
 <h3>1日の流れ</h3><ol><li><b>準備中</b>：釘・設定・配置・イベントを決めます。台をいじれるのは閉店中だけです。</li><li><b>営業中</b>：10:00〜22:45。速さは×1〜×4、「停止」で一時停止できます。</li><li><b>日報</b>：売上・評判・イベントの結果・お客さんの声が出ます。</li></ol>
-<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート・ハマり）を切り替えられます。</li></ul>
+<h3>画面の操作</h3><ul><li>店内は指でドラッグして移動、2本指か右下の＋−で拡大縮小できます。</li><li>台や設備をタップすると詳しい情報が見られます。</li><li>右上の「表示」で、台の上に出す情報（設定・番号・レート・ハマり）を切り替えられます。</li><li>上のまん中の<b>「お知らせ」</b>に、ライバル店の動き・新しい店のオープン・規制・新台などがまとまっています。数字が赤く光っているときは、急ぎのお知らせがあります。</li><li>左上のノルマの札は <b>▲</b> でたたむと、店内が広く見えます（▼でひらく）。</li></ul>
 <h3>最初の3日間はグランドオープン</h3><p>入りきらないほどお客さんが来ますが、評価がとても厳しい期間です。ここで出さないと信用がガタ落ちします。</p>`],
   story:['ストーリー',`<p>あなたは借金300万円を抱えた元パチンカス。潰れかけのホールのオーナー<b>大黒千代</b>さんに借金を肩代わりしてもらい、<b>雇われ店長</b>になりました。</p>
 <h3>章とクリア</h3><ol><li><b>借金まみれの雇われ店長</b>：ノルマに3回合格・借金を返す・ゴールデン会館に勝つ</li><li><b>町の人気店へ</b>：町のシェア1位の日を30日・ランク3・大手チェーンに勝つ</li><li><b>駅前の決戦</b>：お店を買い取る・駅前に出る・駅前でシェア1位</li><li><b>チェーン社長</b>：お店を3軒に・3軒そろって黒字・業界の帝王に勝つ</li><li><b>最終章 全国ホールアワード</b>：審査で大賞を取ればエンディング</li></ol>
@@ -6695,6 +6782,7 @@ $('#sheetBody').addEventListener('click',e=>{
       if(t==='none'||t==='renewal'||t==='media'||t==='season'||t==='anniv')ev.ad=false;
       sfx('tap');save();refreshAll();break}
     case 'ev-target':S.event.target=S.event.type==='tail'?Number(v):v;sfx('tap');save();refreshAll();break;
+    case 'nt-go':openSheet(b.dataset.k,v);break;
     case 'ev-ad':if(adBanned())break;S.event.ad=!S.event.ad;sfx('tap');save();refreshAll();break;
     case 'ex-set':{if(exKey(b.dataset.k)===v)break;if(setExch(b.dataset.k,v)){sfx('good');save();refreshAll()}else sfx('bad');renderSheet();break}
     case 'mn-reset':S.mn.reset=v;sfx('tap');save();renderSheet();break;
@@ -6884,7 +6972,12 @@ function startDay(){
 }
 $('#bOverlay').addEventListener('click',()=>{prefs.overlay={set:'no',no:'rate',rate:'hama',hama:'off',off:'set'}[prefs.overlay]||'set';savePrefs();renderStatus()});
 $('#bMenu').addEventListener('click',()=>{audio();openSheet('menu',false)});
-$('#quotaChip').addEventListener('click',e=>{audio();sfx('tap');if(e.target.closest('[data-mis]'))openSheet('morning');else openSheet('manage','story')});
+/* 上のまん中が、左右の札にかぶらない幅にする */
+try{const ro=new ResizeObserver(()=>{const r=$('#root').style;r.setProperty('--hudl',$('.tl').offsetWidth+'px');r.setProperty('--hudr',$('.tr').offsetWidth+'px');r.setProperty('--hudlh',$('.tl').offsetHeight+'px');fitStatus()});ro.observe($('.tl'));ro.observe($('.tr'))}catch(e){}
+$('#statusMsg').addEventListener('click',e=>{if(e.target.closest('[data-notice]')){audio();sfx('tap');openSheet('notice')}});
+$('#quotaChip').addEventListener('click',e=>{audio();sfx('tap');
+  if(e.target.closest('[data-fold]')){prefs.qfold=!prefs.qfold;savePrefs();refreshHud();return}
+  if(e.target.closest('[data-mis]'))openSheet('morning');else openSheet('manage','story')});
 $('#sheetClose').addEventListener('click',()=>{closeSheet();refreshAll()});
 $('#scrim').addEventListener('click',()=>{if(performance.now()-sheetAt<450)return;closeSheet();refreshAll()});
 $('#zIn').addEventListener('click',()=>zoomAt(1.3));
