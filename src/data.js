@@ -96,7 +96,7 @@ const DB=Object.fromEntries(DECOR.map(d=>[d.id,d]));
 const WALLITEMS=[
  {id:'toilet',name:'トイレ',price:300000,appeal:2,cap:2,rank:1,info:'壁に自動ドアで付く。マスを使わない。2人まで同時に使える'},
  {id:'smokeroom',name:'喫煙室',price:500000,appeal:3,cap:4,rank:2,info:'壁に付く喫煙室。マスを使わない。4人まで同時に使える'},
- {id:'camera',name:'防犯カメラ',price:180000,appeal:0,cap:0,rank:1,info:'壁に付く。周り5マスのゴト師を見つけやすくなる',noFront:1},
+ {id:'camera',name:'防犯カメラ',price:180000,appeal:0,cap:0,rank:1,info:'壁に付く。向かいの壁まで、幅11マス（左右5マスずつ）のゴト師を見つけやすくなる',noFront:1},
 ];
 const WB=Object.fromEntries(WALLITEMS.map(d=>[d.id,d]));
 const SWATCH={kiosk:'#0ea5e9',camera:'#111827',counter:'#d9a066',vending:'#ef4444',bench:'#a16207',booth:'#94d8e8',plant:'#22c55e',changer:'#94a3b8',cleaner:'#e0f2fe',neon:'#ff4fa3',cat:'#ffffff',chandelier:'#facc15',fountain:'#38bdf8',daruma:'#dc2626',trophy:'#facc15',goldcat:'#eab308',toilet:'#3b82f6',smokeroom:'#64748b'};

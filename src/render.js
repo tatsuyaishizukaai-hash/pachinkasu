@@ -251,8 +251,18 @@ function drawOverlay(now,tool){
         if(near&&!cleaners.some(c=>Math.max(Math.abs(c.x-x),Math.abs(c.y-y))<=2))R(px+1,py+1,TS-2,TS-2,'rgba(255,170,60,.25)')}
     }
   }
-  if(S.phase==='prep'&&((tool==='build'&&buildItem&&buildItem.type==='camera')||(panelSel&&panelSel.type==='camera'))){
-    for(const d of G.doors)if(d.type==='camera'){const f=frontOf(d);R(OX+Math.max(0,f.x-5)*TS,OY+Math.max(0,f.y-5)*TS,(Math.min(G.W-1,f.x+5)-Math.max(0,f.x-5)+1)*TS,(Math.min(G.H-1,f.y+5)-Math.max(0,f.y-5)+1)*TS,'rgba(59,130,246,.16)')}
+  /* 防犯カメラを置くとき・選んだとき：見張っているマスは青、どのカメラにも映らないマスは赤 */
+  const camSel=panelSel&&panelSel.type==='camera'?panelSel:(tool==='move'&&moveSel&&moveSel.type==='camera')?moveSel:null;
+  if(S.phase==='prep'&&((tool==='build'&&buildItem&&buildItem.type==='camera')||camSel)){
+    const cams=G.doors.filter(d=>d.type==='camera'),building=tool==='build'||tool==='move';
+    for(let y=0;y<G.H;y++)for(let x=0;x<G.W;x++){
+      const n=cams.reduce((a,d)=>a+(camSees(d,x,y)?1:0),0),px=OX+x*TS,py=OY+y*TS;
+      if(n)R(px,py,TS,TS,n>1?'rgba(59,130,246,.27)':'rgba(59,130,246,.15)');
+      else if(building)R(px+1,py+1,TS-2,TS-2,'rgba(255,45,85,.14)');
+    }
+    if(camSel){const c=Math.floor(now/400)%2?'#2563eb':'#93c5fd';
+      if(camSel.side==='t'){const x0=Math.max(0,camSel.pos-CAM_R),x1=Math.min(G.W-1,camSel.pos+CAM_R);R(OX+x0*TS,OY,1,G.H*TS,c);R(OX+(x1+1)*TS-1,OY,1,G.H*TS,c)}
+      else{const y0=Math.max(0,camSel.pos-CAM_R),y1=Math.min(G.H-1,camSel.pos+CAM_R);R(OX,OY+y0*TS,G.W*TS,1,c);R(OX,OY+(y1+1)*TS-1,G.W*TS,1,c)}}
   }
   const mode=prefs.overlay;
   if(mode!=='off'){

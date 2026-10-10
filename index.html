@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>[hidden]{display:none!important}</style>
-<script>window.APP_MODE=true;window.APP_VERSION='202610090827';</script>
+<script>window.APP_MODE=true;window.APP_VERSION='202610100257';</script>
 <title>パチンカスの成り上がり店長録</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -743,7 +743,7 @@ const DB=Object.fromEntries(DECOR.map(d=>[d.id,d]));
 const WALLITEMS=[
  {id:'toilet',name:'トイレ',price:300000,appeal:2,cap:2,rank:1,info:'壁に自動ドアで付く。マスを使わない。2人まで同時に使える'},
  {id:'smokeroom',name:'喫煙室',price:500000,appeal:3,cap:4,rank:2,info:'壁に付く喫煙室。マスを使わない。4人まで同時に使える'},
- {id:'camera',name:'防犯カメラ',price:180000,appeal:0,cap:0,rank:1,info:'壁に付く。周り5マスのゴト師を見つけやすくなる',noFront:1},
+ {id:'camera',name:'防犯カメラ',price:180000,appeal:0,cap:0,rank:1,info:'壁に付く。向かいの壁まで、幅11マス（左右5マスずつ）のゴト師を見つけやすくなる',noFront:1},
 ];
 const WB=Object.fromEntries(WALLITEMS.map(d=>[d.id,d]));
 const SWATCH={kiosk:'#0ea5e9',camera:'#111827',counter:'#d9a066',vending:'#ef4444',bench:'#a16207',booth:'#94d8e8',plant:'#22c55e',changer:'#94a3b8',cleaner:'#e0f2fe',neon:'#ff4fa3',cat:'#ffffff',chandelier:'#facc15',fountain:'#38bdf8',daruma:'#dc2626',trophy:'#facc15',goldcat:'#eab308',toilet:'#3b82f6',smokeroom:'#64748b'};
@@ -2378,9 +2378,13 @@ function tweetTick(now){
 }
 
 /* ---------- ゴト師 ---------- */
+/* 防犯カメラは、付けた壁から向かいの壁まで、幅11マス（左右5マスずつ）を見張る。
+   奥の壁のカメラは縦の列を、横の壁のカメラは横の列を、店の反対側まで見通す */
+const CAM_R=5;
+const camSees=(d,x,y)=>d.side==='t'?Math.abs(x-d.pos)<=CAM_R:Math.abs(y-d.pos)<=CAM_R;
 function camerasCovering(x,y){
   let n=0;
-  for(const d of G.doors)if(d.type==='camera'){const f=frontOf(d);if(Math.max(Math.abs(f.x-x),Math.abs(f.y-y))<=5)n++}
+  for(const d of G.doors)if(d.type==='camera'&&camSees(d,x,y))n++;
   return n;
 }
 function spawnGoto(){
@@ -5188,8 +5192,18 @@ function drawOverlay(now,tool){
         if(near&&!cleaners.some(c=>Math.max(Math.abs(c.x-x),Math.abs(c.y-y))<=2))R(px+1,py+1,TS-2,TS-2,'rgba(255,170,60,.25)')}
     }
   }
-  if(S.phase==='prep'&&((tool==='build'&&buildItem&&buildItem.type==='camera')||(panelSel&&panelSel.type==='camera'))){
-    for(const d of G.doors)if(d.type==='camera'){const f=frontOf(d);R(OX+Math.max(0,f.x-5)*TS,OY+Math.max(0,f.y-5)*TS,(Math.min(G.W-1,f.x+5)-Math.max(0,f.x-5)+1)*TS,(Math.min(G.H-1,f.y+5)-Math.max(0,f.y-5)+1)*TS,'rgba(59,130,246,.16)')}
+  /* 防犯カメラを置くとき・選んだとき：見張っているマスは青、どのカメラにも映らないマスは赤 */
+  const camSel=panelSel&&panelSel.type==='camera'?panelSel:(tool==='move'&&moveSel&&moveSel.type==='camera')?moveSel:null;
+  if(S.phase==='prep'&&((tool==='build'&&buildItem&&buildItem.type==='camera')||camSel)){
+    const cams=G.doors.filter(d=>d.type==='camera'),building=tool==='build'||tool==='move';
+    for(let y=0;y<G.H;y++)for(let x=0;x<G.W;x++){
+      const n=cams.reduce((a,d)=>a+(camSees(d,x,y)?1:0),0),px=OX+x*TS,py=OY+y*TS;
+      if(n)R(px,py,TS,TS,n>1?'rgba(59,130,246,.27)':'rgba(59,130,246,.15)');
+      else if(building)R(px+1,py+1,TS-2,TS-2,'rgba(255,45,85,.14)');
+    }
+    if(camSel){const c=Math.floor(now/400)%2?'#2563eb':'#93c5fd';
+      if(camSel.side==='t'){const x0=Math.max(0,camSel.pos-CAM_R),x1=Math.min(G.W-1,camSel.pos+CAM_R);R(OX+x0*TS,OY,1,G.H*TS,c);R(OX+(x1+1)*TS-1,OY,1,G.H*TS,c)}
+      else{const y0=Math.max(0,camSel.pos-CAM_R),y1=Math.min(G.H-1,camSel.pos+CAM_R);R(OX,OY+y0*TS,G.W*TS,1,c);R(OX,OY+(y1+1)*TS-1,G.W*TS,1,c)}}
   }
   const mode=prefs.overlay;
   if(mode!=='off'){
@@ -5591,7 +5605,7 @@ function toolText(){
   if(tool==='build'){
     const it=buildItem,nm=itemName(it),price=it.store?'倉庫から（無料）':yen(priceOf(it));
     const left=it.store?S.storage.filter(s=>s.kind===it.kind&&s.type===it.type).length:null;
-    const how=it.kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ（続けて置けます）';
+    const how=it.type==='camera'?'見張りたい列のマスをタップ（青＝映る・赤＝映らない）':it.kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ（続けて置けます）';
     return `<div class="tt">配置：<b>${esc(nm)}</b> ${price}${left!=null?` ・ 残り${left}`:''}<br><span class="sub">${how}</span></div>
 <div class="row">${it.kind==='m'?dirButtons(buildDir):''}${undoB}${end}</div>`;
   }
@@ -5614,14 +5628,16 @@ const itemName=it=>it.kind==='m'?MB[it.type].name:it.kind==='d'?DB[it.type].name
 const itemPrice=it=>it.kind==='m'?MB[it.type].price:it.kind==='d'?DB[it.type].price:WB[it.type].price;
 /* 買うときの値段（交換上手・佐藤さんの割引） */
 const priceOf=it=>Math.round(itemPrice(it)*(it.kind==='m'?pxF(it.type):1)*skPrice()/1000)*1000;
-function startBuild(kind,type,store){buildItem={kind,type,store:!!store};buildDir=0;tool='build';moveSel=null;closeSheet();renderDock();toast(kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ')}
+function startBuild(kind,type,store){buildItem={kind,type,store:!!store};buildDir=0;tool='build';moveSel=null;closeSheet();renderDock();toast(type==='camera'?'見張りたい列のマスをタップ。向かいの壁まで映ります':kind==='w'?'壁か、壁ぎわのマスをタップ':'置きたいマスをタップ')}
 function tryPlace(hit){
   const it=buildItem,price=it.store?0:priceOf(it);
   let sIdx=-1;
   if(it.store){sIdx=S.storage.findIndex(s=>s.kind===it.kind&&s.type===it.type);if(sIdx<0){tool='view';renderDock();return}}
   if(S.money<price){toast('お金が足りません');sfx('bad');return}
   if(it.kind==='w'){
-    const slot=hit.wall?{side:hit.wall,pos:hit.pos}:doorSlotFor(hit.x,hit.y);
+    let slot=hit.wall?{side:hit.wall,pos:hit.pos}:doorSlotFor(hit.x,hit.y);
+    /* 防犯カメラは、床のどこをタップしても、その列の奥の壁に付く（向かいの壁まで見通すので） */
+    if(!slot&&it.type==='camera')slot={side:'t',pos:hit.x};
     if(!slot){toastAt('壁か、壁ぎわのマスをタップしてください',hit.x,hit.y);sfx('bad');return}
     const d={type:it.type,side:slot.side,pos:slot.pos},why=validate(G.objs,[...G.doors,d]);
     if(why){toast(why);sfx('bad');return}
@@ -5695,8 +5711,11 @@ function moveTap(hit){
   }
   if(moveSel.side){
     if(door===moveSel){moveSel=null;renderDock();return}
-    if(o){moveSel=o;renderDock();return}
-    const slot=hit.wall?{side:hit.wall,pos:hit.pos}:doorSlotFor(hit.x,hit.y);
+    const cam=moveSel.type==='camera';
+    if(o&&!cam){moveSel=o;renderDock();return}
+    /* 防犯カメラは、台のあるマスをタップしても動かせる（その列の奥の壁か、横の壁へ） */
+    let slot=hit.wall?{side:hit.wall,pos:hit.pos}:doorSlotFor(hit.x,hit.y);
+    if(!slot&&cam)slot={side:'t',pos:hit.x};
     if(!slot){toast('壁か、壁ぎわのマスをタップしてください');sfx('bad');return}
     const cand=G.doors.map(d=>d===moveSel?{...d,side:slot.side,pos:slot.pos}:d),why=validate(G.objs,cand);
     if(why){toast(why);sfx('bad');return}
@@ -6602,7 +6621,7 @@ const GUIDE={
 <h3>取材イベント</h3><p>雑誌や人気配信者に取材してもらうと、たくさんのお客さんが来ます。お店全体の出し具合が見られ、良ければ大きく信用が上がり、悪ければ大きく下がります。</p>
 <h3>データ公開機</h3><p>台の成績を公開すると設定狙いの客が増え、出し方の評判が大きく動きます。</p>
 <h3>台の故障</h3><p>古い台ほど故障しやすく、ホール係が直します。閉店までに直らなかった台は夜間に修理費がかかります。</p>
-<h3>ゴト師</h3><p>不正な道具で玉を抜く客です。サングラスが目印。壁に付ける防犯カメラと、近くを見回るホール係が見つけます。</p>
+<h3>ゴト師</h3><p>不正な道具で玉を抜く客です。サングラスが目印。壁に付ける防犯カメラと、近くを見回るホール係が見つけます。<b>防犯カメラは、付けた壁から向かいの壁まで、幅11マス（左右5マスずつ）を見張ります。</b>置くときは、見張りたい列のマスをタップするとその列の奥の壁に付きます（青いマスが映る範囲、赤いマスはどのカメラにも映らない場所）。2台のカメラに映るマスでは、もっと見つけやすくなります。</p>
 <h3>やりこみ目標</h3><p>経営 → 目標 で、達成するとボーナスがもらえる目標が見られます（ストーリーとは別）。</p>`],
 };
 function guideSheet(tab){

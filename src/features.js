@@ -22,9 +22,13 @@ function tweetTick(now){
 }
 
 /* ---------- ゴト師 ---------- */
+/* 防犯カメラは、付けた壁から向かいの壁まで、幅11マス（左右5マスずつ）を見張る。
+   奥の壁のカメラは縦の列を、横の壁のカメラは横の列を、店の反対側まで見通す */
+const CAM_R=5;
+const camSees=(d,x,y)=>d.side==='t'?Math.abs(x-d.pos)<=CAM_R:Math.abs(y-d.pos)<=CAM_R;
 function camerasCovering(x,y){
   let n=0;
-  for(const d of G.doors)if(d.type==='camera'){const f=frontOf(d);if(Math.max(Math.abs(f.x-x),Math.abs(f.y-y))<=5)n++}
+  for(const d of G.doors)if(d.type==='camera'&&camSees(d,x,y))n++;
   return n;
 }
 function spawnGoto(){
